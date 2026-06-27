@@ -200,6 +200,9 @@ def _twitter_iso_datetime(date_string: str, end_of_day: bool = False) -> str:
     parsed = datetime.fromisoformat(date_string)
     if end_of_day:
         parsed = parsed + timedelta(days=1)
+        latest_allowed = datetime.utcnow() - timedelta(seconds=30)
+        if parsed > latest_allowed:
+            parsed = latest_allowed
     return parsed.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 

@@ -10,6 +10,8 @@ import time
 import logging
 import warnings
 import pickle
+import sys
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
 import subprocess
@@ -56,9 +58,12 @@ def gmx_ohlc_path(symbol=None, timeframe=None):
 def list_gmx_symbols(timeframe=None):
     timeframe = timeframe or Config.TIMEFRAME
     suffix = f"_{timeframe}"
+    blacklist = {symbol.upper() for symbol in getattr(Config, 'GMX_SYMBOL_BLACKLIST', set())}
     symbols = []
     for path in Path(Config.GMX_OHLC_DIR).glob(f"gmx_arbitrum_*{suffix}.csv"):
         symbol = path.stem.removeprefix("gmx_arbitrum_").removesuffix(suffix)
+        if symbol.upper() in blacklist:
+            continue
         symbols.append(symbol)
     return sorted(symbols)
 
@@ -154,7 +159,10 @@ class TelegramNotifier:
                 pos_info = bot_instance.trader.get_position_info()
                 if pos_info:
                     emoji = "🟢" if pos_info['type'] == 'LONG' else "🔴"
-                    position_text = f"{emoji} {pos_info['type']} | PnL: {pos_info['pnl']:.2f}%"
+                    position_text = (
+                        f"{emoji} {pos_info['symbol']} {pos_info['type']} | "
+                        f"PnL: {pos_info['pnl']:.2f}% / ${pos_info['pnl_usd']:.2f}"
+                    )
             
             pred_text = "No Recent Prediction"
             if bot_instance.last_prediction_prob is not None:
@@ -187,10 +195,11 @@ class TelegramNotifier:
         emoji = "🟢" if position_info['type'] == 'LONG' else "🔴"
         text = (
             f"{emoji} *Active Position*\n\n"
+            f"Symbol: `{position_info['symbol']}`\n"
             f"Type: `{position_info['type']}`\n"
             f"Entry Price: `${position_info['entry']:.4f}`\n"
             f"Current: `${position_info['current']:.4f}`\n"
-            f"PnL: `{position_info['pnl']:.2f}%`\n"
+            f"PnL: `{position_info['pnl']:.2f}% / ${position_info['pnl_usd']:.2f}`\n"
             f"SL: `${position_info['sl']:.4f}`\n"
             f"TP: `${position_info['tp']:.4f}`\n"
             f"Trailing: `{'✅' if position_info['trailing'] else '❌'}`\n"
@@ -622,24 +631,94 @@ class KrakenTrader:
         self.tp_price = None
         self.trailing_activated = False
         self.position_size = None
+        self.position_symbol = None
         
-        self.total_balance_usd = 0
+        self.dry_run_cash = Config.DRY_RUN_BALANCE_USD
+        self.total_balance_usd = Config.DRY_RUN_BALANCE_USD if Config.DRY_RUN else 0
         self.available_ada = 0
-        self.available_usd = 0
+        self.available_usd = Config.DRY_RUN_BALANCE_USD if Config.DRY_RUN else 0
         
         self.trade_history = []
+        if Config.DRY_RUN:
+            self.load_dry_run_state()
+
+    def load_dry_run_state(self):
+        state_path = Path(Config.DRY_RUN_STATE_PATH)
+        trades_path = Path(Config.DRY_RUN_TRADES_PATH)
+
+        if state_path.exists():
+            try:
+                state = json.loads(state_path.read_text())
+                self.dry_run_cash = float(state.get('dry_run_cash', self.dry_run_cash))
+                position = state.get('position') or {}
+                self.current_position = position.get('type')
+                self.entry_price = position.get('entry_price')
+                self.entry_time = datetime.fromisoformat(position['entry_time']) if position.get('entry_time') else None
+                self.sl_price = position.get('sl_price')
+                self.tp_price = position.get('tp_price')
+                self.trailing_activated = bool(position.get('trailing_activated', False))
+                self.position_size = position.get('position_size')
+                self.position_symbol = position.get('position_symbol')
+                logger.info(f"Loaded DRY_RUN state from {state_path}")
+            except Exception as exc:
+                logger.error(f"Could not load DRY_RUN state: {exc}")
+
+        if trades_path.exists():
+            try:
+                trades_df = pd.read_csv(trades_path)
+                self.trade_history = trades_df.to_dict('records')
+                logger.info(f"Loaded DRY_RUN trade history from {trades_path}")
+            except Exception as exc:
+                logger.error(f"Could not load DRY_RUN trade history: {exc}")
+
+    def save_dry_run_state(self):
+        if not Config.DRY_RUN:
+            return
+
+        state_path = Path(Config.DRY_RUN_STATE_PATH)
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+
+        position = None
+        if self.current_position:
+            position = {
+                'type': self.current_position,
+                'entry_price': self.entry_price,
+                'entry_time': self.entry_time.isoformat() if self.entry_time else None,
+                'sl_price': self.sl_price,
+                'tp_price': self.tp_price,
+                'trailing_activated': self.trailing_activated,
+                'position_size': self.position_size,
+                'position_symbol': self.position_symbol,
+            }
+
+        state = {
+            'dry_run_cash': self.dry_run_cash,
+            'equity': self.get_dry_run_equity(),
+            'position': position,
+            'updated_at': datetime.now().isoformat(),
+        }
+        state_path.write_text(json.dumps(state, indent=2))
+
+    def append_dry_run_trade(self, trade):
+        trades_path = Path(Config.DRY_RUN_TRADES_PATH)
+        trades_path.parent.mkdir(parents=True, exist_ok=True)
+        row = trade.copy()
+        for key in ('entry_time', 'exit_time'):
+            if hasattr(row.get(key), 'isoformat'):
+                row[key] = row[key].isoformat()
+        pd.DataFrame([row]).to_csv(
+            trades_path,
+            mode='a',
+            header=not trades_path.exists(),
+            index=False,
+        )
         
     def update_balance(self):
         try:
             if Config.DRY_RUN:
-                current_ada_price = self.get_current_price()
-                if current_ada_price is None:
-                    logger.warning("Unable to Retrieve Price")
-                    return None
-
                 self.available_ada = 0.0
-                self.available_usd = Config.DRY_RUN_BALANCE_USD
-                self.total_balance_usd = Config.DRY_RUN_BALANCE_USD
+                self.available_usd = self.dry_run_cash
+                self.total_balance_usd = self.get_dry_run_equity()
                 logger.info(f"Simulated DRY_RUN Balance: ${self.total_balance_usd:.2f}")
 
                 return {
@@ -706,10 +785,10 @@ class KrakenTrader:
             logger.error(f"Error calculating position size: {e}")
             return Config.MIN_TRADE_AMOUNT
     
-    def get_current_price(self):
+    def get_current_price(self, symbol=None):
         try:
             if using_gmx_data():
-                df = load_gmx_ohlc(Config.GMX_SYMBOL, Config.TIMEFRAME)
+                df = load_gmx_ohlc(symbol or Config.GMX_SYMBOL, Config.TIMEFRAME)
                 return float(df['Close'].iloc[-1])
 
             response = self.api.query_public('Ticker', {'pair': Config.KRAKEN_PAIR})
@@ -747,10 +826,13 @@ class KrakenTrader:
                 self.sl_price = sl
                 self.tp_price = tp
                 self.trailing_activated = False
+                self.position_symbol = Config.GMX_SYMBOL if using_gmx_data() else asset_label()
                 logger.info(
                     f"DRY_RUN: Simulate Position Opening {direction}: "
-                    f"price={price:.4f}, size={self.position_size:.2f}, SL={sl:.4f}, TP={tp:.4f}"
+                    f"symbol={self.position_symbol}, price={price:.4f}, "
+                    f"size={self.position_size:.2f}, SL={sl:.4f}, TP={tp:.4f}"
                 )
+                self.save_dry_run_state()
                 return True
 
             if using_gmx_data():
@@ -776,6 +858,7 @@ class KrakenTrader:
             self.sl_price = sl
             self.tp_price = tp
             self.trailing_activated = False
+            self.position_symbol = Config.GMX_SYMBOL if using_gmx_data() else asset_label()
             
             logger.info(f"Position {direction} opened: {price:.4f}")
             return True
@@ -806,7 +889,8 @@ class KrakenTrader:
             
             order_type = 'sell' if self.current_position == 'LONG' else 'buy'
             
-            logger.info(f"🔄 Attempting to Close {self.current_position}: {self.position_size:.2f} {asset_label()}")
+            close_symbol = self.position_symbol or asset_label()
+            logger.info(f"🔄 Attempting to Close {self.current_position}: {self.position_size:.2f} {close_symbol}")
             
             # 🔥 PRE-CLOSURE VALIDATION
             if self.position_size < Config.MIN_TRADE_AMOUNT:
@@ -815,28 +899,40 @@ class KrakenTrader:
                 return False
 
             if Config.DRY_RUN:
-                current_price = self.get_current_price() or self.entry_price
+                current_price = self.get_current_price(close_symbol) or self.entry_price
                 pnl = self.calculate_pnl(current_price)
+                pnl_usd = self.calculate_pnl_usd(current_price)
+                self.dry_run_cash += pnl_usd
                 duration = datetime.now() - self.entry_time
-                self.trade_history.append({
+                trade = {
                     'entry_time': self.entry_time,
                     'exit_time': datetime.now(),
+                    'symbol': close_symbol,
                     'type': self.current_position,
                     'entry_price': self.entry_price,
                     'exit_price': current_price,
                     'pnl_percent': pnl,
+                    'pnl_usd': pnl_usd,
                     'reason': reason,
                     'duration': duration,
                     'order_id': 'dry_run'
-                })
-                logger.info(f"DRY_RUN: Simulate Position Closure {self.current_position}: PnL={pnl:.2f}%, Reason={reason}")
+                }
+                self.trade_history.append(trade)
+                self.append_dry_run_trade(trade)
+                logger.info(
+                    f"DRY_RUN: Simulate Position Closure {self.current_position}: "
+                    f"symbol={close_symbol}, PnL={pnl:.2f}%, PnL=${pnl_usd:.2f}, "
+                    f"cash=${self.dry_run_cash:.2f}, Reason={reason}"
+                )
                 self.current_position = None
                 self.entry_price = None
                 self.entry_time = None
                 self.sl_price = None
                 self.tp_price = None
                 self.position_size = None
+                self.position_symbol = None
                 self.trailing_activated = False
+                self.save_dry_run_state()
                 return True
 
             if using_gmx_data():
@@ -915,6 +1011,7 @@ class KrakenTrader:
             self.sl_price = None
             self.tp_price = None
             self.position_size = None
+            self.position_symbol = None
             self.trailing_activated = False
             
             # 🔥 UPDATE BALANCE
@@ -1023,6 +1120,21 @@ class KrakenTrader:
             return ((current_price - self.entry_price) / self.entry_price) * 100
         else:
             return ((self.entry_price - current_price) / self.entry_price) * 100
+
+    def calculate_pnl_usd(self, current_price):
+        if not self.entry_price or not self.position_size:
+            return 0.0
+
+        if self.current_position == 'LONG':
+            return (current_price - self.entry_price) * self.position_size
+        return (self.entry_price - current_price) * self.position_size
+
+    def get_dry_run_equity(self):
+        equity = self.dry_run_cash
+        if self.current_position:
+            current_price = self.get_current_price(self.position_symbol) or self.entry_price
+            equity += self.calculate_pnl_usd(current_price)
+        return equity
     
     def update_trailing_stop(self, current_price, atr):
         if not self.current_position or not atr:
@@ -1080,7 +1192,7 @@ class KrakenTrader:
         if not self.current_position:
             return None
         
-        current_price = self.get_current_price()
+        current_price = self.get_current_price(self.position_symbol)
         if not current_price:
             return None
         
@@ -1090,9 +1202,11 @@ class KrakenTrader:
         
         return {
             'type': self.current_position,
+            'symbol': self.position_symbol or asset_label(),
             'entry': self.entry_price,
             'current': current_price,
             'pnl': self.calculate_pnl(current_price),
+            'pnl_usd': self.calculate_pnl_usd(current_price),
             'sl': self.sl_price,
             'tp': self.tp_price,
             'trailing': self.trailing_activated,
@@ -1128,6 +1242,59 @@ class TradingBot:
         
         logger.info("✅ Bot Initialized")
         self.notifier.send_message("🤖 Trading Bot v3.3 Started\n✅ Model with 18 features loaded")
+
+    def refresh_gmx_data_cache(self, force=False):
+        """Refresh GMX candle CSVs before signal evaluation while preserving the local cache."""
+        if not using_gmx_data() or not getattr(Config, 'GMX_AUTO_REFRESH_ENABLED', True):
+            return True
+
+        now = time.time()
+        last_refresh = getattr(self, '_last_gmx_refresh_ts', 0)
+        refresh_seconds = int(getattr(Config, 'GMX_AUTO_REFRESH_SECONDS', 3300))
+        if not force and last_refresh and (now - last_refresh) < refresh_seconds:
+            logger.info("GMX data refresh skipped; cache was refreshed recently")
+            return True
+
+        update_script = Path(getattr(Config, 'GMX_UPDATE_SCRIPT'))
+        update_config = Path(getattr(Config, 'GMX_UPDATE_CONFIG'))
+        if not update_script.exists():
+            logger.warning(f"GMX update script not found: {update_script}")
+            return False
+        if not update_config.exists():
+            logger.warning(f"GMX update config not found: {update_config}")
+            return False
+
+        cmd = [
+            sys.executable,
+            str(update_script),
+            '--config', str(update_config),
+            '--period', Config.TIMEFRAME,
+            '--chain', getattr(Config, 'GMX_UPDATE_CHAIN', 'arbitrum'),
+        ]
+
+        try:
+            logger.info(f"Refreshing GMX {Config.TIMEFRAME} OHLC cache before scan")
+            result = subprocess.run(
+                cmd,
+                cwd=update_script.parent,
+                text=True,
+                capture_output=True,
+                timeout=int(getattr(Config, 'GMX_UPDATE_TIMEOUT_SECONDS', 900)),
+            )
+            if result.stdout:
+                logger.info(result.stdout.strip())
+            if result.stderr:
+                logger.warning(result.stderr.strip())
+            if result.returncode != 0:
+                logger.warning(f"GMX data refresh failed with exit code {result.returncode}")
+                return False
+
+            self._last_gmx_refresh_ts = now
+            logger.info("GMX OHLC cache refresh complete")
+            return True
+        except Exception as exc:
+            logger.warning(f"GMX data refresh failed: {exc}")
+            return False
     
     def predict_direction(self, symbol=None, include_sentiment=True):
         """
@@ -1195,6 +1362,9 @@ class TradingBot:
         try:
             logger.info("🔔 Starting Signal Evaluation...")
             self.notifier.send_message("⏰ Evaluating Signal...")
+
+            if using_gmx_data():
+                self.refresh_gmx_data_cache()
             
             balance_info = self.trader.update_balance()
             if balance_info:
@@ -1268,7 +1438,6 @@ class TradingBot:
             prediction_prob = selected['probability']
             current_price = selected['price']
             self.current_atr = selected['atr']
-            Config.GMX_SYMBOL = selected_symbol
 
             # Calculate stops
             sl_distance = self.current_atr * Config.ATR_SL_MULTIPLIER
@@ -1276,8 +1445,24 @@ class TradingBot:
             
             # Close Existing Position
             if self.trader.current_position:
+                current_symbol = self.trader.position_symbol
+                if current_symbol == selected_symbol and self.trader.current_position == direction:
+                    logger.info(
+                        f"Keeping existing {direction} position on {selected_symbol}; "
+                        "selected signal is unchanged"
+                    )
+                    self.notifier.send_message(
+                        f"✅ Keeping Existing Position\n"
+                        f"Symbol: `{selected_symbol}`\n"
+                        f"Direction: `{direction}`\n"
+                        f"Probability: `{prediction_prob*100:.1f}%`"
+                    )
+                    return
+
                 self.trader.close_position("Nueva hora")
                 self.notifier.send_message("🔄 Posición cerrada por nueva señal")
+
+            Config.GMX_SYMBOL = selected_symbol
             
             logger.info(
                 f"🎯 Selected {selected_symbol}: direction={direction}, "
@@ -1476,7 +1661,7 @@ class TradingBot:
             if not self.trader.current_position:
                 return
             
-            current_price = self.trader.get_current_price()
+            current_price = self.trader.get_current_price(self.trader.position_symbol)
             if current_price is None:
                 return
             
@@ -1487,10 +1672,11 @@ class TradingBot:
             if position_info:
                 self.notifier.send_position_update(position_info)
             
+            pnl = self.trader.calculate_pnl(current_price)
+            pnl_usd = self.trader.calculate_pnl_usd(current_price)
             if self.trader.check_exit_conditions(current_price):
-                pnl = self.trader.calculate_pnl(current_price)
                 emoji = "✅" if pnl > 0 else "❌"
-                self.notifier.send_message(f"{emoji} Position Closed: `{pnl:.2f}%`")
+                self.notifier.send_message(f"{emoji} Position Closed: `{pnl:.2f}% / ${pnl_usd:.2f}`")
             
         except Exception as e:
             logger.error(f"Monitoring Error: {e}")

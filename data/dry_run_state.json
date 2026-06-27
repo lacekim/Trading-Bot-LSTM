@@ -1,0 +1,15 @@
+{
+  "dry_run_cash": 988.2622369824381,
+  "equity": 988.2622369824381,
+  "position": {
+    "type": "LONG",
+    "entry_price": 0.163428,
+    "entry_time": "2026-06-22T11:04:48.376999",
+    "sl_price": 0.15942835714285714,
+    "tp_price": 0.1714272857142857,
+    "trailing_activated": false,
+    "position_size": 2470.8762064030975,
+    "position_symbol": "MET"
+  },
+  "updated_at": "2026-06-22T11:04:48.380713"
+}

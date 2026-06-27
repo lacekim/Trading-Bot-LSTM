@@ -23,6 +23,20 @@ class Config:
     LOOKBACK_PERIOD = '2y'
     DATA_DIR = Path('./data')
     GMX_OHLC_DIR = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/data/GMX_OHLCVT')
+    GMX_AUTO_REFRESH_ENABLED = os.getenv('GMX_AUTO_REFRESH_ENABLED', 'true').lower() in ('1', 'true', 'yes', 'on')
+    GMX_AUTO_REFRESH_SECONDS = int(os.getenv('GMX_AUTO_REFRESH_SECONDS', '3300'))
+    GMX_UPDATE_SCRIPT = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/update_gmx_data.py')
+    GMX_UPDATE_CONFIG = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/config_gmx.json')
+    GMX_UPDATE_CHAIN = os.getenv('GMX_UPDATE_CHAIN', 'arbitrum')
+    GMX_UPDATE_TIMEOUT_SECONDS = int(os.getenv('GMX_UPDATE_TIMEOUT_SECONDS', '900'))
+    GMX_SYMBOL_BLACKLIST = {
+        'DAI',
+        'SUSD',
+        'USDC',
+        'USDC.E',
+        'USDE',
+        'USDT',
+    }
     KRAKEN_OHLC_DIR = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/data/Kraken_OHLCVT')
     KRAKEN_MAX_GAP_HOURS = 2
     MIN_TRAIN_CANDLES = 2000
@@ -53,6 +67,8 @@ class Config:
     RISK_PERCENTAGE = 1.0
     DRY_RUN = os.getenv('DRY_RUN', 'true').lower() in ('1', 'true', 'yes', 'on')
     DRY_RUN_BALANCE_USD = float(os.getenv('DRY_RUN_BALANCE_USD', '1000'))
+    DRY_RUN_STATE_PATH = Path(os.getenv('DRY_RUN_STATE_PATH', './data/dry_run_state.json'))
+    DRY_RUN_TRADES_PATH = Path(os.getenv('DRY_RUN_TRADES_PATH', './data/dry_run_trades.csv'))
     TELEGRAM_ENABLED = os.getenv('TELEGRAM_ENABLED', 'true').lower() in ('1', 'true', 'yes', 'on')
     
     # ==================== STOPS Y TARGETS ====================
@@ -71,8 +87,8 @@ class Config:
     MIN_SIGNAL_THRESHOLD = 0.58  # 58% minimum confidence
     MIN_DIRECTIONAL_CONFIDENCE = 0.58
 
-    # Additional entry filter using trend context and volume
-    ENABLE_ENTRY_CONTEXT_FILTER = True
+    # Keep live entries aligned with the model signal path; sentiment runs after candidates are found.
+    ENABLE_ENTRY_CONTEXT_FILTER = False
     ENTRY_FILTER_MIN_VOLUME_RATIO = 1.0
     ENTRY_FILTER_REQUIRE_TREND = True
     ENTRY_FILTER_MIN_TREND = 0.0
