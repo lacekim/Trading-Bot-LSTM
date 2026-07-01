@@ -1724,7 +1724,7 @@ class TradingBot:
                 time.sleep(1)
             except KeyboardInterrupt:
                 logger.info("Bot Stopped by User")
-                self.notifier.send_message("🛑 Bot detenido")
+                self.notifier.send_message("🛑 Bot Stopped")
                 break
             except Exception as e:
                 logger.error(f"Loop Error: {e}")
@@ -1750,7 +1750,7 @@ def run_lstm_backtest_for_symbol(model, data_handler, symbol, timeframe, startin
     df = df.replace([np.inf, -np.inf], np.nan).dropna()
 
     if len(df) <= Config.SEQUENCE_LENGTH + 1:
-        raise ValueError(f"Insufficient Data for {symbol}: {len(df)} velas limpias")
+        raise ValueError(f"Insufficient Data for {symbol}: {len(df)} Clean Candles")
 
     features = df[Config.FEATURE_COLUMNS].values
     features = np.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
@@ -1976,11 +1976,11 @@ if __name__ == "__main__":
         print("\n" + "="*60)
         print("🤖 GMX 15m LSTM TRADING BOT v3.3")
         print("   🔥 Uses All 18 Features Correctly")
-        print("   🔥 Clasificador binario optimizado")
+        print("   🔥 Binary Classifier Optimized")
         print("="*60 + "\n")
         
         Config.validate()
-        logger.info("✅ Credenciales validadas")
+        logger.info("✅ Credentials Validated")
         
         bot = TradingBot()
         bot.run()
