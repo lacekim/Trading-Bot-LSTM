@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Bot de Trading LSTM v3.3 - CORREGIDO
-🔥 Ahora usa TODOS los features correctamente
+LSTM Trading Bot v3.3 - FIXED"
+🔥 Now Uses ALL Features Correctly
 """
 from config import Config
 from argparse import ArgumentParser
