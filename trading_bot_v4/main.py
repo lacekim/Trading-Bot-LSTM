@@ -78,6 +78,28 @@ def main():
         return 0
     if args.smc_shadow_backtest:
         result = run_smc_shadow_backtest(args)
+        if args.all_assets:
+            summary_df = result["summary_df"]
+            print(f"V4 SMC shadow backtest summary saved to {result['summary_path']}")
+            print(f"SMC filter features: {', '.join(result['smc_filter_features'])}")
+            print(f"SMC filter lookback candles: {result['smc_filter_lookback']}")
+            display_columns = [
+                "ranking",
+                "symbol",
+                "smc_filtered_return_pct",
+                "drawdown_improvement_pct",
+                "profit_factor_improvement",
+                "smc_return_drawdown_ratio",
+                "baseline_return_pct",
+                "baseline_max_drawdown_pct",
+                "smc_filtered_max_drawdown_pct",
+                "baseline_profit_factor",
+                "smc_filtered_profit_factor",
+            ]
+            if not summary_df.empty:
+                print(summary_df[display_columns].head(20).to_string(index=False))
+            return 0
+
         baseline = result["baseline_summary"]
         filtered = result["filtered_summary"]
         print(f"SMC shadow backtest: {baseline['symbol']} {baseline['timeframe']}")

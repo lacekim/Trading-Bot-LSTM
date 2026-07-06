@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from trading_bot import load_gmx_ohlc
+from trading_bot import list_gmx_symbols, load_gmx_ohlc
 from trading_bot_v4.backtesting.ranking_engine import _compute_trade_metrics, run_symbol_v4_backtest_ranking
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.core.data_handler import V4DataHandler
@@ -20,8 +21,11 @@ from trading_bot_v4.core.smc_swings import (
     add_swing_features,
     load_gmx_ohlcv,
 )
+from trading_bot_v4.utils.logger import build_logger
 from trading_bot_v4.utils.model_cache import ModelScalerCache
 
+
+logger = build_logger("v4_smc_shadow_backtest")
 
 SMC_SHADOW_FEATURES = [
     "swing_low",
@@ -31,6 +35,7 @@ SMC_SHADOW_FEATURES = [
     "swept_swing_high",
 ]
 SMC_FILTER_LOOKBACK = 24
+SMC_SHADOW_SUMMARY_PATH = Path("v4_smc_shadow_backtest_summary.csv")
 
 
 def _rolling_activity(series: pd.Series, lookback: int = SMC_FILTER_LOOKBACK) -> pd.Series:
@@ -291,13 +296,88 @@ def run_symbol_smc_shadow_backtest(
     }
 
 
+def _build_summary_row(result: dict[str, Any]) -> dict[str, float | int | str]:
+    baseline = result["baseline_summary"]
+    filtered = result["filtered_summary"]
+    baseline_drawdown = float(baseline.get("max_drawdown_pct", 0.0) or 0.0)
+    filtered_drawdown = float(filtered.get("max_drawdown_pct", 0.0) or 0.0)
+    baseline_profit_factor = float(baseline.get("profit_factor", 0.0) or 0.0)
+    filtered_profit_factor = float(filtered.get("profit_factor", 0.0) or 0.0)
+
+    return {
+        "symbol": baseline["symbol"],
+        "timeframe": baseline["timeframe"],
+        "baseline_return_pct": float(baseline.get("return_pct", 0.0) or 0.0),
+        "smc_filtered_return_pct": float(filtered.get("return_pct", 0.0) or 0.0),
+        "return_improvement_pct": float(filtered.get("return_pct", 0.0) or 0.0) - float(baseline.get("return_pct", 0.0) or 0.0),
+        "baseline_trades": int(baseline.get("signals_traded", 0) or 0),
+        "smc_filtered_trades": int(filtered.get("signals_traded", 0) or 0),
+        "baseline_win_rate_pct": float(baseline.get("win_rate_pct", 0.0) or 0.0),
+        "smc_filtered_win_rate_pct": float(filtered.get("win_rate_pct", 0.0) or 0.0),
+        "baseline_max_drawdown_pct": baseline_drawdown,
+        "smc_filtered_max_drawdown_pct": filtered_drawdown,
+        "drawdown_improvement_pct": abs(baseline_drawdown) - abs(filtered_drawdown),
+        "baseline_profit_factor": baseline_profit_factor,
+        "smc_filtered_profit_factor": filtered_profit_factor,
+        "profit_factor_improvement": filtered_profit_factor - baseline_profit_factor,
+        "smc_return_drawdown_ratio": float(filtered.get("return_to_drawdown_ratio", 0.0) or 0.0),
+    }
+
+
+def _rank_shadow_summary(summary_df: pd.DataFrame) -> pd.DataFrame:
+    if summary_df.empty:
+        return summary_df
+
+    ranked = summary_df.copy()
+    ranking_columns = [
+        "smc_filtered_return_pct",
+        "drawdown_improvement_pct",
+        "profit_factor_improvement",
+        "smc_return_drawdown_ratio",
+    ]
+    for column in ranking_columns:
+        ranked[column] = pd.to_numeric(ranked[column], errors="coerce").fillna(0.0)
+
+    ranked = ranked.sort_values(
+        by=ranking_columns,
+        ascending=[False, False, False, False],
+        na_position="last",
+    ).reset_index(drop=True)
+    ranked["ranking"] = ranked.index + 1
+    return ranked
+
+
+def run_all_assets_smc_shadow_backtest(
+    model: Any,
+    data_handler: Any,
+    timeframe: str,
+    starting_capital: float,
+) -> pd.DataFrame:
+    symbols = list_gmx_symbols(timeframe)
+    if not symbols:
+        raise FileNotFoundError(f"No GMX {timeframe} files found in {Config.GMX_OHLC_DIR}")
+
+    rows = []
+    for symbol in symbols:
+        try:
+            result = run_symbol_smc_shadow_backtest(model, data_handler, symbol, timeframe, starting_capital)
+            rows.append(_build_summary_row(result))
+        except Exception as exc:
+            logger.warning("SMC shadow backtest failed for %s: %s", symbol, exc)
+
+    ranked = _rank_shadow_summary(pd.DataFrame(rows))
+    ranked.to_csv(SMC_SHADOW_SUMMARY_PATH, index=False)
+    return ranked
+
+
 def run_smc_shadow_backtest(args: Any | None = None) -> dict[str, Any]:
     if args is None:
-        args = type("Args", (), {"symbol": Config.GMX_SYMBOL, "timeframe": Config.TIMEFRAME, "capital": 100000.0})()
+        args = type("Args", (), {"symbol": Config.GMX_SYMBOL, "timeframe": Config.TIMEFRAME, "capital": 100000.0, "all_assets": False})()
 
     symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
     timeframe = getattr(args, "timeframe", Config.TIMEFRAME)
     starting_capital = float(getattr(args, "capital", 100000.0))
+    use_all_assets = bool(getattr(args, "all_assets", False))
 
     if getattr(Config, "DATA_SOURCE", "").upper() == "GMX":
         handler = V4DataHandler()
@@ -306,4 +386,14 @@ def run_smc_shadow_backtest(args: Any | None = None) -> dict[str, Any]:
     cache = ModelScalerCache()
     model, scaler = cache.load()
     data_handler = V4DataHandler(str(cache.scaler_path), scaler=scaler)
+
+    if use_all_assets:
+        summary_df = run_all_assets_smc_shadow_backtest(model, data_handler, timeframe, starting_capital)
+        return {
+            "summary_df": summary_df,
+            "summary_path": SMC_SHADOW_SUMMARY_PATH,
+            "smc_filter_features": SMC_SHADOW_FEATURES,
+            "smc_filter_lookback": SMC_FILTER_LOOKBACK,
+        }
+
     return run_symbol_smc_shadow_backtest(model, data_handler, symbol, timeframe, starting_capital)
