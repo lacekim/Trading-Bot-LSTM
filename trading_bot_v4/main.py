@@ -55,6 +55,7 @@ def parse_args():
     parser.add_argument("--rank-assets", action="store_true", help="Rank GMX assets for analysis-only V4 asset selection")
     parser.add_argument("--validate-asset-rankings", action="store_true", help="Validate asset rankings against constrained paper performance")
     parser.add_argument("--validated", action="store_true", help="Use constrained-performance-first asset ranking weights")
+    parser.add_argument("--validated-whitelist", action="store_true", help="Use the validated whitelist for supported paper-only commands")
     parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
     parser.add_argument("--debug", action="store_true", help="Write debug output for supported analysis commands")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
@@ -200,6 +201,8 @@ def main():
         summary_df = result.get("summary_df")
         print("live trading: disabled")
         print("SMC model paper trading only: no live orders submitted")
+        if result.get("validated_whitelist"):
+            print(f"validated whitelist assets: {', '.join(result.get('symbols', []))}")
         print(f"assets evaluated: {result['assets_evaluated']}")
         print(f"predictions evaluated: {result['predictions_evaluated']}")
         print(f"trade candidates: {result['trade_candidates']}")

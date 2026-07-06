@@ -22,6 +22,9 @@ logger = build_logger("v4_smc_model_paper")
 
 SMC_MODEL_PAPER_SUMMARY_PATH = Path("logs/v4_smc_model_paper_summary.csv")
 SMC_MODEL_PAPER_SIGNALS_PATH = Path("logs/v4_smc_model_paper_signals.csv")
+VALIDATED_RANKINGS_PATH = Path("models/asset_rankings_validated.csv")
+VALIDATED_WHITELIST_PAPER_SUMMARY_PATH = Path("logs/v4_validated_whitelist_paper_summary.csv")
+VALIDATED_WHITELIST_PAPER_SIGNALS_PATH = Path("logs/v4_validated_whitelist_paper_signals.csv")
 
 
 def _direction_from_probability(probability: float) -> str:
@@ -118,22 +121,70 @@ def _summarize_asset(signals: pd.DataFrame, symbol: str, timeframe: str) -> dict
     }
 
 
-def _write_outputs(signals: pd.DataFrame, summaries: list[dict[str, Any]]) -> pd.DataFrame:
-    SMC_MODEL_PAPER_SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    signals.to_csv(SMC_MODEL_PAPER_SIGNALS_PATH, index=False)
+def _load_validated_whitelist(timeframe: str) -> list[str]:
+    if not VALIDATED_RANKINGS_PATH.exists():
+        raise FileNotFoundError(f"Validated asset rankings not found: {VALIDATED_RANKINGS_PATH}")
+
+    rankings = pd.read_csv(VALIDATED_RANKINGS_PATH)
+    if rankings.empty:
+        raise ValueError(f"Validated asset rankings are empty: {VALIDATED_RANKINGS_PATH}")
+
+    rankings["symbol"] = rankings["symbol"].astype(str).str.upper()
+    if "timeframe" in rankings.columns:
+        rankings = rankings.loc[rankings["timeframe"].astype(str).eq(str(timeframe))]
+
+    required = [
+        "constrained_smc_return_pct",
+        "constrained_smc_profit_factor",
+        "constrained_smc_max_drawdown_pct",
+        "trade_count_sanity_score",
+    ]
+    missing = [column for column in required if column not in rankings.columns]
+    if missing:
+        raise ValueError(f"Validated rankings missing whitelist columns: {missing}")
+
+    whitelist = rankings.loc[
+        (pd.to_numeric(rankings["constrained_smc_return_pct"], errors="coerce") > 0.0)
+        & (pd.to_numeric(rankings["constrained_smc_profit_factor"], errors="coerce") >= 1.0)
+        & (pd.to_numeric(rankings["constrained_smc_max_drawdown_pct"], errors="coerce") >= -15.0)
+        & (pd.to_numeric(rankings["trade_count_sanity_score"], errors="coerce") >= 70.0)
+    ].sort_values("rank" if "rank" in rankings.columns else "validated_score")
+
+    symbols = whitelist["symbol"].drop_duplicates().tolist()
+    if not symbols:
+        raise ValueError("Validated whitelist is empty; rerun --rank-assets --validated and inspect filters")
+    return symbols
+
+
+def _write_outputs(
+    signals: pd.DataFrame,
+    summaries: list[dict[str, Any]],
+    summary_path: Path,
+    signals_path: Path,
+) -> pd.DataFrame:
+    signals_path.parent.mkdir(parents=True, exist_ok=True)
+    signals.to_csv(signals_path, index=False)
 
     summary = pd.DataFrame(summaries)
-    SMC_MODEL_PAPER_SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    summary.to_csv(SMC_MODEL_PAPER_SUMMARY_PATH, index=False)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary.to_csv(summary_path, index=False)
     return summary
 
 
 def run_smc_model_paper_trading(args: Any) -> dict[str, Any]:
     """Generate paper-only signals from the separate SMC-enhanced model."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    use_validated_whitelist = bool(getattr(args, "validated_whitelist", False))
     use_all_assets = bool(getattr(args, "all_assets", False))
     selected_symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
-    symbols = [str(symbol).upper() for symbol in list_gmx_symbols(timeframe)] if use_all_assets else [selected_symbol]
+    if use_validated_whitelist:
+        symbols = _load_validated_whitelist(timeframe)
+        summary_path = VALIDATED_WHITELIST_PAPER_SUMMARY_PATH
+        signals_path = VALIDATED_WHITELIST_PAPER_SIGNALS_PATH
+    else:
+        symbols = [str(symbol).upper() for symbol in list_gmx_symbols(timeframe)] if use_all_assets else [selected_symbol]
+        summary_path = SMC_MODEL_PAPER_SUMMARY_PATH
+        signals_path = SMC_MODEL_PAPER_SIGNALS_PATH
 
     cache = ModelScalerCache(model_path=SMC_MODEL_PATH, scaler_path=SMC_SCALER_PATH)
     model, scaler = cache.load()
@@ -162,13 +213,15 @@ def run_smc_model_paper_trading(args: Any) -> dict[str, Any]:
             "feature_count",
         ]
     )
-    summary = _write_outputs(all_signals, summaries)
+    summary = _write_outputs(all_signals, summaries, summary_path, signals_path)
     return {
         "all_assets": use_all_assets,
+        "validated_whitelist": use_validated_whitelist,
+        "symbols": symbols,
         "assets_evaluated": int(len(summaries)),
         "predictions_evaluated": int(len(all_signals)),
         "trade_candidates": int(all_signals["is_trade_candidate"].sum()) if not all_signals.empty else 0,
-        "summary_path": SMC_MODEL_PAPER_SUMMARY_PATH,
-        "signals_path": SMC_MODEL_PAPER_SIGNALS_PATH,
+        "summary_path": summary_path,
+        "signals_path": signals_path,
         "summary_df": summary,
     }
