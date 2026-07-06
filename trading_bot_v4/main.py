@@ -12,6 +12,7 @@ from trading_bot_v4.backtesting.backtest_engine import run_v4_backtest
 from trading_bot_v4.backtesting.comparison_engine import run_v4_compare_original
 from trading_bot_v4.backtesting.ranking_engine import run_v4_backtest_ranking
 from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backtest
+from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.utils.logger import build_logger
 
@@ -35,6 +36,7 @@ def parse_args():
     parser.add_argument("--backtest", action="store_true", help="Run a V4 backtest over one asset or all assets")
     parser.add_argument("--backtest-rank", action="store_true", help="Backtest every GMX asset and rank them by risk-adjusted performance")
     parser.add_argument("--smc-shadow-backtest", action="store_true", help="Compare baseline model behavior against selected SMC filters")
+    parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -116,6 +118,24 @@ def main():
         print(f"baseline profit factor: {format_optional_metric(baseline.get('profit_factor'))}")
         print(f"SMC-filtered profit factor: {format_optional_metric(filtered.get('profit_factor'))}")
         return 0
+    if args.walk_forward_smc:
+        summary_df = run_walk_forward_smc_validation(args)
+        print(f"V4 walk-forward summary saved to {WALK_FORWARD_SUMMARY_PATH}")
+        print(f"V4 walk-forward HTML report saved to {WALK_FORWARD_REPORT_PATH}")
+        if not summary_df.empty:
+            display_columns = [
+                "symbol",
+                "window",
+                "strategy",
+                "return_pct",
+                "max_drawdown_pct",
+                "profit_factor",
+                "sharpe_ratio",
+                "trades",
+                "win_rate_pct",
+            ]
+            print(summary_df[display_columns].head(30).to_string(index=False))
+        return 0
     if args.compare_original:
         run_v4_compare_original(args)
         return 0
@@ -187,7 +207,7 @@ def main():
             )
         return 0
 
-    print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --smc-shadow-backtest, --compare-original, --analyze-smc, or --refresh.")
+    print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --smc-shadow-backtest, --walk-forward-smc, --compare-original, --analyze-smc, or --refresh.")
     return 0
 
 
