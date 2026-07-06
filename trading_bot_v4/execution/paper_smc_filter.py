@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from trading_bot import load_gmx_ohlc
+from trading_bot import list_gmx_symbols, load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.core.data_handler import V4DataHandler
 from trading_bot_v4.core.smc_swings import (
@@ -27,6 +27,7 @@ from trading_bot_v4.utils.model_cache import ModelScalerCache
 logger = build_logger("v4_paper_smc_filter")
 
 SMC_PAPER_BLOCK_LOG_PATH = Path("logs/v4_smc_blocked_trades.csv")
+SMC_PAPER_SUMMARY_PATH = Path("logs/v4_smc_paper_summary.csv")
 SMC_CONTEXT_LOOKBACK = 24
 
 
@@ -139,16 +140,22 @@ def _append_blocked_trade_log(rows: list[dict[str, Any]]) -> None:
     )
 
 
-def run_paper_trade_smc_filter(args: Any) -> dict[str, Any]:
-    """Evaluate paper-only model signals with the optional SMC filter enabled."""
-    symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
-    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+def _format_signal(timestamp: Any, row: pd.Series | dict[str, Any]) -> str:
+    if row is None:
+        return ""
+    probability = float(row["model_probability"])
+    price = float(row["price"])
+    direction = str(row["model_direction"])
+    context = str(row.get("smc_context", "none"))
+    return f"{timestamp} {direction} p={probability:.6f} price={price:.10f} context={context}"
 
-    Config.USE_SMC_FILTER = True
-    cache = ModelScalerCache()
-    model, scaler = cache.load()
-    data_handler = V4DataHandler(str(cache.scaler_path), scaler=scaler)
 
+def _evaluate_symbol_paper_smc(
+    model: Any,
+    data_handler: V4DataHandler,
+    symbol: str,
+    timeframe: str,
+) -> dict[str, Any]:
     signals = _build_prediction_signals(model, data_handler, symbol, timeframe)
     contexts = _build_smc_context(symbol, timeframe, signals.index)
     paper = signals.join(contexts, how="left").dropna(subset=["price"])
@@ -157,6 +164,8 @@ def run_paper_trade_smc_filter(args: Any) -> dict[str, Any]:
 
     allowed_rows = []
     blocked_rows = []
+    latest_allowed_signal = ""
+    latest_blocked_signal = ""
     for timestamp, row in candidates.iterrows():
         direction = str(row["model_direction"])
         context = str(row["smc_context"])
@@ -171,9 +180,11 @@ def run_paper_trade_smc_filter(args: Any) -> dict[str, Any]:
         }
         if _smc_allows(direction, context):
             allowed_rows.append(record)
+            latest_allowed_signal = _format_signal(timestamp, row)
             continue
 
         blocked_rows.append(record)
+        latest_blocked_signal = _format_signal(timestamp, row)
         logger.info(
             "SMC paper trade blocked timestamp=%s probability=%.6f direction=%s smc_reason=%s price=%.10f",
             timestamp,
@@ -183,15 +194,88 @@ def run_paper_trade_smc_filter(args: Any) -> dict[str, Any]:
             record["price"],
         )
 
-    _append_blocked_trade_log(blocked_rows)
+    candidates_count = int(len(candidates))
+    blocked_count = int(len(blocked_rows))
+    block_rate = blocked_count / candidates_count if candidates_count else 0.0
     latest = paper.iloc[-1].to_dict() if not paper.empty else {}
     return {
         "symbol": symbol,
         "timeframe": timeframe,
         "predictions": int(len(paper)),
-        "paper_candidates": int(len(candidates)),
+        "paper_candidates": candidates_count,
+        "candidates": candidates_count,
         "allowed": int(len(allowed_rows)),
-        "blocked": int(len(blocked_rows)),
-        "blocked_log_path": SMC_PAPER_BLOCK_LOG_PATH,
+        "blocked": blocked_count,
+        "block_rate": block_rate,
+        "latest_allowed_signal": latest_allowed_signal,
+        "latest_blocked_signal": latest_blocked_signal,
+        "blocked_rows": blocked_rows,
         "latest": latest,
     }
+
+
+def _write_summary(results: list[dict[str, Any]]) -> pd.DataFrame:
+    summary_rows = [
+        {
+            "symbol": result["symbol"],
+            "timeframe": result["timeframe"],
+            "candidates": result["candidates"],
+            "allowed": result["allowed"],
+            "blocked": result["blocked"],
+            "block_rate": result["block_rate"],
+            "latest_allowed_signal": result["latest_allowed_signal"],
+            "latest_blocked_signal": result["latest_blocked_signal"],
+        }
+        for result in results
+    ]
+    summary = pd.DataFrame(summary_rows)
+    SMC_PAPER_SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    summary.to_csv(SMC_PAPER_SUMMARY_PATH, index=False)
+    return summary
+
+
+def run_paper_trade_smc_filter(args: Any) -> dict[str, Any]:
+    """Evaluate paper-only model signals with the optional SMC filter enabled."""
+    symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
+    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    use_all_assets = bool(getattr(args, "all_assets", False))
+
+    Config.USE_SMC_FILTER = True
+    cache = ModelScalerCache()
+    model, scaler = cache.load()
+    data_handler = V4DataHandler(str(cache.scaler_path), scaler=scaler)
+
+    if use_all_assets:
+        symbols = [str(item).upper() for item in list_gmx_symbols(timeframe)]
+        results = []
+        all_blocked_rows = []
+        for asset in symbols:
+            try:
+                result = _evaluate_symbol_paper_smc(model, data_handler, asset, timeframe)
+            except Exception as exc:
+                logger.warning("Skipping %s %s during paper SMC evaluation: %s", asset, timeframe, exc)
+                continue
+            results.append(result)
+            all_blocked_rows.extend(result["blocked_rows"])
+
+        _append_blocked_trade_log(all_blocked_rows)
+        summary = _write_summary(results)
+        return {
+            "all_assets": True,
+            "timeframe": timeframe,
+            "assets": int(len(results)),
+            "predictions": int(sum(result["predictions"] for result in results)),
+            "paper_candidates": int(sum(result["paper_candidates"] for result in results)),
+            "candidates": int(sum(result["candidates"] for result in results)),
+            "allowed": int(sum(result["allowed"] for result in results)),
+            "blocked": int(sum(result["blocked"] for result in results)),
+            "blocked_log_path": SMC_PAPER_BLOCK_LOG_PATH,
+            "summary_path": SMC_PAPER_SUMMARY_PATH,
+            "summary_df": summary,
+        }
+
+    result = _evaluate_symbol_paper_smc(model, data_handler, symbol, timeframe)
+    _append_blocked_trade_log(result["blocked_rows"])
+    result["blocked_log_path"] = SMC_PAPER_BLOCK_LOG_PATH
+    result["all_assets"] = False
+    return result

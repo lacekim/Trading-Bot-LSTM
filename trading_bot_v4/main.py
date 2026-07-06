@@ -140,6 +140,29 @@ def main():
         return 0
     if args.paper_trade_smc:
         result = run_paper_trade_smc_filter(args)
+        if result.get("all_assets"):
+            summary_df = result.get("summary_df")
+            print(f"V4 paper SMC filter summary saved to {result['summary_path']}")
+            print("live trading: disabled")
+            print(f"assets evaluated: {result['assets']}")
+            print(f"predictions evaluated: {result['predictions']}")
+            print(f"paper trade candidates: {result['paper_candidates']}")
+            print(f"SMC allowed candidates: {result['allowed']}")
+            print(f"SMC blocked candidates: {result['blocked']}")
+            print(f"blocked trade log: {result['blocked_log_path']}")
+            if summary_df is not None and not summary_df.empty:
+                display_columns = [
+                    "symbol",
+                    "candidates",
+                    "allowed",
+                    "blocked",
+                    "block_rate",
+                    "latest_allowed_signal",
+                    "latest_blocked_signal",
+                ]
+                print(summary_df[display_columns].head(30).to_string(index=False))
+            return 0
+
         latest = result.get("latest") or {}
         print(f"V4 paper SMC filter: {result['symbol']} {result['timeframe']}")
         print("live trading: disabled")
