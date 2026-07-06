@@ -19,6 +19,13 @@ SWING_COLUMNS = [
     "distance_to_swing_high",
     "distance_to_swing_low",
 ]
+STRUCTURE_COLUMNS = [
+    "bullish_bos",
+    "bearish_bos",
+    "bullish_choch",
+    "bearish_choch",
+    "structure_trend",
+]
 
 
 @dataclass(frozen=True)
@@ -27,6 +34,12 @@ class SwingValidationSummary:
     total_swing_lows: int
     both_swing_high_and_low: int
     swing_candle_percentage: float
+    total_bullish_bos: int
+    total_bearish_bos: int
+    total_bullish_choch: int
+    total_bearish_choch: int
+    current_structure_trend: int
+    latest_structure_signal: str
 
 
 def calculate_atr(df: pd.DataFrame, period: int | None = None) -> pd.Series:
@@ -117,9 +130,66 @@ def add_swing_features(
     return result
 
 
+def add_structure_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add BOS/CHOCH structure labels from confirmed swing features."""
+    required = ["Close", *SWING_COLUMNS]
+    missing = [column for column in required if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required SMC feature columns: {missing}")
+
+    result = df.copy()
+    for column in ["Close", "last_swing_high", "last_swing_low"]:
+        result[column] = pd.to_numeric(result[column], errors="coerce")
+
+    prior_swing_high = result["last_swing_high"].shift(1)
+    prior_swing_low = result["last_swing_low"].shift(1)
+    trend = 0
+    last_broken_high: float | None = None
+    last_broken_low: float | None = None
+
+    for column in STRUCTURE_COLUMNS:
+        result[column] = 0
+
+    for index, close in result["Close"].items():
+        if pd.isna(close):
+            result.loc[index, "structure_trend"] = trend
+            continue
+
+        high_level = prior_swing_high.loc[index]
+        low_level = prior_swing_low.loc[index]
+        break_high = (
+            pd.notna(high_level)
+            and float(close) > float(high_level)
+            and (last_broken_high is None or float(high_level) != last_broken_high)
+        )
+        break_low = (
+            pd.notna(low_level)
+            and float(close) < float(low_level)
+            and (last_broken_low is None or float(low_level) != last_broken_low)
+        )
+
+        if break_high:
+            result.loc[index, "bullish_bos"] = 1
+            if trend == -1:
+                result.loc[index, "bullish_choch"] = 1
+            trend = 1
+            last_broken_high = float(high_level)
+
+        if break_low:
+            result.loc[index, "bearish_bos"] = 1
+            if trend == 1:
+                result.loc[index, "bearish_choch"] = 1
+            trend = -1
+            last_broken_low = float(low_level)
+
+        result.loc[index, "structure_trend"] = trend
+
+    return result
+
+
 def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
     """Summarize standalone SMC swing labels for CLI validation output."""
-    missing = [column for column in ["swing_high", "swing_low"] if column not in df.columns]
+    missing = [column for column in ["swing_high", "swing_low", *STRUCTURE_COLUMNS] if column not in df.columns]
     if missing:
         raise ValueError(f"Missing swing feature columns: {missing}")
 
@@ -128,12 +198,27 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
     total_rows = len(df)
     swing_rows = (swing_high | swing_low).sum()
     swing_percentage = (swing_rows / total_rows * 100.0) if total_rows else 0.0
+    signal_columns = ["bullish_choch", "bearish_choch", "bullish_bos", "bearish_bos"]
+    signal_rows = df[df[signal_columns].eq(1).any(axis=1)]
+    latest_signal = "none"
+    if not signal_rows.empty:
+        latest_row = signal_rows.iloc[-1]
+        for column in signal_columns:
+            if latest_row[column] == 1:
+                latest_signal = column
+                break
 
     return SwingValidationSummary(
         total_swing_highs=int(swing_high.sum()),
         total_swing_lows=int(swing_low.sum()),
         both_swing_high_and_low=int((swing_high & swing_low).sum()),
         swing_candle_percentage=float(swing_percentage),
+        total_bullish_bos=int(df["bullish_bos"].eq(1).sum()),
+        total_bearish_bos=int(df["bearish_bos"].eq(1).sum()),
+        total_bullish_choch=int(df["bullish_choch"].eq(1).sum()),
+        total_bearish_choch=int(df["bearish_choch"].eq(1).sum()),
+        current_structure_trend=int(df["structure_trend"].iloc[-1]) if total_rows else 0,
+        latest_structure_signal=latest_signal,
     )
 
 
@@ -191,6 +276,7 @@ def analyze_gmx_smc_swings(
         swing_window=swing_window,
         min_swing_distance_atr=min_swing_distance_atr,
     )
+    features = add_structure_features(features)
     validation = summarize_swing_features(features)
 
     output = Path(output_path or f"v4_smc_features_{normalized_symbol}_{timeframe}.csv")

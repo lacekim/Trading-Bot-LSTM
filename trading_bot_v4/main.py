@@ -77,8 +77,12 @@ def main():
         print(f"V4 SMC swing features saved to {output_path}")
         print(f"total swing highs: {validation.total_swing_highs}")
         print(f"total swing lows: {validation.total_swing_lows}")
-        print(f"rows where both swing_high and swing_low are 1: {validation.both_swing_high_and_low}")
-        print(f"percentage of candles marked as swings: {validation.swing_candle_percentage:.2f}%")
+        print(f"total bullish BOS: {validation.total_bullish_bos}")
+        print(f"total bearish BOS: {validation.total_bearish_bos}")
+        print(f"total bullish CHOCH: {validation.total_bullish_choch}")
+        print(f"total bearish CHOCH: {validation.total_bearish_choch}")
+        print(f"current structure_trend: {validation.current_structure_trend}")
+        print(f"latest BOS/CHOCH signal: {validation.latest_structure_signal}")
         return 0
 
     print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --compare-original, --analyze-smc, or --refresh.")
