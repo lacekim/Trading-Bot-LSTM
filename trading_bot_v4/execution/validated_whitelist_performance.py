@@ -36,9 +36,11 @@ class ValidatedWhitelistPerformanceResult:
     csv_path: Path
     html_path: Path
     report_df: pd.DataFrame
+    start_date: str
+    end_date: str
 
 
-def _load_validated_whitelist_signals(timeframe: str, assets: list[str]) -> pd.DataFrame:
+def _load_validated_whitelist_signals(timeframe: str, assets: list[str], recent_days: int = 0) -> pd.DataFrame:
     _require_file(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH, "validated whitelist paper signals")
     signals = pd.read_csv(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH)
     required = ["timestamp", "symbol", "timeframe", "model_probability", "model_direction", "is_trade_candidate"]
@@ -56,6 +58,10 @@ def _load_validated_whitelist_signals(timeframe: str, assets: list[str]) -> pd.D
         signals["timeframe"].eq(str(timeframe))
         & signals["symbol"].isin(assets)
     ].copy()
+    if recent_days > 0 and not signals.empty:
+        latest_timestamp = signals["timestamp"].max()
+        start_timestamp = latest_timestamp - pd.Timedelta(days=recent_days)
+        signals = signals.loc[signals["timestamp"].ge(start_timestamp)].copy()
     return signals.sort_values(["symbol", "timestamp"]).reset_index(drop=True)
 
 
@@ -87,6 +93,8 @@ def _build_symbol_report(symbol: str, timeframe: str, signals: pd.DataFrame, sta
     return {
         "symbol": symbol,
         "timeframe": timeframe,
+        "start_date": symbol_signals["timestamp"].min(),
+        "end_date": symbol_signals["timestamp"].max(),
         **_constraints_used(),
         "predictions": int(len(symbol_signals)),
         "trade_candidates": candidates,
@@ -105,11 +113,12 @@ def _build_symbol_report(symbol: str, timeframe: str, signals: pd.DataFrame, sta
     }
 
 
-def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: Path, assets: list[str]) -> None:
+def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: Path, assets: list[str], recent_days: int = 0) -> None:
     html_path.parent.mkdir(parents=True, exist_ok=True)
     display = report.copy()
     numeric_columns = display.select_dtypes(include=[np.number]).columns
     display[numeric_columns] = display[numeric_columns].round(6)
+    period_note = f"Recent {recent_days} days only." if recent_days > 0 else "Full available signal history."
     html = f"""<!doctype html>
 <html>
 <head>
@@ -127,6 +136,7 @@ def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: 
 <body>
   <h1>V4 Validated Whitelist Performance</h1>
   <p>Paper-only constrained V4-style execution for {", ".join(assets)}. No live orders are submitted.</p>
+  <p>{period_note}</p>
   <ul>
     <li>Assets evaluated: {len(display)}</li>
     <li>Combined portfolio return: {combined_return:.6f}%</li>
@@ -144,15 +154,25 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
     starting_capital = float(getattr(args, "capital", 100000.0))
     strict = bool(getattr(args, "strict", False))
     single_asset = str(getattr(args, "asset", "") or "").upper()
+    recent_days = int(getattr(args, "recent_days", 0) or 0)
     if single_asset:
         assets = [single_asset]
-        csv_path = Path("logs") / f"v4_{single_asset}_validated_performance.csv"
-        html_path = Path("logs") / f"v4_{single_asset}_validated_performance.html"
+        if recent_days > 0:
+            csv_path = Path("logs") / f"v4_{single_asset}_recent{recent_days}_validated_performance.csv"
+            html_path = Path("logs") / f"v4_{single_asset}_recent{recent_days}_validated_performance.html"
+        else:
+            csv_path = Path("logs") / f"v4_{single_asset}_validated_performance.csv"
+            html_path = Path("logs") / f"v4_{single_asset}_validated_performance.html"
     else:
         assets = STRICT_VALIDATED_WHITELIST_ASSETS if strict else VALIDATED_WHITELIST_ASSETS
-        csv_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH
-        html_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH
-    signals = _load_validated_whitelist_signals(timeframe, assets)
+        if recent_days > 0:
+            prefix = "strict_validated_whitelist" if strict else "validated_whitelist"
+            csv_path = Path("logs") / f"v4_{prefix}_recent{recent_days}_performance.csv"
+            html_path = Path("logs") / f"v4_{prefix}_recent{recent_days}_performance.html"
+        else:
+            csv_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH
+            html_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH
+    signals = _load_validated_whitelist_signals(timeframe, assets, recent_days=recent_days)
     if signals.empty:
         raise ValueError(f"No validated whitelist paper signals found for {timeframe}")
 
@@ -166,16 +186,20 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
     report = pd.DataFrame(rows)
     if report.empty:
         raise ValueError("No validated whitelist assets could be evaluated")
+    report["start_date"] = pd.to_datetime(report["start_date"], errors="coerce")
+    report["end_date"] = pd.to_datetime(report["end_date"], errors="coerce")
     report = report.sort_values("return_pct", ascending=False).reset_index(drop=True)
 
     combined_starting_capital = per_asset_capital * len(report)
     combined_final_capital = float(report["final_capital"].sum())
     combined_return = ((combined_final_capital / combined_starting_capital) - 1.0) * 100.0
     report.insert(0, "portfolio_weight_pct", 100.0 / len(report))
+    start_date = str(report["start_date"].min())
+    end_date = str(report["end_date"].max())
 
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     report.to_csv(csv_path, index=False)
-    _write_html_report(report, combined_return, html_path, assets)
+    _write_html_report(report, combined_return, html_path, assets, recent_days=recent_days)
 
     return ValidatedWhitelistPerformanceResult(
         assets_evaluated=int(len(report)),
@@ -185,4 +209,6 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
         csv_path=csv_path,
         html_path=html_path,
         report_df=report,
+        start_date=start_date,
+        end_date=end_date,
     )

@@ -75,6 +75,7 @@ def parse_args():
     parser.add_argument("--symbol", default=V4Config.GMX_SYMBOL, help="GMX symbol to backtest")
     parser.add_argument("--asset", default="", help="Single GMX asset for supported analysis commands")
     parser.add_argument("--timeframe", default=V4Config.TIMEFRAME, help="GMX data timeframe")
+    parser.add_argument("--recent-days", type=int, default=0, help="Limit supported analysis commands to the most recent N days")
     parser.add_argument("--capital", type=float, default=100000.0, help="Starting capital for backtest")
     parser.add_argument("--all-assets", action="store_true", help="Backtest every GMX asset")
     return parser.parse_args()
@@ -232,10 +233,14 @@ def main():
         print(f"combined portfolio return: {format_optional_metric(result.combined_portfolio_return_pct)}%")
         print(f"combined starting capital: {format_optional_metric(result.combined_starting_capital)}")
         print(f"combined final capital: {format_optional_metric(result.combined_final_capital)}")
+        print(f"start date: {result.start_date}")
+        print(f"end date: {result.end_date}")
         print(f"performance CSV: {result.csv_path}")
         print(f"performance HTML: {result.html_path}")
         display_columns = [
             "symbol",
+            "start_date",
+            "end_date",
             "return_pct",
             "max_drawdown_pct",
             "profit_factor",
