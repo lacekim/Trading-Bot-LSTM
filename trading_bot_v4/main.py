@@ -28,6 +28,7 @@ from trading_bot_v4.execution.validated_whitelist_performance import (
 )
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
+from trading_bot_v4.research.daily_research import run_daily_research
 from trading_bot_v4.utils.logger import build_logger
 
 logger = build_logger("v4_main")
@@ -55,6 +56,7 @@ def parse_args():
     parser.add_argument("--paper-trade-smc-model", action="store_true", help="Generate paper-only signals from the optional SMC-enhanced model")
     parser.add_argument("--paper-readiness", action="store_true", help="Evaluate go/no-go readiness from recent paper performance")
     parser.add_argument("--go-assets-performance", action="store_true", help="Run constrained paper performance for assets marked GO by readiness")
+    parser.add_argument("--daily-research", action="store_true", help="Run the daily paper-only V4 research pipeline")
     parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
     parser.add_argument("--compare-paper-model-performance", action="store_true", help="Compare paper signal performance for original and SMC models")
@@ -293,6 +295,50 @@ def main():
             "daily_loss_events",
         ]
         print(result.report_df[display_columns].to_string(index=False))
+        return 0
+    if args.daily_research:
+        result = run_daily_research(args)
+        print("live trading: disabled")
+        print("daily research only: no live orders submitted")
+        print(f"market data refresh: {result.refresh_succeeded}")
+        print(f"SMC feature files updated: {result.smc_features_updated}")
+        print(f"asset rankings: {result.rankings_path}")
+        print(f"paper readiness: {result.readiness_path}")
+        print(f"GO performance CSV: {result.performance_csv_path}")
+        print(f"GO performance HTML: {result.performance_html_path}")
+        print(f"dashboard: {result.dashboard_path}")
+        print(f"current whitelist: {', '.join(result.go_assets) if result.go_assets else 'none'}")
+        print(f"selected performance assets: {', '.join(result.selected_assets) if result.selected_assets else 'none'}")
+        print(f"portfolio return: {format_optional_metric(result.combined_return)}%")
+        if result.alerts:
+            print("GO status alerts:")
+            for alert in result.alerts:
+                print(f"- {alert}")
+        else:
+            print("GO status alerts: none")
+        readiness_columns = [
+            "symbol",
+            "decision",
+            "return_7d_pct",
+            "return_14d_pct",
+            "return_30d_pct",
+            "profit_factor_30d",
+            "max_drawdown_30d_pct",
+            "trade_count_30d",
+        ]
+        print("GO / NO-GO status:")
+        print(result.readiness_df[readiness_columns].to_string(index=False))
+        performance_columns = [
+            "symbol",
+            "return_pct",
+            "max_drawdown_pct",
+            "profit_factor",
+            "win_rate_pct",
+            "trade_count",
+            "daily_loss_events",
+        ]
+        print("paper performance:")
+        print(result.performance_df[performance_columns].to_string(index=False))
         return 0
     if args.validated_whitelist_performance:
         if args.recent_sweep:
