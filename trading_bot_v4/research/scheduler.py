@@ -9,11 +9,11 @@ from typing import Any, Callable
 import time
 import traceback
 
+from trading_bot import load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
-from trading_bot_v4.core.data_handler import V4DataHandler
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
-from trading_bot_v4.research.daily_research import _safe_top_validated_symbols, _update_smc_features, run_daily_research
+from trading_bot_v4.research.daily_research import _update_smc_features, run_daily_research
 from trading_bot_v4.utils.model_cache import ModelScalerCache
 
 
@@ -152,41 +152,42 @@ def _next_daily_time(now: datetime) -> datetime:
     return candidate
 
 
-def _run_hourly_update(timeframe: str, top_validated: int, models: SchedulerModelBundle) -> None:
-    handler = V4DataHandler()
+def _hourly_refresh_symbols() -> list[str]:
+    symbols = getattr(Config, "HOURLY_REFRESH_SYMBOLS", ["AIXBT", "DYDX"])
+    return [str(symbol).upper() for symbol in symbols]
 
-    def refresh_market_data() -> bool:
-        return handler.refresh_gmx_cache(force=True)
 
-    refresh_result = _run_guarded("hourly.refresh_market_data", refresh_market_data)
-    if refresh_result is False:
-        _log("WARNING hourly.refresh_market_data returned False; continuing with cached data")
+def _refresh_active_market_data(symbols: list[str], timeframe: str) -> int:
+    refreshed = 0
+    for symbol in symbols:
+        data = load_gmx_ohlc(symbol, timeframe)
+        if data is None or data.empty:
+            raise ValueError(f"No cached OHLC rows available for {symbol} {timeframe}")
+        refreshed += 1
+    return refreshed
+
+
+def _run_hourly_update(timeframe: str, models: SchedulerModelBundle) -> None:
+    symbols = _hourly_refresh_symbols()
+    _log(f"Hourly refresh symbols: {', '.join(symbols)}")
+
+    _run_guarded(
+        "hourly.refresh_active_market_data",
+        lambda: _refresh_active_market_data(symbols, timeframe),
+    )
 
     def update_smc_features() -> int:
-        symbols = _safe_top_validated_symbols(timeframe, top_validated)
         outputs = _update_smc_features(symbols, timeframe)
         return len(outputs)
 
     _run_guarded("hourly.update_smc_features", update_smc_features)
 
-    def update_all_asset_paper_signals() -> dict[str, Any]:
+    def update_active_paper_signals() -> dict[str, Any]:
         return run_smc_model_paper_trading(
-            _scheduler_args(timeframe=timeframe, all_assets=True, model=models.smc_model, scaler=models.smc_scaler)
+            _scheduler_args(timeframe=timeframe, symbols=symbols, model=models.smc_model, scaler=models.smc_scaler)
         )
 
-    _run_guarded("hourly.update_smc_model_paper_signals", update_all_asset_paper_signals)
-
-    def update_validated_whitelist_paper_signals() -> dict[str, Any]:
-        return run_smc_model_paper_trading(
-            _scheduler_args(
-                timeframe=timeframe,
-                validated_whitelist=True,
-                model=models.smc_model,
-                scaler=models.smc_scaler,
-            )
-        )
-
-    _run_guarded("hourly.update_validated_whitelist_paper_signals", update_validated_whitelist_paper_signals)
+    _run_guarded("hourly.update_active_smc_model_paper_signals", update_active_paper_signals)
 
 
 def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerModelBundle) -> None:
@@ -198,6 +199,8 @@ def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerMod
                 top_validated=top_validated,
                 model=models.original_model,
                 scaler=models.original_scaler,
+                smc_model=models.smc_model,
+                smc_scaler=models.smc_scaler,
             )
         ),
     )
@@ -213,14 +216,19 @@ def run_auto_scheduler(args: Any) -> None:
         next_daily_research=_next_daily_time(now),
     )
     models = _load_scheduler_models("scheduler startup")
+    hourly_symbols = _hourly_refresh_symbols()
 
     print("Scheduler started.")
     print("Model loaded.")
     print("Scaler loaded.")
+    print(f"Hourly refresh symbols: {', '.join(hourly_symbols)}")
+    print("Daily research refresh: all assets")
     print(f"Next hourly update: {state.next_hourly_update.isoformat(timespec='seconds')}")
     print(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
     print("No live trading.")
     _log("Scheduler started")
+    _log(f"Hourly refresh symbols: {', '.join(hourly_symbols)}")
+    _log("Daily research refresh: all assets")
     _log(f"Next hourly update: {state.next_hourly_update.isoformat(timespec='seconds')}")
     _log(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
     _log("No live trading")
@@ -231,7 +239,7 @@ def run_auto_scheduler(args: Any) -> None:
         now = datetime.now()
         if now >= next_hourly:
             models = _maybe_reload_models(models)
-            _run_hourly_update(timeframe, top_validated, models)
+            _run_hourly_update(timeframe, models)
             next_hourly = _next_hour_boundary(datetime.now())
             _log(f"Next hourly update: {next_hourly.isoformat(timespec='seconds')}")
 

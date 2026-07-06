@@ -28,5 +28,8 @@ class V4Config(LegacyConfig):
     PAPER_MAX_DAILY_LOSS_PCT = 3
     PAPER_USE_COMPOUNDING = False
 
+    # Paper-only scheduler scope. Daily research still refreshes and evaluates all assets.
+    HOURLY_REFRESH_SYMBOLS = ["AIXBT", "DYDX"]
+
 
 Config = V4Config

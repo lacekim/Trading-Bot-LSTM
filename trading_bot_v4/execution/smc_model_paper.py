@@ -176,8 +176,13 @@ def run_smc_model_paper_trading(args: Any) -> dict[str, Any]:
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     use_validated_whitelist = bool(getattr(args, "validated_whitelist", False))
     use_all_assets = bool(getattr(args, "all_assets", False))
+    selected_symbols = getattr(args, "symbols", None)
     selected_symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
-    if use_validated_whitelist:
+    if selected_symbols:
+        symbols = [str(symbol).upper() for symbol in selected_symbols]
+        summary_path = SMC_MODEL_PAPER_SUMMARY_PATH
+        signals_path = SMC_MODEL_PAPER_SIGNALS_PATH
+    elif use_validated_whitelist:
         symbols = _load_validated_whitelist(timeframe)
         summary_path = VALIDATED_WHITELIST_PAPER_SUMMARY_PATH
         signals_path = VALIDATED_WHITELIST_PAPER_SIGNALS_PATH

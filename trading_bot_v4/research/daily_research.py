@@ -12,6 +12,7 @@ import pandas as pd
 from trading_bot_v4.backtesting.asset_selection_engine import run_asset_ranking
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.core.data_handler import V4DataHandler
+from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.validated_whitelist_performance import (
     _load_top_validated_symbols,
     run_go_assets_performance,
@@ -227,6 +228,15 @@ def run_daily_research(args: Any) -> DailyResearchResult:
         )
     )
     rankings = ranking_result.rankings
+
+    run_smc_model_paper_trading(
+        _daily_args(
+            timeframe=timeframe,
+            all_assets=True,
+            model=getattr(args, "smc_model", None),
+            scaler=getattr(args, "smc_scaler", None),
+        )
+    )
 
     readiness_result = run_paper_readiness(_daily_args(timeframe=timeframe, top_validated=top_count))
     readiness = readiness_result.readiness_df if readiness_result.readiness_df is not None else pd.DataFrame()
