@@ -26,6 +26,13 @@ def parse_args():
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
+    parser.add_argument("--swing-window", type=int, default=V4Config.SMC_SWING_WINDOW, help="Bars on each side used to confirm SMC swings")
+    parser.add_argument(
+        "--min-swing-distance-atr",
+        type=float,
+        default=V4Config.SMC_MIN_SWING_DISTANCE_ATR,
+        help="Minimum distance from the previous same-side swing, measured in ATR",
+    )
     parser.add_argument("--refresh", action="store_true", help="Refresh the GMX OHLC cache before doing anything else")
     parser.add_argument("--symbol", default=V4Config.GMX_SYMBOL, help="GMX symbol to backtest")
     parser.add_argument("--timeframe", default=V4Config.TIMEFRAME, help="GMX data timeframe")
@@ -61,8 +68,17 @@ def main():
         run_v4_compare_original(args)
         return 0
     if args.analyze_smc:
-        output_path = analyze_gmx_smc_swings(args.symbol, args.timeframe)
+        output_path, validation = analyze_gmx_smc_swings(
+            args.symbol,
+            args.timeframe,
+            swing_window=args.swing_window,
+            min_swing_distance_atr=args.min_swing_distance_atr,
+        )
         print(f"V4 SMC swing features saved to {output_path}")
+        print(f"total swing highs: {validation.total_swing_highs}")
+        print(f"total swing lows: {validation.total_swing_lows}")
+        print(f"rows where both swing_high and swing_low are 1: {validation.both_swing_high_and_low}")
+        print(f"percentage of candles marked as swings: {validation.swing_candle_percentage:.2f}%")
         return 0
 
     print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --compare-original, --analyze-smc, or --refresh.")

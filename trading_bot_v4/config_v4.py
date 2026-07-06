@@ -15,6 +15,8 @@ class V4Config(LegacyConfig):
     SMC_USE_ORDER_BLOCKS = os.getenv("V4_USE_ORDER_BLOCKS", "false").lower() in {"1", "true", "yes", "on"}
     SMC_USE_FVG = os.getenv("V4_USE_FVG", "false").lower() in {"1", "true", "yes", "on"}
     SMC_USE_LIQUIDITY_SWEEPS = os.getenv("V4_USE_LIQUIDITY_SWEEPS", "false").lower() in {"1", "true", "yes", "on"}
+    SMC_SWING_WINDOW = int(os.getenv("V4_SMC_SWING_WINDOW", "5"))
+    SMC_MIN_SWING_DISTANCE_ATR = float(os.getenv("V4_SMC_MIN_SWING_DISTANCE_ATR", "0.5"))
 
 
 Config = V4Config
