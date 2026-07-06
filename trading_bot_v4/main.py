@@ -16,6 +16,7 @@ from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WA
 from trading_bot_v4.backtesting.model_comparison import run_model_comparison
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.execution.paper_model_comparison import run_paper_model_comparison
+from trading_bot_v4.execution.paper_model_performance import run_paper_model_performance
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
@@ -46,6 +47,7 @@ def parse_args():
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--paper-trade-smc-model", action="store_true", help="Generate paper-only signals from the optional SMC-enhanced model")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
+    parser.add_argument("--compare-paper-model-performance", action="store_true", help="Compare paper signal performance for original and SMC models")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
@@ -227,6 +229,32 @@ def main():
                 "long_agreement_pct",
                 "short_agreement_pct",
                 "latest_signal_difference",
+            ]
+            print(report_df[display_columns].to_string(index=False))
+        return 0
+    if args.compare_paper_model_performance:
+        result = run_paper_model_performance(args)
+        report_df = result.report_df
+        print("live trading: disabled")
+        print("paper model performance comparison only: no live orders submitted")
+        print(f"assets compared: {result.assets_compared}")
+        print(f"performance CSV: {result.csv_path}")
+        print(f"performance HTML: {result.html_path}")
+        print(f"SMC better assets: {len(result.smc_better_assets)}")
+        print(", ".join(result.smc_better_assets) if result.smc_better_assets else "none")
+        print(f"Original better assets: {len(result.original_better_assets)}")
+        print(", ".join(result.original_better_assets) if result.original_better_assets else "none")
+        print(f"Average return difference: {format_optional_metric(result.average_return_difference)}%")
+        print(f"Average drawdown difference: {format_optional_metric(result.average_drawdown_difference)}%")
+        if report_df is not None and not report_df.empty:
+            display_columns = [
+                "symbol",
+                "original_return_pct",
+                "smc_return_pct",
+                "return_difference_pct",
+                "original_max_drawdown_pct",
+                "smc_max_drawdown_pct",
+                "smc_aggression_performance_effect",
             ]
             print(report_df[display_columns].to_string(index=False))
         return 0
