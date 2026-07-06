@@ -16,6 +16,7 @@ from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WA
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
+from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.utils.logger import build_logger
 
 logger = build_logger("v4_main")
@@ -41,6 +42,7 @@ def parse_args():
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
+    parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -198,6 +200,20 @@ def main():
         print(f"total feature count: {result.total_feature_count}")
         print(f"rows written: {result.rows_written}")
         print(f"output path: {result.output_path}")
+        return 0
+    if args.train_smc_model:
+        result = train_smc_model(args.timeframe)
+        print(f"rows used: {result.rows_used}")
+        print(f"feature count: {result.feature_count}")
+        print(
+            "train/validation split: "
+            f"{result.train_rows}/{result.validation_rows} rows "
+            f"({result.train_sequences}/{result.validation_sequences} sequences)"
+        )
+        print(f"validation accuracy: {format_optional_metric(result.validation_accuracy)}")
+        print(f"validation loss: {format_optional_metric(result.validation_loss)}")
+        print(f"model path: {result.model_path}")
+        print(f"scaler path: {result.scaler_path}")
         return 0
     if args.compare_original:
         run_v4_compare_original(args)
