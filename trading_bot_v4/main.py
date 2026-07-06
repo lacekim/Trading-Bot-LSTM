@@ -60,6 +60,7 @@ def parse_args():
     parser.add_argument("--validated-whitelist", action="store_true", help="Use the validated whitelist for supported paper-only commands")
     parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
     parser.add_argument("--debug", action="store_true", help="Write debug output for supported analysis commands")
+    parser.add_argument("--strict", action="store_true", help="Use stricter filters for supported analysis commands")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -222,7 +223,10 @@ def main():
         result = run_validated_whitelist_performance(args)
         report_df = result.report_df
         print("live trading: disabled")
-        print("validated whitelist performance only: no live orders submitted")
+        if args.strict:
+            print("strict validated whitelist performance only: no live orders submitted")
+        else:
+            print("validated whitelist performance only: no live orders submitted")
         print(f"assets evaluated: {result.assets_evaluated}")
         print(f"combined portfolio return: {format_optional_metric(result.combined_portfolio_return_pct)}%")
         print(f"combined starting capital: {format_optional_metric(result.combined_starting_capital)}")

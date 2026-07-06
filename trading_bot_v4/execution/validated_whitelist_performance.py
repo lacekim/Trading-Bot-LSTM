@@ -20,8 +20,11 @@ from trading_bot_v4.execution.smc_model_paper import VALIDATED_WHITELIST_PAPER_S
 
 
 VALIDATED_WHITELIST_ASSETS = ["PENGU", "DYDX", "AIXBT"]
+STRICT_VALIDATED_WHITELIST_ASSETS = ["AIXBT", "DYDX"]
 VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH = Path("logs/v4_validated_whitelist_performance.csv")
 VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH = Path("logs/v4_validated_whitelist_performance.html")
+STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH = Path("logs/v4_strict_validated_whitelist_performance.csv")
+STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH = Path("logs/v4_strict_validated_whitelist_performance.html")
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,7 @@ class ValidatedWhitelistPerformanceResult:
     report_df: pd.DataFrame
 
 
-def _load_validated_whitelist_signals(timeframe: str) -> pd.DataFrame:
+def _load_validated_whitelist_signals(timeframe: str, assets: list[str]) -> pd.DataFrame:
     _require_file(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH, "validated whitelist paper signals")
     signals = pd.read_csv(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH)
     required = ["timestamp", "symbol", "timeframe", "model_probability", "model_direction", "is_trade_candidate"]
@@ -51,7 +54,7 @@ def _load_validated_whitelist_signals(timeframe: str) -> pd.DataFrame:
     signals = signals.dropna(subset=["timestamp", "symbol", "timeframe", "model_probability"])
     signals = signals.loc[
         signals["timeframe"].eq(str(timeframe))
-        & signals["symbol"].isin(VALIDATED_WHITELIST_ASSETS)
+        & signals["symbol"].isin(assets)
     ].copy()
     return signals.sort_values(["symbol", "timestamp"]).reset_index(drop=True)
 
@@ -102,7 +105,7 @@ def _build_symbol_report(symbol: str, timeframe: str, signals: pd.DataFrame, sta
     }
 
 
-def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: Path) -> None:
+def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: Path, assets: list[str]) -> None:
     html_path.parent.mkdir(parents=True, exist_ok=True)
     display = report.copy()
     numeric_columns = display.select_dtypes(include=[np.number]).columns
@@ -123,7 +126,7 @@ def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: 
 </head>
 <body>
   <h1>V4 Validated Whitelist Performance</h1>
-  <p>Paper-only constrained V4-style execution for PENGU, DYDX, and AIXBT. No live orders are submitted.</p>
+  <p>Paper-only constrained V4-style execution for {", ".join(assets)}. No live orders are submitted.</p>
   <ul>
     <li>Assets evaluated: {len(display)}</li>
     <li>Combined portfolio return: {combined_return:.6f}%</li>
@@ -139,13 +142,17 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
     """Run constrained paper performance for the validated whitelist only."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
-    signals = _load_validated_whitelist_signals(timeframe)
+    strict = bool(getattr(args, "strict", False))
+    assets = STRICT_VALIDATED_WHITELIST_ASSETS if strict else VALIDATED_WHITELIST_ASSETS
+    csv_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH
+    html_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH
+    signals = _load_validated_whitelist_signals(timeframe, assets)
     if signals.empty:
         raise ValueError(f"No validated whitelist paper signals found for {timeframe}")
 
-    per_asset_capital = starting_capital / len(VALIDATED_WHITELIST_ASSETS)
+    per_asset_capital = starting_capital / len(assets)
     rows = []
-    for symbol in VALIDATED_WHITELIST_ASSETS:
+    for symbol in assets:
         row = _build_symbol_report(symbol, timeframe, signals, per_asset_capital)
         if row is not None:
             rows.append(row)
@@ -160,16 +167,16 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
     combined_return = ((combined_final_capital / combined_starting_capital) - 1.0) * 100.0
     report.insert(0, "portfolio_weight_pct", 100.0 / len(report))
 
-    VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    report.to_csv(VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH, index=False)
-    _write_html_report(report, combined_return, VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    report.to_csv(csv_path, index=False)
+    _write_html_report(report, combined_return, html_path, assets)
 
     return ValidatedWhitelistPerformanceResult(
         assets_evaluated=int(len(report)),
         combined_portfolio_return_pct=float(combined_return),
         combined_final_capital=combined_final_capital,
         combined_starting_capital=float(combined_starting_capital),
-        csv_path=VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH,
-        html_path=VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH,
+        csv_path=csv_path,
+        html_path=html_path,
         report_df=report,
     )
