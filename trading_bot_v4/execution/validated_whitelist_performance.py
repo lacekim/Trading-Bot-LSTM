@@ -143,9 +143,15 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
     strict = bool(getattr(args, "strict", False))
-    assets = STRICT_VALIDATED_WHITELIST_ASSETS if strict else VALIDATED_WHITELIST_ASSETS
-    csv_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH
-    html_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH
+    single_asset = str(getattr(args, "asset", "") or "").upper()
+    if single_asset:
+        assets = [single_asset]
+        csv_path = Path("logs") / f"v4_{single_asset}_validated_performance.csv"
+        html_path = Path("logs") / f"v4_{single_asset}_validated_performance.html"
+    else:
+        assets = STRICT_VALIDATED_WHITELIST_ASSETS if strict else VALIDATED_WHITELIST_ASSETS
+        csv_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH
+        html_path = STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH if strict else VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH
     signals = _load_validated_whitelist_signals(timeframe, assets)
     if signals.empty:
         raise ValueError(f"No validated whitelist paper signals found for {timeframe}")

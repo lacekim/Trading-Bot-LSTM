@@ -73,6 +73,7 @@ def parse_args():
     )
     parser.add_argument("--refresh", action="store_true", help="Refresh the GMX OHLC cache before doing anything else")
     parser.add_argument("--symbol", default=V4Config.GMX_SYMBOL, help="GMX symbol to backtest")
+    parser.add_argument("--asset", default="", help="Single GMX asset for supported analysis commands")
     parser.add_argument("--timeframe", default=V4Config.TIMEFRAME, help="GMX data timeframe")
     parser.add_argument("--capital", type=float, default=100000.0, help="Starting capital for backtest")
     parser.add_argument("--all-assets", action="store_true", help="Backtest every GMX asset")
