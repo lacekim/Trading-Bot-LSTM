@@ -22,6 +22,7 @@ from trading_bot_v4.utils.model_cache import ModelScalerCache
 logger = build_logger("v4_asset_selection")
 
 ASSET_RANKINGS_PATH = Path("models/asset_rankings.csv")
+ASSET_RANKINGS_VALIDATED_PATH = Path("models/asset_rankings_validated.csv")
 WALK_FORWARD_SUMMARY_PATH = Path("v4_walk_forward_summary.csv")
 
 
@@ -213,6 +214,12 @@ def _performance_overrides(symbol: str, performance: pd.DataFrame) -> dict[str, 
     return {
         "profit_factor": float(row.get("smc_profit_factor", row.get("original_profit_factor", 0.0))),
         "trade_frequency_pct": _safe_ratio(float(row.get("smc_trade_count", 0.0)), float(row.get("shared_timestamps", 0.0))) * 100.0,
+        "constrained_smc_return_pct": float(row.get("smc_return_pct", np.nan)),
+        "constrained_smc_profit_factor": float(row.get("smc_profit_factor", np.nan)),
+        "constrained_smc_max_drawdown_pct": float(row.get("smc_max_drawdown_pct", np.nan)),
+        "smc_vs_original_improvement_pct": float(row.get("return_difference_pct", np.nan)),
+        "constrained_smc_trade_count": float(row.get("smc_trade_count", np.nan)),
+        "shared_timestamps": float(row.get("shared_timestamps", np.nan)),
     }
 
 
@@ -290,6 +297,53 @@ def _add_ranking_scores(rankings: pd.DataFrame) -> pd.DataFrame:
     }
     result["ranking_score"] = sum(result[column] * weight for column, weight in weights.items())
     return result.sort_values("ranking_score", ascending=False).reset_index(drop=True)
+
+
+def _trade_count_sanity_score(trade_count: pd.Series, shared_timestamps: pd.Series) -> pd.Series:
+    count = _clean_numeric(trade_count).fillna(0.0)
+    timestamps = _clean_numeric(shared_timestamps).replace(0.0, np.nan)
+    frequency = (count / timestamps).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    count_ok = count.between(80, 700)
+    frequency_ok = frequency.between(0.02, 0.20)
+    score = pd.Series(100.0, index=count.index)
+    score.loc[~count_ok] -= 35.0
+    score.loc[~frequency_ok] -= 35.0
+    score.loc[count < 30] = 0.0
+    return score.clip(lower=0.0, upper=100.0)
+
+
+def _add_validated_ranking_scores(rankings: pd.DataFrame) -> pd.DataFrame:
+    result = rankings.copy()
+    result["constrained_smc_return_score"] = _percentile_score(result["constrained_smc_return_pct"])
+    result["constrained_smc_profit_factor_score"] = _percentile_score(result["constrained_smc_profit_factor"])
+    result["constrained_smc_drawdown_score"] = _percentile_score(result["constrained_smc_max_drawdown_pct"])
+    result["walk_forward_stability_score"] = _clean_numeric(result["walk_forward_stability"]).clip(0.0, 100.0).fillna(0.0)
+    result["smc_improvement_score"] = _percentile_score(result["smc_vs_original_improvement_pct"])
+    result["trade_count_sanity_score"] = _trade_count_sanity_score(
+        result["constrained_smc_trade_count"],
+        result["shared_timestamps"],
+    )
+    result["liquidity_score"] = _percentile_score(np.log1p(result["liquidity"].clip(lower=0.0)))
+    result["trend_strength_score"] = _percentile_score(result["trend_strength"])
+    result["confidence_score"] = _percentile_score(result["cnn_lstm_confidence"])
+    result["secondary_filter_score"] = (
+        (result["liquidity_score"] * 0.34)
+        + (result["trend_strength_score"] * 0.33)
+        + (result["confidence_score"] * 0.33)
+    )
+
+    weights = {
+        "constrained_smc_return_score": 0.34,
+        "constrained_smc_profit_factor_score": 0.20,
+        "constrained_smc_drawdown_score": 0.18,
+        "walk_forward_stability_score": 0.12,
+        "smc_improvement_score": 0.08,
+        "trade_count_sanity_score": 0.05,
+        "secondary_filter_score": 0.03,
+    }
+    result["validated_score"] = sum(result[column] * weight for column, weight in weights.items())
+    result["ranking_score"] = result["validated_score"]
+    return result.sort_values("validated_score", ascending=False).reset_index(drop=True)
 
 
 def _whitelist_condition_frame(rankings: pd.DataFrame) -> pd.DataFrame:
@@ -489,8 +543,11 @@ def validate_asset_rankings(args: Any) -> AssetRankingValidationResult:
 def run_asset_ranking(args: Any) -> AssetRankingResult:
     """Rank all local GMX assets for analysis-only asset selection."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    validated = bool(getattr(args, "validated", False))
     symbols = [str(symbol).upper() for symbol in list_gmx_symbols(timeframe)]
     performance = _load_constrained_performance()
+    if validated and performance.empty:
+        raise FileNotFoundError(f"Validated ranking requires constrained performance: {PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH}")
     walk_forward_stability = _load_walk_forward_stability(timeframe)
 
     model = scaler = None
@@ -517,20 +574,44 @@ def run_asset_ranking(args: Any) -> AssetRankingResult:
     rankings = pd.DataFrame(rows)
     if rankings.empty:
         rankings = pd.DataFrame(columns=["symbol", "timeframe", "ranking_score"])
+    elif validated:
+        required = [
+            "constrained_smc_return_pct",
+            "constrained_smc_profit_factor",
+            "constrained_smc_max_drawdown_pct",
+            "smc_vs_original_improvement_pct",
+            "constrained_smc_trade_count",
+            "shared_timestamps",
+        ]
+        rankings = rankings.dropna(subset=required)
+        rankings = _add_validated_ranking_scores(rankings)
+        rankings.insert(0, "rank", np.arange(1, len(rankings) + 1))
     else:
         rankings = _add_ranking_scores(rankings)
         rankings.insert(0, "rank", np.arange(1, len(rankings) + 1))
 
-    ASSET_RANKINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    rankings.to_csv(ASSET_RANKINGS_PATH, index=False)
+    output_path = ASSET_RANKINGS_VALIDATED_PATH if validated else ASSET_RANKINGS_PATH
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    rankings.to_csv(output_path, index=False)
 
     top_assets = rankings["symbol"].head(20).astype(str).tolist() if not rankings.empty else []
     worst_assets = rankings["symbol"].tail(20).astype(str).tolist() if not rankings.empty else []
-    conditions = _whitelist_condition_frame(rankings) if not rankings.empty else pd.DataFrame()
-    whitelist = rankings.loc[
-        conditions["passes_whitelist"],
-        "symbol",
-    ].head(20).astype(str).tolist() if not rankings.empty else []
+    if validated and not rankings.empty:
+        whitelist = rankings.loc[
+            (_clean_numeric(rankings["constrained_smc_return_pct"]) > 0.0)
+            & (_clean_numeric(rankings["constrained_smc_profit_factor"]) >= 1.0)
+            & (_clean_numeric(rankings["constrained_smc_max_drawdown_pct"]) >= -15.0)
+            & (_clean_numeric(rankings["trade_count_sanity_score"]) >= 70.0),
+            "symbol",
+        ].head(20).astype(str).tolist()
+        if not whitelist:
+            whitelist = top_assets[:10]
+    else:
+        conditions = _whitelist_condition_frame(rankings) if not rankings.empty else pd.DataFrame()
+        whitelist = rankings.loc[
+            conditions["passes_whitelist"],
+            "symbol",
+        ].head(20).astype(str).tolist() if not rankings.empty else []
 
     blacklist_frame = rankings.loc[
         (rankings["ranking_score"] <= 35.0)
@@ -545,7 +626,7 @@ def run_asset_ranking(args: Any) -> AssetRankingResult:
         blacklist.extend(fallback)
 
     return AssetRankingResult(
-        output_path=ASSET_RANKINGS_PATH,
+        output_path=output_path,
         rankings=rankings,
         top_assets=top_assets,
         worst_assets=worst_assets,

@@ -54,6 +54,7 @@ def parse_args():
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
     parser.add_argument("--rank-assets", action="store_true", help="Rank GMX assets for analysis-only V4 asset selection")
     parser.add_argument("--validate-asset-rankings", action="store_true", help="Validate asset rankings against constrained paper performance")
+    parser.add_argument("--validated", action="store_true", help="Use constrained-performance-first asset ranking weights")
     parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
     parser.add_argument("--debug", action="store_true", help="Write debug output for supported analysis commands")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
@@ -354,27 +355,44 @@ def main():
         rankings = result.rankings
         print(f"asset rankings saved to: {result.output_path}")
         if not rankings.empty:
-            display_columns = [
-                "rank",
-                "symbol",
-                "ranking_score",
-                "historical_return_pct",
-                "sharpe_ratio",
-                "sortino_ratio",
-                "calmar_ratio",
-                "profit_factor",
-                "max_drawdown_pct",
-                "trade_frequency_pct",
-                "volatility_pct",
-                "atr",
-                "trend_strength",
-                "liquidity",
-                "smc_score",
-                "cnn_lstm_confidence",
-                "walk_forward_stability",
-            ]
+            if args.validated:
+                display_columns = [
+                    "rank",
+                    "symbol",
+                    "validated_score",
+                    "constrained_smc_return_pct",
+                    "constrained_smc_profit_factor",
+                    "constrained_smc_max_drawdown_pct",
+                    "smc_vs_original_improvement_pct",
+                    "constrained_smc_trade_count",
+                    "trade_count_sanity_score",
+                    "walk_forward_stability",
+                    "secondary_filter_score",
+                ]
+                correlation = rankings["validated_score"].corr(rankings["constrained_smc_return_pct"])
+                print(f"correlation validated_score vs constrained SMC return: {format_optional_metric(correlation)}")
+            else:
+                display_columns = [
+                    "rank",
+                    "symbol",
+                    "ranking_score",
+                    "historical_return_pct",
+                    "sharpe_ratio",
+                    "sortino_ratio",
+                    "calmar_ratio",
+                    "profit_factor",
+                    "max_drawdown_pct",
+                    "trade_frequency_pct",
+                    "volatility_pct",
+                    "atr",
+                    "trend_strength",
+                    "liquidity",
+                    "smc_score",
+                    "cnn_lstm_confidence",
+                    "walk_forward_stability",
+                ]
             available_columns = [column for column in display_columns if column in rankings.columns]
-            print("Top 20 assets")
+            print("Top 20 validated assets" if args.validated else "Top 20 assets")
             print(rankings[available_columns].head(20).to_string(index=False))
             print("Worst 20 assets")
             print(rankings[available_columns].tail(20).to_string(index=False))
