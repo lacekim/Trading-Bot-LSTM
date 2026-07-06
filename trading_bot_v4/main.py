@@ -52,6 +52,7 @@ def parse_args():
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
     parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
+    parser.add_argument("--debug", action="store_true", help="Write debug output for supported analysis commands")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -238,8 +239,12 @@ def main():
         print("live trading: disabled")
         print("paper model performance comparison only: no live orders submitted")
         print(f"assets compared: {result.assets_compared}")
-        print(f"performance CSV: {result.csv_path}")
-        print(f"performance HTML: {result.html_path}")
+        if result.csv_path is not None:
+            print(f"performance CSV: {result.csv_path}")
+        if result.html_path is not None:
+            print(f"performance HTML: {result.html_path}")
+        if result.debug_path is not None:
+            print(f"performance debug CSV: {result.debug_path}")
         print(f"SMC better assets: {len(result.smc_better_assets)}")
         print(", ".join(result.smc_better_assets) if result.smc_better_assets else "none")
         print(f"Original better assets: {len(result.original_better_assets)}")

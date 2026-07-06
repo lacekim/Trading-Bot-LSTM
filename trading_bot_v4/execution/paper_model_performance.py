@@ -25,6 +25,7 @@ logger = build_logger("v4_paper_model_performance")
 
 PAPER_MODEL_PERFORMANCE_CSV_PATH = Path("logs/v4_paper_model_performance.csv")
 PAPER_MODEL_PERFORMANCE_HTML_PATH = Path("logs/v4_paper_model_performance.html")
+PAPER_MODEL_PERFORMANCE_DEBUG_TEMPLATE = "v4_paper_model_performance_debug_{symbol}.csv"
 
 
 @dataclass(frozen=True)
@@ -34,8 +35,9 @@ class PaperModelPerformanceResult:
     original_better_assets: list[str]
     average_return_difference: float
     average_drawdown_difference: float
-    csv_path: Path
-    html_path: Path
+    csv_path: Path | None
+    html_path: Path | None
+    debug_path: Path | None
     report_df: pd.DataFrame
 
 
@@ -77,30 +79,36 @@ def _build_execution_frame(symbol: str, timeframe: str, timestamps: pd.Series) -
     return execution.replace([np.inf, -np.inf], np.nan)
 
 
-def _simulate_direction_signals(
-    symbol: str,
-    timeframe: str,
-    signals: pd.DataFrame,
+def _trade_result(direction: str, profit: float) -> str:
+    if profit > 0:
+        return f"{direction}_WIN"
+    if profit < 0:
+        return f"{direction}_LOSS"
+    return f"{direction}_FLAT"
+
+
+def _simulate_prepared_signals(
+    signal_frame: pd.DataFrame,
     direction_column: str,
     starting_capital: float,
-) -> dict[str, float | int]:
-    if signals.empty:
-        return _empty_metrics(starting_capital)
+) -> tuple[dict[str, float | int], pd.DataFrame]:
+    if signal_frame.empty:
+        return _empty_metrics(starting_capital), pd.DataFrame(columns=["timestamp", "trade_result", "capital"])
 
-    signals = signals.sort_values("timestamp").reset_index(drop=True)
-    execution = _build_execution_frame(symbol, timeframe, signals["timestamp"])
-    signal_frame = signals.join(execution.reset_index(drop=True))
-
+    signal_frame = signal_frame.sort_values("timestamp").reset_index(drop=True)
     fee_rate = _fee_rate()
     slippage_rate = _slippage_rate()
     capital = float(starting_capital)
     equity = [capital]
     trade_returns_pct: list[float] = []
+    debug_rows: list[dict[str, Any]] = []
 
     for _, row in signal_frame.iterrows():
+        timestamp = row.get("timestamp")
         direction = str(row.get(direction_column, "HOLD")).upper()
         if direction not in {"LONG", "SHORT"}:
             equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "HOLD", "capital": capital})
             continue
 
         if (
@@ -111,12 +119,14 @@ def _simulate_direction_signals(
             or pd.isna(row.get("Close_next"))
         ):
             equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "SKIPPED_MISSING_EXECUTION", "capital": capital})
             continue
 
         entry_price = float(row["Close"])
         atr = float(row["ATR"])
         if entry_price <= 0 or atr <= 0:
             equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "SKIPPED_INVALID_EXECUTION", "capital": capital})
             continue
 
         if direction == "LONG":
@@ -135,6 +145,7 @@ def _simulate_direction_signals(
         units = min(risk_size, max_affordable * 0.95)
         if units <= 0:
             equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "SKIPPED_ZERO_SIZE", "capital": capital})
             continue
 
         high_next = float(row["High_next"])
@@ -163,9 +174,10 @@ def _simulate_direction_signals(
         notional = max(effective_entry_price * units, 1e-12)
         trade_returns_pct.append((profit / notional) * 100.0)
         equity.append(capital)
+        debug_rows.append({"timestamp": timestamp, "trade_result": _trade_result(direction, profit), "capital": capital})
 
     if not trade_returns_pct:
-        return _empty_metrics(starting_capital)
+        return _empty_metrics(starting_capital), pd.DataFrame(debug_rows)
 
     trade_returns = np.array(trade_returns_pct, dtype=float)
     equity_array = np.array(equity, dtype=float)
@@ -183,7 +195,7 @@ def _simulate_direction_signals(
     avg_loss = float(losing.mean()) if len(losing) else 0.0
     win_rate_decimal = win_rate / 100.0
 
-    return {
+    metrics = {
         "return_pct": float(return_pct),
         "final_capital": final_capital,
         "max_drawdown_pct": max_drawdown,
@@ -193,12 +205,30 @@ def _simulate_direction_signals(
         "average_trade_pct": float(trade_returns.mean()),
         "expectancy": float((win_rate_decimal * avg_win) + ((1.0 - win_rate_decimal) * avg_loss)),
     }
+    return metrics, pd.DataFrame(debug_rows)
+
+
+def _simulate_direction_signals(
+    symbol: str,
+    timeframe: str,
+    signals: pd.DataFrame,
+    direction_column: str,
+    starting_capital: float,
+) -> dict[str, float | int]:
+    if signals.empty:
+        return _empty_metrics(starting_capital)
+
+    signals = signals.sort_values("timestamp").reset_index(drop=True)
+    execution = _build_execution_frame(symbol, timeframe, signals["timestamp"])
+    signal_frame = signals.join(execution.reset_index(drop=True))
+    metrics, _ = _simulate_prepared_signals(signal_frame, direction_column, starting_capital)
+    return metrics
 
 
 def _load_smc_signals() -> pd.DataFrame:
     _require_file(SMC_MODEL_PAPER_SIGNALS_PATH, "SMC model paper signals")
     signals = pd.read_csv(SMC_MODEL_PAPER_SIGNALS_PATH)
-    required = ["timestamp", "symbol", "timeframe", "model_direction", "is_trade_candidate"]
+    required = ["timestamp", "symbol", "timeframe", "model_probability", "model_direction", "is_trade_candidate"]
     missing = [column for column in required if column not in signals.columns]
     if missing:
         raise ValueError(f"Missing SMC paper signal columns: {missing}")
@@ -206,8 +236,9 @@ def _load_smc_signals() -> pd.DataFrame:
     signals["timestamp"] = pd.to_datetime(signals["timestamp"], errors="coerce")
     signals["symbol"] = signals["symbol"].astype(str).str.upper()
     signals["timeframe"] = signals["timeframe"].astype(str)
+    signals["model_probability"] = pd.to_numeric(signals["model_probability"], errors="coerce")
     signals["model_direction"] = signals["model_direction"].astype(str).str.upper()
-    return signals.dropna(subset=["timestamp", "symbol", "timeframe"]).sort_values(["symbol", "timestamp"]).reset_index(drop=True)
+    return signals.dropna(subset=["timestamp", "symbol", "timeframe", "model_probability"]).sort_values(["symbol", "timestamp"]).reset_index(drop=True)
 
 
 def _load_signal_comparison() -> pd.DataFrame:
@@ -229,6 +260,73 @@ def _aggression_effect(aggressiveness: str, return_difference: float) -> str:
     return f"{aggressiveness} {outcome}"
 
 
+def _prepare_merged_signals(
+    original: pd.DataFrame,
+    symbol_smc: pd.DataFrame,
+    symbol: str,
+    timeframe: str,
+) -> pd.DataFrame:
+    original_duplicates = int(original.duplicated(subset=["timestamp", "symbol", "timeframe"]).sum())
+    smc_duplicates = int(symbol_smc.duplicated(subset=["timestamp", "symbol", "timeframe"]).sum())
+    if original_duplicates:
+        logger.warning("Dropping %s duplicate original signal timestamps for %s %s", original_duplicates, symbol, timeframe)
+    if smc_duplicates:
+        logger.warning("Dropping %s duplicate SMC signal timestamps for %s %s", smc_duplicates, symbol, timeframe)
+
+    original = original.drop_duplicates(subset=["timestamp", "symbol", "timeframe"], keep="last")
+    smc = symbol_smc.rename(columns={"model_direction": "smc_direction", "is_trade_candidate": "smc_candidate"})
+    smc = smc.drop_duplicates(subset=["timestamp", "symbol", "timeframe"], keep="last")
+    merged = original.merge(
+        smc[["timestamp", "symbol", "timeframe", "model_probability", "smc_direction", "smc_candidate"]],
+        on=["timestamp", "symbol", "timeframe"],
+        how="inner",
+    ).rename(columns={"model_probability": "smc_probability"})
+    merged = merged.sort_values("timestamp").reset_index(drop=True)
+    if merged["timestamp"].duplicated().any():
+        raise ValueError(f"Duplicate merged timestamps for {symbol} {timeframe}")
+    return merged
+
+
+def _build_debug_frame(
+    symbol: str,
+    timeframe: str,
+    merged: pd.DataFrame,
+    starting_capital: float,
+) -> tuple[dict[str, float | int], dict[str, float | int], pd.DataFrame]:
+    execution = _build_execution_frame(symbol, timeframe, merged["timestamp"]).reset_index(drop=True)
+    base = merged.reset_index(drop=True).join(execution)
+    original_metrics, original_debug = _simulate_prepared_signals(
+        base[["timestamp", "original_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
+        "original_direction",
+        starting_capital,
+    )
+    smc_metrics, smc_debug = _simulate_prepared_signals(
+        base[["timestamp", "smc_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
+        "smc_direction",
+        starting_capital,
+    )
+
+    debug = pd.DataFrame(
+        {
+            "timestamp": base["timestamp"],
+            "close": base["Close"],
+            "high_next": base["High_next"],
+            "low_next": base["Low_next"],
+            "close_next": base["Close_next"],
+            "ATR": base["ATR"],
+            "original_probability": base["original_probability"],
+            "smc_probability": base["smc_probability"],
+            "original_signal": base["original_direction"],
+            "smc_signal": base["smc_direction"],
+            "original_trade_result": original_debug["trade_result"].to_numpy(),
+            "smc_trade_result": smc_debug["trade_result"].to_numpy(),
+            "original_capital": original_debug["capital"].to_numpy(dtype=float),
+            "smc_capital": smc_debug["capital"].to_numpy(dtype=float),
+        }
+    )
+    return original_metrics, smc_metrics, debug
+
+
 def _build_symbol_performance(
     symbol: str,
     timeframe: str,
@@ -237,6 +335,7 @@ def _build_symbol_performance(
     smc_signals: pd.DataFrame,
     comparison_row: pd.Series,
     starting_capital: float,
+    debug: bool = False,
 ) -> dict[str, Any] | None:
     original = _predict_original_model_signals(original_model, original_scaler, symbol, timeframe)
     symbol_smc = smc_signals.loc[(smc_signals["symbol"] == symbol) & (smc_signals["timeframe"] == timeframe)].copy()
@@ -244,35 +343,32 @@ def _build_symbol_performance(
         logger.warning("Skipping %s %s: no saved SMC paper signals", symbol, timeframe)
         return None
 
-    smc = symbol_smc.rename(columns={"model_direction": "smc_direction", "is_trade_candidate": "smc_candidate"})
-    merged = original.merge(
-        smc[["timestamp", "symbol", "timeframe", "smc_direction", "smc_candidate"]],
-        on=["timestamp", "symbol", "timeframe"],
-        how="inner",
-    ).sort_values("timestamp")
+    merged = _prepare_merged_signals(original, symbol_smc, symbol, timeframe)
     if merged.empty:
         logger.warning("Skipping %s %s: no shared signal timestamps", symbol, timeframe)
         return None
 
-    original_metrics = _simulate_direction_signals(
-        symbol=symbol,
-        timeframe=timeframe,
-        signals=merged[["timestamp", "original_direction"]],
-        direction_column="original_direction",
-        starting_capital=starting_capital,
-    )
-    smc_metrics = _simulate_direction_signals(
-        symbol=symbol,
-        timeframe=timeframe,
-        signals=merged[["timestamp", "smc_direction"]],
-        direction_column="smc_direction",
-        starting_capital=starting_capital,
-    )
+    debug_frame = pd.DataFrame()
+    if debug:
+        original_metrics, smc_metrics, debug_frame = _build_debug_frame(symbol, timeframe, merged, starting_capital)
+    else:
+        execution = _build_execution_frame(symbol, timeframe, merged["timestamp"]).reset_index(drop=True)
+        base = merged.reset_index(drop=True).join(execution)
+        original_metrics, _ = _simulate_prepared_signals(
+            base[["timestamp", "original_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
+            "original_direction",
+            starting_capital,
+        )
+        smc_metrics, _ = _simulate_prepared_signals(
+            base[["timestamp", "smc_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
+            "smc_direction",
+            starting_capital,
+        )
 
     return_difference = float(smc_metrics["return_pct"] - original_metrics["return_pct"])
     drawdown_difference = float(smc_metrics["max_drawdown_pct"] - original_metrics["max_drawdown_pct"])
     aggressiveness = str(comparison_row["aggressiveness"])
-    return {
+    row = {
         "symbol": symbol,
         "timeframe": timeframe,
         "shared_timestamps": int(len(merged)),
@@ -293,6 +389,9 @@ def _build_symbol_performance(
         "smc_trade_count": int(smc_metrics["trade_count"]),
         "smc_aggression_performance_effect": _aggression_effect(aggressiveness, return_difference),
     }
+    if debug:
+        row["_debug_frame"] = debug_frame
+    return row
 
 
 def _write_html_report(report: pd.DataFrame, html_path: Path) -> None:
@@ -335,15 +434,22 @@ def run_paper_model_performance(args: Any) -> PaperModelPerformanceResult:
     """Compare paper signal performance without placing orders."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
+    debug = bool(getattr(args, "debug", False))
+    selected_symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
     comparison = _load_signal_comparison()
     smc_signals = _load_smc_signals()
 
     comparison = comparison.loc[comparison["timeframe"] == timeframe].copy()
     if comparison.empty:
         raise ValueError(f"No paper model comparison rows for timeframe {timeframe}")
+    if debug:
+        comparison = comparison.loc[comparison["symbol"] == selected_symbol].copy()
+        if comparison.empty:
+            raise ValueError(f"No paper model comparison row for {selected_symbol} {timeframe}")
 
     original_model, original_scaler = ModelScalerCache().load()
     rows = []
+    debug_frame = pd.DataFrame()
     for _, comparison_row in comparison.sort_values("symbol").iterrows():
         symbol = str(comparison_row["symbol"]).upper()
         try:
@@ -355,20 +461,34 @@ def run_paper_model_performance(args: Any) -> PaperModelPerformanceResult:
                 smc_signals=smc_signals,
                 comparison_row=comparison_row,
                 starting_capital=starting_capital,
+                debug=debug and symbol == selected_symbol,
             )
         except Exception as exc:
             logger.warning("Skipping %s %s during paper performance comparison: %s", symbol, timeframe, exc)
             continue
         if row is not None:
+            if "_debug_frame" in row:
+                debug_frame = row.pop("_debug_frame")
             rows.append(row)
 
     report = pd.DataFrame(rows)
     if not report.empty:
         report = report.sort_values("return_difference_pct", ascending=False).reset_index(drop=True)
 
-    PAPER_MODEL_PERFORMANCE_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    report.to_csv(PAPER_MODEL_PERFORMANCE_CSV_PATH, index=False)
-    _write_html_report(report, PAPER_MODEL_PERFORMANCE_HTML_PATH)
+    csv_path = None
+    html_path = None
+    if not debug:
+        PAPER_MODEL_PERFORMANCE_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+        report.to_csv(PAPER_MODEL_PERFORMANCE_CSV_PATH, index=False)
+        _write_html_report(report, PAPER_MODEL_PERFORMANCE_HTML_PATH)
+        csv_path = PAPER_MODEL_PERFORMANCE_CSV_PATH
+        html_path = PAPER_MODEL_PERFORMANCE_HTML_PATH
+
+    debug_path = None
+    if debug and not debug_frame.empty:
+        debug_path = Path("logs") / PAPER_MODEL_PERFORMANCE_DEBUG_TEMPLATE.format(symbol=selected_symbol)
+        debug_path.parent.mkdir(parents=True, exist_ok=True)
+        debug_frame.to_csv(debug_path, index=False)
 
     smc_better_assets = report.loc[report["return_difference_pct"] > 0, "symbol"].astype(str).tolist() if not report.empty else []
     original_better_assets = report.loc[report["return_difference_pct"] < 0, "symbol"].astype(str).tolist() if not report.empty else []
@@ -380,7 +500,8 @@ def run_paper_model_performance(args: Any) -> PaperModelPerformanceResult:
         original_better_assets=original_better_assets,
         average_return_difference=average_return_difference,
         average_drawdown_difference=average_drawdown_difference,
-        csv_path=PAPER_MODEL_PERFORMANCE_CSV_PATH,
-        html_path=PAPER_MODEL_PERFORMANCE_HTML_PATH,
+        csv_path=csv_path,
+        html_path=html_path,
+        debug_path=debug_path,
         report_df=report,
     )
