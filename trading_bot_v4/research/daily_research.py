@@ -218,7 +218,14 @@ def run_daily_research(args: Any) -> DailyResearchResult:
     pre_rank_symbols = _safe_top_validated_symbols(timeframe, top_count)
     smc_outputs = _update_smc_features(pre_rank_symbols, timeframe)
 
-    ranking_result = run_asset_ranking(_daily_args(timeframe=timeframe, validated=True))
+    ranking_result = run_asset_ranking(
+        _daily_args(
+            timeframe=timeframe,
+            validated=True,
+            model=getattr(args, "model", None),
+            scaler=getattr(args, "scaler", None),
+        )
+    )
     rankings = ranking_result.rankings
 
     readiness_result = run_paper_readiness(_daily_args(timeframe=timeframe, top_validated=top_count))
