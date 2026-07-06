@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
+    parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -218,8 +219,16 @@ def main():
         print(f"scaler path: {result.scaler_path}")
         return 0
     if args.compare_models:
-        result = run_model_comparison(timeframe=args.timeframe, starting_capital=args.capital)
+        result = run_model_comparison(
+            timeframe=args.timeframe,
+            starting_capital=args.capital,
+            test_only=args.test_only,
+            debug_symbol=args.symbol,
+            symbol=args.symbol,
+            all_assets=args.all_assets,
+        )
         print(f"models compared: original vs SMC")
+        print(f"evaluation mode: {'test_only_final_15_pct' if args.test_only else 'all_rows'}")
         print(f"assets compared: {result.assets_compared}")
         print(f"Assets where SMC is better: {len(result.smc_better_assets)}")
         print(", ".join(result.smc_better_assets) if result.smc_better_assets else "none")
@@ -229,6 +238,11 @@ def main():
         print(f"Median improvement: {format_optional_metric(result.median_improvement)}%")
         print(f"comparison CSV: {result.csv_path}")
         print(f"comparison HTML: {result.html_path}")
+        if result.debug_path is not None:
+            print(f"debug predictions: {result.debug_path}")
+            if not result.debug_sample.empty:
+                print(f"sample predictions for {args.symbol.upper()}:")
+                print(result.debug_sample.to_string(index=False))
         return 0
     if args.compare_original:
         run_v4_compare_original(args)
