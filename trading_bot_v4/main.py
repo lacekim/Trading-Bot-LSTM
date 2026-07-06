@@ -15,6 +15,7 @@ from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backte
 from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
 from trading_bot_v4.backtesting.model_comparison import run_model_comparison
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
+from trading_bot_v4.execution.paper_model_comparison import run_paper_model_comparison
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
@@ -44,6 +45,7 @@ def parse_args():
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--paper-trade-smc-model", action="store_true", help="Generate paper-only signals from the optional SMC-enhanced model")
+    parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
@@ -203,6 +205,30 @@ def main():
             ]
             print("latest signal per asset:")
             print(summary_df[display_columns].to_string(index=False))
+        return 0
+    if args.compare_paper_models:
+        result = run_paper_model_comparison(args)
+        report_df = result.get("report_df")
+        print("live trading: disabled")
+        print("paper model comparison only: no live orders submitted")
+        print(f"assets compared: {result['assets_compared']}")
+        print(f"comparison CSV: {result['csv_path']}")
+        print(f"comparison HTML: {result['html_path']}")
+        print(f"assets where SMC is more aggressive: {len(result['smc_more_aggressive_assets'])}")
+        print(", ".join(result["smc_more_aggressive_assets"]) if result["smc_more_aggressive_assets"] else "none")
+        print(f"assets where SMC is more selective: {len(result['smc_more_selective_assets'])}")
+        print(", ".join(result["smc_more_selective_assets"]) if result["smc_more_selective_assets"] else "none")
+        if report_df is not None and not report_df.empty:
+            display_columns = [
+                "symbol",
+                "original_candidates",
+                "smc_candidates",
+                "signal_agreement_pct",
+                "long_agreement_pct",
+                "short_agreement_pct",
+                "latest_signal_difference",
+            ]
+            print(report_df[display_columns].to_string(index=False))
         return 0
     if args.build_smc_training_data:
         if args.all_assets:
