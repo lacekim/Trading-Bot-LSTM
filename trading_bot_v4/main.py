@@ -20,6 +20,7 @@ from trading_bot_v4.execution.paper_model_comparison import run_paper_model_comp
 from trading_bot_v4.execution.paper_model_performance import run_paper_model_performance
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
+from trading_bot_v4.execution.validated_whitelist_performance import run_validated_whitelist_performance
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.utils.logger import build_logger
@@ -47,6 +48,7 @@ def parse_args():
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--paper-trade-smc-model", action="store_true", help="Generate paper-only signals from the optional SMC-enhanced model")
+    parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
     parser.add_argument("--compare-paper-model-performance", action="store_true", help="Compare paper signal performance for original and SMC models")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
@@ -215,6 +217,30 @@ def main():
             ]
             print("latest signal per asset:")
             print(summary_df[display_columns].to_string(index=False))
+        return 0
+    if args.validated_whitelist_performance:
+        result = run_validated_whitelist_performance(args)
+        report_df = result.report_df
+        print("live trading: disabled")
+        print("validated whitelist performance only: no live orders submitted")
+        print(f"assets evaluated: {result.assets_evaluated}")
+        print(f"combined portfolio return: {format_optional_metric(result.combined_portfolio_return_pct)}%")
+        print(f"combined starting capital: {format_optional_metric(result.combined_starting_capital)}")
+        print(f"combined final capital: {format_optional_metric(result.combined_final_capital)}")
+        print(f"performance CSV: {result.csv_path}")
+        print(f"performance HTML: {result.html_path}")
+        display_columns = [
+            "symbol",
+            "return_pct",
+            "max_drawdown_pct",
+            "profit_factor",
+            "win_rate_pct",
+            "trade_count",
+            "daily_loss_events",
+            "average_trade_pct",
+            "latest_signal",
+        ]
+        print(report_df[display_columns].to_string(index=False))
         return 0
     if args.compare_paper_models:
         result = run_paper_model_comparison(args)
