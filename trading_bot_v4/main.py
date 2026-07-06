@@ -106,6 +106,11 @@ def main():
         if validation.bars_since_latest_liquidity_sweep is not None:
             bars_since_sweep = str(validation.bars_since_latest_liquidity_sweep)
         print(f"bars since latest liquidity sweep: {bars_since_sweep}")
+        print(f"current regime: {validation.current_regime}")
+        print(f"trending candles count: {validation.trending_candles_count}")
+        print(f"ranging candles count: {validation.ranging_candles_count}")
+        print(f"high volatility count: {validation.high_volatility_count}")
+        print(f"low volatility count: {validation.low_volatility_count}")
         return 0
 
     print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --compare-original, --analyze-smc, or --refresh.")

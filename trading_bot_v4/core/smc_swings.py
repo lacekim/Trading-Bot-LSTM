@@ -54,6 +54,13 @@ LIQUIDITY_SWEEP_COLUMNS = [
     "sweep_distance",
     "bars_since_liquidity_sweep",
 ]
+REGIME_COLUMNS = [
+    "regime_trending",
+    "regime_ranging",
+    "regime_high_volatility",
+    "regime_low_volatility",
+    "regime_score",
+]
 
 
 @dataclass(frozen=True)
@@ -82,6 +89,11 @@ class SwingValidationSummary:
     total_bearish_liquidity_sweeps: int
     latest_liquidity_sweep_type: str
     bars_since_latest_liquidity_sweep: int | None
+    current_regime: str
+    trending_candles_count: int
+    ranging_candles_count: int
+    high_volatility_count: int
+    low_volatility_count: int
 
 
 def calculate_atr(df: pd.DataFrame, period: int | None = None) -> pd.Series:
@@ -492,6 +504,45 @@ def add_liquidity_sweep_features(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def add_market_regime_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Classify market regime from ATR, EMA slope, and recent price range."""
+    missing = [column for column in OHLCV_COLUMNS if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required OHLCV columns: {missing}")
+
+    result = df.copy()
+    for column in OHLCV_COLUMNS:
+        result[column] = pd.to_numeric(result[column], errors="coerce")
+
+    atr = calculate_atr(result)
+    close = result["Close"]
+    atr_pct = atr / close.replace(0, pd.NA)
+    ema = close.ewm(span=50, adjust=False).mean()
+    ema_slope_pct = (ema - ema.shift(5)) / close.replace(0, pd.NA)
+    recent_range_pct = (
+        result["High"].rolling(window=20, min_periods=1).max()
+        - result["Low"].rolling(window=20, min_periods=1).min()
+    ) / close.replace(0, pd.NA)
+
+    trend_threshold = (atr_pct * 0.35).fillna(0)
+    range_threshold = (atr_pct * 3.0).fillna(0)
+    volatility_baseline = atr_pct.rolling(window=100, min_periods=20).median().bfill().ffill()
+
+    trending = ema_slope_pct.abs().gt(trend_threshold) & recent_range_pct.gt(range_threshold)
+    high_volatility = atr_pct.gt(volatility_baseline)
+    low_volatility = atr_pct.le(volatility_baseline)
+
+    result["regime_trending"] = trending.fillna(False).astype(int)
+    result["regime_ranging"] = (~trending.fillna(False)).astype(int)
+    result["regime_high_volatility"] = high_volatility.fillna(False).astype(int)
+    result["regime_low_volatility"] = low_volatility.fillna(False).astype(int)
+
+    trend_component = (ema_slope_pct.abs() / atr_pct.replace(0, pd.NA)).clip(upper=5).fillna(0)
+    range_component = (recent_range_pct / atr_pct.replace(0, pd.NA)).clip(upper=10).fillna(0)
+    result["regime_score"] = trend_component + (range_component / 10.0)
+    return result
+
+
 def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
     """Summarize standalone SMC swing labels for CLI validation output."""
     missing = [
@@ -503,6 +554,7 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
             *FVG_COLUMNS,
             *ORDER_BLOCK_COLUMNS,
             *LIQUIDITY_SWEEP_COLUMNS,
+            *REGIME_COLUMNS,
         ]
         if column not in df.columns
     ]
@@ -540,6 +592,12 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
             latest_liquidity_sweep_type = "bearish"
         latest_bars_since = df["bars_since_liquidity_sweep"].iloc[-1]
         bars_since_latest_liquidity_sweep = int(latest_bars_since)
+    current_regime = "unknown"
+    if total_rows:
+        latest = df.iloc[-1]
+        direction_regime = "trending" if latest["regime_trending"] == 1 else "ranging"
+        volatility_regime = "high_volatility" if latest["regime_high_volatility"] == 1 else "low_volatility"
+        current_regime = f"{direction_regime}_{volatility_regime}"
 
     return SwingValidationSummary(
         total_swing_highs=int(swing_high.sum()),
@@ -566,6 +624,11 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
         total_bearish_liquidity_sweeps=int(df["bearish_liquidity_sweep"].eq(1).sum()),
         latest_liquidity_sweep_type=latest_liquidity_sweep_type,
         bars_since_latest_liquidity_sweep=bars_since_latest_liquidity_sweep,
+        current_regime=current_regime,
+        trending_candles_count=int(df["regime_trending"].eq(1).sum()),
+        ranging_candles_count=int(df["regime_ranging"].eq(1).sum()),
+        high_volatility_count=int(df["regime_high_volatility"].eq(1).sum()),
+        low_volatility_count=int(df["regime_low_volatility"].eq(1).sum()),
     )
 
 
@@ -627,6 +690,7 @@ def analyze_gmx_smc_swings(
     features = add_liquidity_sweep_features(features)
     features = add_order_block_features(features)
     features = add_fvg_features(features)
+    features = add_market_regime_features(features)
     validation = summarize_swing_features(features)
 
     output = Path(output_path or f"v4_smc_features_{normalized_symbol}_{timeframe}.csv")
