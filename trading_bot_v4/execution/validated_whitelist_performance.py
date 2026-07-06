@@ -48,6 +48,16 @@ class ValidatedWhitelistRecentSweepResult:
     sweep_df: pd.DataFrame
 
 
+@dataclass(frozen=True)
+class PaperReadinessResult:
+    symbol: str
+    timeframe: str
+    decision: str
+    failed_conditions: list[str]
+    sweep_csv_path: Path
+    sweep_df: pd.DataFrame
+
+
 def _load_validated_whitelist_signals(timeframe: str, assets: list[str], recent_days: int = 0) -> pd.DataFrame:
     _require_file(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH, "validated whitelist paper signals")
     signals = pd.read_csv(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH)
@@ -279,5 +289,58 @@ def run_validated_whitelist_recent_sweep(args: Any) -> ValidatedWhitelistRecentS
         symbol=symbol,
         timeframe=timeframe,
         csv_path=csv_path,
+        sweep_df=sweep,
+    )
+
+
+def _window_row(sweep: pd.DataFrame, recent_days: int) -> pd.Series:
+    rows = sweep.loc[sweep["recent_days"].eq(recent_days)]
+    if rows.empty:
+        raise ValueError(f"Missing {recent_days}d recent sweep row")
+    return rows.iloc[0]
+
+
+def _finite_metric(row: pd.Series, column: str) -> float:
+    value = pd.to_numeric(pd.Series([row.get(column)]), errors="coerce").iloc[0]
+    if pd.isna(value) or not np.isfinite(float(value)):
+        return float("nan")
+    return float(value)
+
+
+def run_paper_readiness(args: Any) -> PaperReadinessResult:
+    """Evaluate go/no-go paper readiness using recent sweep metrics."""
+    sweep_result = run_validated_whitelist_recent_sweep(args)
+    sweep = sweep_result.sweep_df
+    row_7 = _window_row(sweep, 7)
+    row_14 = _window_row(sweep, 14)
+    row_30 = _window_row(sweep, 30)
+
+    return_7 = _finite_metric(row_7, "return_pct")
+    return_14 = _finite_metric(row_14, "return_pct")
+    return_30 = _finite_metric(row_30, "return_pct")
+    profit_factor_30 = _finite_metric(row_30, "profit_factor")
+    drawdown_30 = _finite_metric(row_30, "max_drawdown_pct")
+    trade_count_30 = int(_finite_metric(row_30, "trade_count")) if np.isfinite(_finite_metric(row_30, "trade_count")) else 0
+
+    failed: list[str] = []
+    if not return_7 > 0:
+        failed.append(f"7d return > 0 failed: {return_7:.6f}%")
+    if not return_14 > 0:
+        failed.append(f"14d return > 0 failed: {return_14:.6f}%")
+    if not return_30 > 0:
+        failed.append(f"30d return > 0 failed: {return_30:.6f}%")
+    if not profit_factor_30 > 1.05:
+        failed.append(f"30d profit factor > 1.05 failed: {profit_factor_30:.6f}")
+    if not drawdown_30 > -5.0:
+        failed.append(f"30d max drawdown better than -5% failed: {drawdown_30:.6f}%")
+    if not trade_count_30 >= 50:
+        failed.append(f"30d trade count >= 50 failed: {trade_count_30}")
+
+    return PaperReadinessResult(
+        symbol=sweep_result.symbol,
+        timeframe=sweep_result.timeframe,
+        decision="GO" if not failed else "NO-GO",
+        failed_conditions=failed,
+        sweep_csv_path=sweep_result.csv_path,
         sweep_df=sweep,
     )

@@ -21,6 +21,7 @@ from trading_bot_v4.execution.paper_model_performance import run_paper_model_per
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.validated_whitelist_performance import (
+    run_paper_readiness,
     run_validated_whitelist_performance,
     run_validated_whitelist_recent_sweep,
 )
@@ -51,6 +52,7 @@ def parse_args():
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--paper-trade-smc-model", action="store_true", help="Generate paper-only signals from the optional SMC-enhanced model")
+    parser.add_argument("--paper-readiness", action="store_true", help="Evaluate go/no-go readiness from recent paper performance")
     parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
     parser.add_argument("--compare-paper-model-performance", action="store_true", help="Compare paper signal performance for original and SMC models")
@@ -224,6 +226,30 @@ def main():
             ]
             print("latest signal per asset:")
             print(summary_df[display_columns].to_string(index=False))
+        return 0
+    if args.paper_readiness:
+        result = run_paper_readiness(args)
+        print("live trading: disabled")
+        print("paper readiness only: no live orders submitted")
+        print(f"symbol: {result.symbol}")
+        print(f"timeframe: {result.timeframe}")
+        print(f"decision: {result.decision}")
+        if result.failed_conditions:
+            print("failed conditions:")
+            for condition in result.failed_conditions:
+                print(f"- {condition}")
+        else:
+            print("failed conditions: none")
+        print(f"recent sweep CSV: {result.sweep_csv_path}")
+        display_columns = [
+            "recent_days",
+            "return_pct",
+            "max_drawdown_pct",
+            "profit_factor",
+            "win_rate_pct",
+            "trade_count",
+        ]
+        print(result.sweep_df[display_columns].to_string(index=False))
         return 0
     if args.validated_whitelist_performance:
         if args.recent_sweep:
