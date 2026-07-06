@@ -186,8 +186,11 @@ def run_smc_model_paper_trading(args: Any) -> dict[str, Any]:
         summary_path = SMC_MODEL_PAPER_SUMMARY_PATH
         signals_path = SMC_MODEL_PAPER_SIGNALS_PATH
 
-    cache = ModelScalerCache(model_path=SMC_MODEL_PATH, scaler_path=SMC_SCALER_PATH)
-    model, scaler = cache.load()
+    model = getattr(args, "model", None)
+    scaler = getattr(args, "scaler", None)
+    if model is None or scaler is None:
+        cache = ModelScalerCache(model_path=SMC_MODEL_PATH, scaler_path=SMC_SCALER_PATH)
+        model, scaler = cache.load()
 
     signal_frames = []
     summaries = []

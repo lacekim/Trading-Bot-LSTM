@@ -29,6 +29,7 @@ from trading_bot_v4.execution.validated_whitelist_performance import (
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.research.daily_research import run_daily_research
+from trading_bot_v4.research.scheduler import run_auto_scheduler
 from trading_bot_v4.utils.logger import build_logger
 
 logger = build_logger("v4_main")
@@ -57,6 +58,7 @@ def parse_args():
     parser.add_argument("--paper-readiness", action="store_true", help="Evaluate go/no-go readiness from recent paper performance")
     parser.add_argument("--go-assets-performance", action="store_true", help="Run constrained paper performance for assets marked GO by readiness")
     parser.add_argument("--daily-research", action="store_true", help="Run the daily paper-only V4 research pipeline")
+    parser.add_argument("--auto", action="store_true", help="Run the paper-only automatic research scheduler")
     parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
     parser.add_argument("--compare-paper-model-performance", action="store_true", help="Compare paper signal performance for original and SMC models")
@@ -95,6 +97,10 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.auto:
+        run_auto_scheduler(args)
+        return 0
+
     if args.refresh:
         handler = V4DataHandler()
         refreshed = handler.refresh_gmx_cache(force=True)

@@ -550,11 +550,14 @@ def run_asset_ranking(args: Any) -> AssetRankingResult:
         raise FileNotFoundError(f"Validated ranking requires constrained performance: {PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH}")
     walk_forward_stability = _load_walk_forward_stability(timeframe)
 
-    model = scaler = None
-    try:
-        model, scaler = ModelScalerCache().load()
-    except Exception as exc:
-        logger.warning("CNN/LSTM confidence unavailable; continuing without model confidence: %s", exc)
+    model = getattr(args, "model", None)
+    scaler = getattr(args, "scaler", None)
+    if model is None or scaler is None:
+        model = scaler = None
+        try:
+            model, scaler = ModelScalerCache().load()
+        except Exception as exc:
+            logger.warning("CNN/LSTM confidence unavailable; continuing without model confidence: %s", exc)
 
     rows: list[dict[str, float | int | str]] = []
     for symbol in symbols:
