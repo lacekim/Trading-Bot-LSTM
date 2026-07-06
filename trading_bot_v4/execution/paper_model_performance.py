@@ -25,6 +25,7 @@ logger = build_logger("v4_paper_model_performance")
 
 PAPER_MODEL_PERFORMANCE_CSV_PATH = Path("logs/v4_paper_model_performance.csv")
 PAPER_MODEL_PERFORMANCE_HTML_PATH = Path("logs/v4_paper_model_performance.html")
+PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH = Path("logs/v4_paper_model_performance_constrained.csv")
 PAPER_MODEL_PERFORMANCE_DEBUG_TEMPLATE = "v4_paper_model_performance_debug_{symbol}.csv"
 
 
@@ -47,11 +48,23 @@ def _require_file(path: Path, description: str) -> None:
 
 
 def _fee_rate() -> float:
-    return float(getattr(Config, "FEE_RATE", getattr(Config, "TRADING_FEE_RATE", getattr(Config, "COMMISSION_RATE", 0.0))))
+    return float(getattr(Config, "PAPER_FEE_BPS", 0.0)) / 10000.0
 
 
 def _slippage_rate() -> float:
-    return float(getattr(Config, "SLIPPAGE_RATE", getattr(Config, "SLIPPAGE_PCT", 0.0)))
+    return float(getattr(Config, "PAPER_SLIPPAGE_BPS", 0.0)) / 10000.0
+
+
+def _constraints_used() -> dict[str, float | int | bool]:
+    return {
+        "paper_max_risk_per_trade_pct": float(Config.PAPER_MAX_RISK_PER_TRADE),
+        "paper_min_bars_between_trades": int(Config.PAPER_MIN_BARS_BETWEEN_TRADES),
+        "paper_fee_bps": float(Config.PAPER_FEE_BPS),
+        "paper_slippage_bps": float(Config.PAPER_SLIPPAGE_BPS),
+        "paper_max_trades_per_day": int(Config.PAPER_MAX_TRADES_PER_DAY),
+        "paper_max_daily_loss_pct": float(Config.PAPER_MAX_DAILY_LOSS_PCT),
+        "paper_use_compounding": bool(Config.PAPER_USE_COMPOUNDING),
+    }
 
 
 def _empty_metrics(starting_capital: float) -> dict[str, float | int]:
@@ -101,14 +114,47 @@ def _simulate_prepared_signals(
     capital = float(starting_capital)
     equity = [capital]
     trade_returns_pct: list[float] = []
+    account_trade_returns_pct: list[float] = []
     debug_rows: list[dict[str, Any]] = []
+    min_bars_between_trades = int(Config.PAPER_MIN_BARS_BETWEEN_TRADES)
+    max_trades_per_day = int(Config.PAPER_MAX_TRADES_PER_DAY)
+    max_daily_loss_pct = float(Config.PAPER_MAX_DAILY_LOSS_PCT)
+    risk_pct = float(Config.PAPER_MAX_RISK_PER_TRADE)
+    use_compounding = bool(Config.PAPER_USE_COMPOUNDING)
+    last_trade_index: int | None = None
+    current_day = None
+    day_start_capital = capital
+    trades_today = 0
 
-    for _, row in signal_frame.iterrows():
+    for row_index, row in signal_frame.iterrows():
         timestamp = row.get("timestamp")
+        timestamp_value = pd.Timestamp(timestamp)
+        day = timestamp_value.date()
+        if current_day != day:
+            current_day = day
+            day_start_capital = capital
+            trades_today = 0
+
         direction = str(row.get(direction_column, "HOLD")).upper()
         if direction not in {"LONG", "SHORT"}:
             equity.append(capital)
             debug_rows.append({"timestamp": timestamp, "trade_result": "HOLD", "capital": capital})
+            continue
+
+        if last_trade_index is not None and (row_index - last_trade_index) < min_bars_between_trades:
+            equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "BLOCKED_COOLDOWN", "capital": capital})
+            continue
+
+        if trades_today >= max_trades_per_day:
+            equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "BLOCKED_DAILY_TRADE_LIMIT", "capital": capital})
+            continue
+
+        daily_loss_pct = ((capital / day_start_capital) - 1.0) * 100.0 if day_start_capital else 0.0
+        if daily_loss_pct <= -max_daily_loss_pct:
+            equity.append(capital)
+            debug_rows.append({"timestamp": timestamp, "trade_result": "BLOCKED_DAILY_LOSS", "capital": capital})
             continue
 
         if (
@@ -139,7 +185,8 @@ def _simulate_prepared_signals(
             take_profit = effective_entry_price - atr * Config.ATR_TP_MULTIPLIER
 
         stop_distance = abs(effective_entry_price - stop_loss)
-        risk_amount = capital * (Config.RISK_PERCENTAGE / 100.0)
+        sizing_capital = capital if use_compounding else float(starting_capital)
+        risk_amount = sizing_capital * (risk_pct / 100.0)
         risk_size = risk_amount / stop_distance if stop_distance else 0.0
         max_affordable = capital / effective_entry_price if effective_entry_price else 0.0
         units = min(risk_size, max_affordable * 0.95)
@@ -170,16 +217,20 @@ def _simulate_prepared_signals(
 
         fees = (effective_entry_price * units * fee_rate) + (exit_price * units * fee_rate)
         profit -= fees
+        capital_before_trade = capital
         capital += profit
         notional = max(effective_entry_price * units, 1e-12)
         trade_returns_pct.append((profit / notional) * 100.0)
+        account_trade_returns_pct.append((profit / max(capital_before_trade, 1e-12)) * 100.0)
         equity.append(capital)
+        last_trade_index = int(row_index)
+        trades_today += 1
         debug_rows.append({"timestamp": timestamp, "trade_result": _trade_result(direction, profit), "capital": capital})
 
     if not trade_returns_pct:
         return _empty_metrics(starting_capital), pd.DataFrame(debug_rows)
 
-    trade_returns = np.array(trade_returns_pct, dtype=float)
+    trade_returns = np.array(account_trade_returns_pct, dtype=float)
     equity_array = np.array(equity, dtype=float)
     winning = trade_returns[trade_returns > 0]
     losing = trade_returns[trade_returns < 0]
@@ -371,6 +422,7 @@ def _build_symbol_performance(
     row = {
         "symbol": symbol,
         "timeframe": timeframe,
+        **_constraints_used(),
         "shared_timestamps": int(len(merged)),
         "original_candidates": int(comparison_row["original_candidates"]),
         "smc_candidates": int(comparison_row["smc_candidates"]),
@@ -385,6 +437,8 @@ def _build_symbol_performance(
         "smc_profit_factor": float(smc_metrics["profit_factor"]),
         "original_win_rate_pct": float(original_metrics["win_rate_pct"]),
         "smc_win_rate_pct": float(smc_metrics["win_rate_pct"]),
+        "original_average_trade_pct": float(original_metrics["average_trade_pct"]),
+        "smc_average_trade_pct": float(smc_metrics["average_trade_pct"]),
         "original_trade_count": int(original_metrics["trade_count"]),
         "smc_trade_count": int(smc_metrics["trade_count"]),
         "smc_aggression_performance_effect": _aggression_effect(aggressiveness, return_difference),
@@ -478,10 +532,10 @@ def run_paper_model_performance(args: Any) -> PaperModelPerformanceResult:
     csv_path = None
     html_path = None
     if not debug:
-        PAPER_MODEL_PERFORMANCE_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
-        report.to_csv(PAPER_MODEL_PERFORMANCE_CSV_PATH, index=False)
+        PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
+        report.to_csv(PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH, index=False)
         _write_html_report(report, PAPER_MODEL_PERFORMANCE_HTML_PATH)
-        csv_path = PAPER_MODEL_PERFORMANCE_CSV_PATH
+        csv_path = PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH
         html_path = PAPER_MODEL_PERFORMANCE_HTML_PATH
 
     debug_path = None

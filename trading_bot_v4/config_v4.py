@@ -19,5 +19,14 @@ class V4Config(LegacyConfig):
     SMC_MIN_SWING_DISTANCE_ATR = float(os.getenv("V4_SMC_MIN_SWING_DISTANCE_ATR", "0.5"))
     USE_SMC_FILTER = False
 
+    # Paper-only execution constraints for analysis reports. These do not affect live trading.
+    PAPER_MAX_RISK_PER_TRADE = 0.25
+    PAPER_MIN_BARS_BETWEEN_TRADES = 4
+    PAPER_FEE_BPS = 5
+    PAPER_SLIPPAGE_BPS = 5
+    PAPER_MAX_TRADES_PER_DAY = 3
+    PAPER_MAX_DAILY_LOSS_PCT = 3
+    PAPER_USE_COMPOUNDING = False
+
 
 Config = V4Config

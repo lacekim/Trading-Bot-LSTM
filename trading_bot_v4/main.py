@@ -252,16 +252,39 @@ def main():
         print(f"Average return difference: {format_optional_metric(result.average_return_difference)}%")
         print(f"Average drawdown difference: {format_optional_metric(result.average_drawdown_difference)}%")
         if report_df is not None and not report_df.empty:
+            first_row = report_df.iloc[0]
+            constraint_columns = [
+                "paper_max_risk_per_trade_pct",
+                "paper_min_bars_between_trades",
+                "paper_fee_bps",
+                "paper_slippage_bps",
+                "paper_max_trades_per_day",
+                "paper_max_daily_loss_pct",
+                "paper_use_compounding",
+            ]
+            if all(column in report_df.columns for column in constraint_columns):
+                print("constraints used:")
+                for column in constraint_columns:
+                    print(f"{column}: {first_row[column]}")
             display_columns = [
                 "symbol",
                 "original_return_pct",
                 "smc_return_pct",
+                "original_trade_count",
+                "smc_trade_count",
                 "return_difference_pct",
                 "original_max_drawdown_pct",
                 "smc_max_drawdown_pct",
+                "original_profit_factor",
+                "smc_profit_factor",
+                "original_win_rate_pct",
+                "smc_win_rate_pct",
+                "original_average_trade_pct",
+                "smc_average_trade_pct",
                 "smc_aggression_performance_effect",
             ]
-            print(report_df[display_columns].to_string(index=False))
+            available_columns = [column for column in display_columns if column in report_df.columns]
+            print(report_df[available_columns].to_string(index=False))
         return 0
     if args.build_smc_training_data:
         if args.all_assets:
