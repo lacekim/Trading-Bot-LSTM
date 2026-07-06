@@ -1,0 +1,35 @@
+SMC Validation Summary: GMX 1h
+
+Counts
+total swing highs: 223
+total swing lows: 214
+both high/low rows: 1
+percentage of candles marked as swings: 9.06%
+total bullish BOS: 102
+total bearish BOS: 103
+total bullish CHOCH: 54
+total bearish CHOCH: 53
+total bullish FVG: 361
+total bearish FVG: 357
+open FVGs: 12
+filled FVGs: 706
+total bullish order blocks: 102
+total bearish order blocks: 103
+open order blocks: 6
+mitigated order blocks: 199
+total bullish liquidity sweeps: 186
+total bearish liquidity sweeps: 218
+trending candles count: 1472
+ranging candles count: 3342
+high volatility count: 2356
+low volatility count: 2458
+
+Latest State
+latest structure trend: 1
+latest BOS/CHOCH: bullish_choch
+latest liquidity sweep: bearish
+bars since latest liquidity sweep: 0
+current regime: ranging_low_volatility
+latest open FVG distance: 0.2439300000
+latest open OB distance: 0.1710000000
+total generated SMC feature columns: 38

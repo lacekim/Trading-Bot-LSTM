@@ -61,6 +61,14 @@ REGIME_COLUMNS = [
     "regime_low_volatility",
     "regime_score",
 ]
+SMC_FEATURE_COLUMNS = [
+    *SWING_COLUMNS,
+    *STRUCTURE_COLUMNS,
+    *LIQUIDITY_SWEEP_COLUMNS,
+    *ORDER_BLOCK_COLUMNS,
+    *FVG_COLUMNS,
+    *REGIME_COLUMNS,
+]
 
 
 @dataclass(frozen=True)
@@ -671,13 +679,71 @@ def load_gmx_ohlcv(symbol: str, timeframe: str) -> pd.DataFrame:
     return df[OHLCV_COLUMNS]
 
 
+def _format_optional_float(value: float | None) -> str:
+    return "none" if value is None else f"{value:.10f}"
+
+
+def build_smc_summary_text(
+    symbol: str,
+    timeframe: str,
+    validation: SwingValidationSummary,
+    total_smc_feature_columns: int,
+) -> str:
+    """Build a compact text summary for standalone SMC analysis."""
+    bars_since_sweep = "none"
+    if validation.bars_since_latest_liquidity_sweep is not None:
+        bars_since_sweep = str(validation.bars_since_latest_liquidity_sweep)
+
+    return "\n".join(
+        [
+            f"SMC Validation Summary: {symbol.upper()} {timeframe}",
+            "",
+            "Counts",
+            f"total swing highs: {validation.total_swing_highs}",
+            f"total swing lows: {validation.total_swing_lows}",
+            f"both high/low rows: {validation.both_swing_high_and_low}",
+            f"percentage of candles marked as swings: {validation.swing_candle_percentage:.2f}%",
+            f"total bullish BOS: {validation.total_bullish_bos}",
+            f"total bearish BOS: {validation.total_bearish_bos}",
+            f"total bullish CHOCH: {validation.total_bullish_choch}",
+            f"total bearish CHOCH: {validation.total_bearish_choch}",
+            f"total bullish FVG: {validation.total_bullish_fvg}",
+            f"total bearish FVG: {validation.total_bearish_fvg}",
+            f"open FVGs: {validation.open_fvgs}",
+            f"filled FVGs: {validation.filled_fvgs}",
+            f"total bullish order blocks: {validation.total_bullish_order_blocks}",
+            f"total bearish order blocks: {validation.total_bearish_order_blocks}",
+            f"open order blocks: {validation.open_order_blocks}",
+            f"mitigated order blocks: {validation.mitigated_order_blocks}",
+            f"total bullish liquidity sweeps: {validation.total_bullish_liquidity_sweeps}",
+            f"total bearish liquidity sweeps: {validation.total_bearish_liquidity_sweeps}",
+            f"trending candles count: {validation.trending_candles_count}",
+            f"ranging candles count: {validation.ranging_candles_count}",
+            f"high volatility count: {validation.high_volatility_count}",
+            f"low volatility count: {validation.low_volatility_count}",
+            "",
+            "Latest State",
+            f"latest structure trend: {validation.current_structure_trend}",
+            f"latest BOS/CHOCH: {validation.latest_structure_signal}",
+            f"latest liquidity sweep: {validation.latest_liquidity_sweep_type}",
+            f"bars since latest liquidity sweep: {bars_since_sweep}",
+            f"current regime: {validation.current_regime}",
+            f"latest open FVG distance: {_format_optional_float(validation.nearest_fvg_distance)}",
+            f"latest open OB distance: {_format_optional_float(validation.nearest_ob_distance)}",
+            f"total generated SMC feature columns: {total_smc_feature_columns}",
+            "",
+        ]
+    )
+
+
 def analyze_gmx_smc_swings(
     symbol: str,
     timeframe: str,
     output_path: str | Path | None = None,
+    summary_output_path: str | Path | None = None,
     swing_window: int | None = None,
     min_swing_distance_atr: float | None = None,
-) -> tuple[Path, SwingValidationSummary]:
+) -> tuple[Path, Path, SwingValidationSummary]:
     """Generate the first V4 SMC feature file for a GMX symbol/timeframe."""
     normalized_symbol = symbol.upper()
     df = load_gmx_ohlcv(normalized_symbol, timeframe)
@@ -695,4 +761,15 @@ def analyze_gmx_smc_swings(
 
     output = Path(output_path or f"v4_smc_features_{normalized_symbol}_{timeframe}.csv")
     features.to_csv(output, index_label="Date", float_format="%.10f")
-    return output, validation
+
+    summary_output = Path(summary_output_path or f"v4_smc_summary_{normalized_symbol}_{timeframe}.txt")
+    summary_output.write_text(
+        build_smc_summary_text(
+            normalized_symbol,
+            timeframe,
+            validation,
+            total_smc_feature_columns=len(SMC_FEATURE_COLUMNS),
+        ),
+        encoding="utf-8",
+    )
+    return output, summary_output, validation
