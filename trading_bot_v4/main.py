@@ -82,6 +82,7 @@ def parse_args():
     parser.add_argument("--timeframe", default=V4Config.TIMEFRAME, help="GMX data timeframe")
     parser.add_argument("--recent-days", type=int, default=0, help="Limit supported analysis commands to the most recent N days")
     parser.add_argument("--recent-sweep", action="store_true", help="Run supported analysis commands over recent day windows")
+    parser.add_argument("--top-validated", type=int, default=0, help="Use the top N validated ranked assets for supported analysis commands")
     parser.add_argument("--capital", type=float, default=100000.0, help="Starting capital for backtest")
     parser.add_argument("--all-assets", action="store_true", help="Backtest every GMX asset")
     return parser.parse_args()
@@ -241,15 +242,29 @@ def main():
         else:
             print("failed conditions: none")
         print(f"recent sweep CSV: {result.sweep_csv_path}")
-        display_columns = [
-            "recent_days",
-            "return_pct",
-            "max_drawdown_pct",
-            "profit_factor",
-            "win_rate_pct",
-            "trade_count",
-        ]
-        print(result.sweep_df[display_columns].to_string(index=False))
+        if result.readiness_df is not None:
+            display_columns = [
+                "symbol",
+                "decision",
+                "return_7d_pct",
+                "return_14d_pct",
+                "return_30d_pct",
+                "profit_factor_30d",
+                "max_drawdown_30d_pct",
+                "trade_count_30d",
+                "failed_conditions",
+            ]
+            print(result.readiness_df[display_columns].to_string(index=False))
+        else:
+            display_columns = [
+                "recent_days",
+                "return_pct",
+                "max_drawdown_pct",
+                "profit_factor",
+                "win_rate_pct",
+                "trade_count",
+            ]
+            print(result.sweep_df[display_columns].to_string(index=False))
         return 0
     if args.validated_whitelist_performance:
         if args.recent_sweep:

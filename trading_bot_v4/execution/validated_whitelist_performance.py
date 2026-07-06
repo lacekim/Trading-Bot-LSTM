@@ -16,7 +16,7 @@ from trading_bot_v4.execution.paper_model_performance import (
     _require_file,
     _simulate_prepared_signals,
 )
-from trading_bot_v4.execution.smc_model_paper import VALIDATED_WHITELIST_PAPER_SIGNALS_PATH
+from trading_bot_v4.execution.smc_model_paper import SMC_MODEL_PAPER_SIGNALS_PATH, VALIDATED_WHITELIST_PAPER_SIGNALS_PATH
 
 
 VALIDATED_WHITELIST_ASSETS = ["PENGU", "DYDX", "AIXBT"]
@@ -56,11 +56,17 @@ class PaperReadinessResult:
     failed_conditions: list[str]
     sweep_csv_path: Path
     sweep_df: pd.DataFrame
+    readiness_df: pd.DataFrame | None = None
 
 
-def _load_validated_whitelist_signals(timeframe: str, assets: list[str], recent_days: int = 0) -> pd.DataFrame:
-    _require_file(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH, "validated whitelist paper signals")
-    signals = pd.read_csv(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH)
+def _load_validated_whitelist_signals(
+    timeframe: str,
+    assets: list[str],
+    recent_days: int = 0,
+    signals_path: Path = VALIDATED_WHITELIST_PAPER_SIGNALS_PATH,
+) -> pd.DataFrame:
+    _require_file(signals_path, "paper signals")
+    signals = pd.read_csv(signals_path)
     required = ["timestamp", "symbol", "timeframe", "model_probability", "model_direction", "is_trade_candidate"]
     missing = [column for column in required if column not in signals.columns]
     if missing:
@@ -237,11 +243,13 @@ def run_validated_whitelist_recent_sweep(args: Any) -> ValidatedWhitelistRecentS
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
     symbol = str(getattr(args, "asset", "") or getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
+    signals_path = Path(getattr(args, "signals_path", VALIDATED_WHITELIST_PAPER_SIGNALS_PATH))
+    output_path = getattr(args, "sweep_output_path", None)
     windows = [7, 14, 30, 60, 90]
 
     rows: list[dict[str, Any]] = []
     for recent_days in windows:
-        signals = _load_validated_whitelist_signals(timeframe, [symbol], recent_days=recent_days)
+        signals = _load_validated_whitelist_signals(timeframe, [symbol], recent_days=recent_days, signals_path=signals_path)
         if signals.empty:
             rows.append(
                 {
@@ -281,7 +289,7 @@ def run_validated_whitelist_recent_sweep(args: Any) -> ValidatedWhitelistRecentS
     if sweep.empty:
         raise ValueError(f"No recent sweep rows could be evaluated for {symbol} {timeframe}")
 
-    csv_path = Path("logs") / f"v4_{symbol}_recent_sweep.csv"
+    csv_path = Path(output_path) if output_path is not None else Path("logs") / f"v4_{symbol}_recent_sweep.csv"
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     sweep.to_csv(csv_path, index=False)
 
@@ -307,10 +315,7 @@ def _finite_metric(row: pd.Series, column: str) -> float:
     return float(value)
 
 
-def run_paper_readiness(args: Any) -> PaperReadinessResult:
-    """Evaluate go/no-go paper readiness using recent sweep metrics."""
-    sweep_result = run_validated_whitelist_recent_sweep(args)
-    sweep = sweep_result.sweep_df
+def _evaluate_readiness(symbol: str, timeframe: str, sweep: pd.DataFrame) -> tuple[str, list[str], dict[str, Any]]:
     row_7 = _window_row(sweep, 7)
     row_14 = _window_row(sweep, 14)
     row_30 = _window_row(sweep, 30)
@@ -336,10 +341,94 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
     if not trade_count_30 >= 50:
         failed.append(f"30d trade count >= 50 failed: {trade_count_30}")
 
+    metrics = {
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "decision": "GO" if not failed else "NO-GO",
+        "failed_conditions": "; ".join(failed) if failed else "",
+        "return_7d_pct": return_7,
+        "return_14d_pct": return_14,
+        "return_30d_pct": return_30,
+        "profit_factor_30d": profit_factor_30,
+        "max_drawdown_30d_pct": drawdown_30,
+        "trade_count_30d": trade_count_30,
+    }
+    return str(metrics["decision"]), failed, metrics
+
+
+def _load_top_validated_symbols(timeframe: str, count: int) -> list[str]:
+    path = Path("models/asset_rankings_validated.csv")
+    _require_file(path, "validated asset rankings")
+    rankings = pd.read_csv(path)
+    required = ["symbol", "timeframe"]
+    missing = [column for column in required if column not in rankings.columns]
+    if missing:
+        raise ValueError(f"Missing validated ranking columns: {missing}")
+
+    rankings["symbol"] = rankings["symbol"].astype(str).str.upper()
+    rankings["timeframe"] = rankings["timeframe"].astype(str)
+    rankings = rankings.loc[rankings["timeframe"].eq(str(timeframe))].copy()
+    if rankings.empty:
+        raise ValueError(f"No validated rankings found for timeframe {timeframe}")
+    if "rank" in rankings.columns:
+        rankings["rank"] = pd.to_numeric(rankings["rank"], errors="coerce")
+        rankings = rankings.sort_values(["rank", "symbol"])
+    elif "validated_score" in rankings.columns:
+        rankings["validated_score"] = pd.to_numeric(rankings["validated_score"], errors="coerce")
+        rankings = rankings.sort_values("validated_score", ascending=False)
+    return rankings["symbol"].head(count).tolist()
+
+
+def run_paper_readiness(args: Any) -> PaperReadinessResult:
+    """Evaluate go/no-go paper readiness using recent sweep metrics."""
+    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    top_validated = int(getattr(args, "top_validated", 0) or 0)
+    if top_validated > 0:
+        symbols = _load_top_validated_symbols(timeframe, top_validated)
+        readiness_rows: list[dict[str, Any]] = []
+        sweep_rows: list[pd.DataFrame] = []
+        for symbol in symbols:
+            sweep_args = type(
+                "Args",
+                (),
+                {
+                    "asset": symbol,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "capital": float(getattr(args, "capital", 100000.0)),
+                    "signals_path": SMC_MODEL_PAPER_SIGNALS_PATH,
+                    "sweep_output_path": None,
+                },
+            )()
+            sweep_result = run_validated_whitelist_recent_sweep(sweep_args)
+            _, _, metrics = _evaluate_readiness(symbol, timeframe, sweep_result.sweep_df)
+            readiness_rows.append(metrics)
+            sweep_rows.append(sweep_result.sweep_df)
+
+        readiness = pd.DataFrame(readiness_rows)
+        sweep = pd.concat(sweep_rows, ignore_index=True) if sweep_rows else pd.DataFrame()
+        csv_path = Path("logs") / f"v4_top_validated{top_validated}_paper_readiness.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        readiness.to_csv(csv_path, index=False)
+        failed_assets = readiness.loc[readiness["decision"].ne("GO"), "symbol"].tolist()
+        return PaperReadinessResult(
+            symbol=f"TOP_VALIDATED_{top_validated}",
+            timeframe=timeframe,
+            decision="GO" if not failed_assets else "NO-GO",
+            failed_conditions=[f"{symbol}: NO-GO" for symbol in failed_assets],
+            sweep_csv_path=csv_path,
+            sweep_df=sweep,
+            readiness_df=readiness,
+        )
+
+    sweep_result = run_validated_whitelist_recent_sweep(args)
+    sweep = sweep_result.sweep_df
+    decision, failed, _ = _evaluate_readiness(sweep_result.symbol, sweep_result.timeframe, sweep)
+
     return PaperReadinessResult(
         symbol=sweep_result.symbol,
         timeframe=sweep_result.timeframe,
-        decision="GO" if not failed else "NO-GO",
+        decision=decision,
         failed_conditions=failed,
         sweep_csv_path=sweep_result.csv_path,
         sweep_df=sweep,
