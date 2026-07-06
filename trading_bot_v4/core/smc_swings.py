@@ -26,6 +26,26 @@ STRUCTURE_COLUMNS = [
     "bearish_choch",
     "structure_trend",
 ]
+FVG_COLUMNS = [
+    "bullish_fvg",
+    "bearish_fvg",
+    "fvg_top",
+    "fvg_bottom",
+    "fvg_size",
+    "fvg_midpoint",
+    "fvg_filled",
+    "distance_to_nearest_fvg",
+]
+ORDER_BLOCK_COLUMNS = [
+    "bullish_order_block",
+    "bearish_order_block",
+    "ob_top",
+    "ob_bottom",
+    "ob_midpoint",
+    "ob_size",
+    "ob_mitigated",
+    "distance_to_nearest_ob",
+]
 
 
 @dataclass(frozen=True)
@@ -40,6 +60,16 @@ class SwingValidationSummary:
     total_bearish_choch: int
     current_structure_trend: int
     latest_structure_signal: str
+    total_bullish_fvg: int
+    total_bearish_fvg: int
+    open_fvgs: int
+    filled_fvgs: int
+    nearest_fvg_distance: float | None
+    total_bullish_order_blocks: int
+    total_bearish_order_blocks: int
+    open_order_blocks: int
+    mitigated_order_blocks: int
+    nearest_ob_distance: float | None
 
 
 def calculate_atr(df: pd.DataFrame, period: int | None = None) -> pd.Series:
@@ -187,9 +217,222 @@ def add_structure_features(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def _distance_to_gap(close: float, bottom: float, top: float) -> float:
+    if bottom <= close <= top:
+        return 0.0
+    if close < bottom:
+        return bottom - close
+    return close - top
+
+
+def add_fvg_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add Fair Value Gap labels and open-gap distance features."""
+    missing = [column for column in OHLCV_COLUMNS if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required OHLCV columns: {missing}")
+
+    result = df.copy()
+    for column in ["High", "Low", "Close"]:
+        result[column] = pd.to_numeric(result[column], errors="coerce")
+
+    for column in FVG_COLUMNS:
+        result[column] = 0
+    for column in ["fvg_top", "fvg_bottom", "fvg_size", "fvg_midpoint", "distance_to_nearest_fvg"]:
+        result[column] = pd.NA
+
+    open_gaps: list[dict[str, float | pd.Timestamp | str]] = []
+
+    for position, (index, row) in enumerate(result.iterrows()):
+        high = row["High"]
+        low = row["Low"]
+        close = row["Close"]
+        if pd.isna(high) or pd.isna(low) or pd.isna(close):
+            continue
+
+        still_open = []
+        for gap in open_gaps:
+            direction = gap["direction"]
+            top = float(gap["top"])
+            bottom = float(gap["bottom"])
+            created_at = gap["created_at"]
+
+            filled = (direction == "bullish" and float(low) <= bottom) or (
+                direction == "bearish" and float(high) >= top
+            )
+            if filled:
+                result.loc[created_at, "fvg_filled"] = 1
+            else:
+                still_open.append(gap)
+        open_gaps = still_open
+
+        if position >= 2:
+            high_two_back = result["High"].iloc[position - 2]
+            low_two_back = result["Low"].iloc[position - 2]
+
+            if pd.notna(high_two_back) and float(low) > float(high_two_back):
+                bottom = float(high_two_back)
+                top = float(low)
+                result.loc[index, "bullish_fvg"] = 1
+                result.loc[index, "fvg_top"] = top
+                result.loc[index, "fvg_bottom"] = bottom
+                result.loc[index, "fvg_size"] = top - bottom
+                result.loc[index, "fvg_midpoint"] = (top + bottom) / 2.0
+                open_gaps.append(
+                    {
+                        "direction": "bullish",
+                        "top": top,
+                        "bottom": bottom,
+                        "created_at": index,
+                    }
+                )
+
+            if pd.notna(low_two_back) and float(high) < float(low_two_back):
+                bottom = float(high)
+                top = float(low_two_back)
+                result.loc[index, "bearish_fvg"] = 1
+                result.loc[index, "fvg_top"] = top
+                result.loc[index, "fvg_bottom"] = bottom
+                result.loc[index, "fvg_size"] = top - bottom
+                result.loc[index, "fvg_midpoint"] = (top + bottom) / 2.0
+                open_gaps.append(
+                    {
+                        "direction": "bearish",
+                        "top": top,
+                        "bottom": bottom,
+                        "created_at": index,
+                    }
+                )
+
+        if open_gaps:
+            distances = [
+                _distance_to_gap(float(close), float(gap["bottom"]), float(gap["top"]))
+                for gap in open_gaps
+            ]
+            result.loc[index, "distance_to_nearest_fvg"] = min(distances)
+
+    result["bullish_fvg"] = result["bullish_fvg"].astype(int)
+    result["bearish_fvg"] = result["bearish_fvg"].astype(int)
+    result["fvg_filled"] = result["fvg_filled"].astype(int)
+    return result
+
+
+def add_order_block_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add order block labels created by BOS events and track later mitigation."""
+    required = ["Open", "High", "Low", "Close", "bullish_bos", "bearish_bos"]
+    missing = [column for column in required if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required order block columns: {missing}")
+
+    result = df.copy()
+    for column in ["Open", "High", "Low", "Close"]:
+        result[column] = pd.to_numeric(result[column], errors="coerce")
+
+    for column in ORDER_BLOCK_COLUMNS:
+        result[column] = 0
+    for column in ["ob_top", "ob_bottom", "ob_midpoint", "ob_size", "distance_to_nearest_ob"]:
+        result[column] = pd.NA
+
+    open_order_blocks: list[dict[str, float | pd.Timestamp | str]] = []
+    index_list = list(result.index)
+    used_ob_indexes: set[pd.Timestamp] = set()
+
+    for position, (index, row) in enumerate(result.iterrows()):
+        high = row["High"]
+        low = row["Low"]
+        close = row["Close"]
+        if pd.isna(high) or pd.isna(low) or pd.isna(close):
+            continue
+
+        still_open = []
+        for order_block in open_order_blocks:
+            top = float(order_block["top"])
+            bottom = float(order_block["bottom"])
+            created_at = order_block["created_at"]
+            mitigated = float(low) <= top and float(high) >= bottom
+            if mitigated:
+                result.loc[created_at, "ob_mitigated"] = 1
+            else:
+                still_open.append(order_block)
+        open_order_blocks = still_open
+
+        if row["bullish_bos"] == 1:
+            ob_index = None
+            for candidate_position in range(position - 1, -1, -1):
+                candidate_index = index_list[candidate_position]
+                candidate = result.loc[candidate_index]
+                if candidate_index in used_ob_indexes:
+                    continue
+                if candidate["Close"] < candidate["Open"]:
+                    ob_index = candidate_index
+                    break
+
+            if ob_index is not None:
+                ob_bottom = float(result.loc[ob_index, "Low"])
+                ob_top = float(result.loc[ob_index, "High"])
+                result.loc[ob_index, "bullish_order_block"] = 1
+                result.loc[ob_index, "ob_top"] = ob_top
+                result.loc[ob_index, "ob_bottom"] = ob_bottom
+                result.loc[ob_index, "ob_midpoint"] = (ob_top + ob_bottom) / 2.0
+                result.loc[ob_index, "ob_size"] = ob_top - ob_bottom
+                used_ob_indexes.add(ob_index)
+                open_order_blocks.append(
+                    {
+                        "direction": "bullish",
+                        "top": ob_top,
+                        "bottom": ob_bottom,
+                        "created_at": ob_index,
+                    }
+                )
+
+        if row["bearish_bos"] == 1:
+            ob_index = None
+            for candidate_position in range(position - 1, -1, -1):
+                candidate_index = index_list[candidate_position]
+                candidate = result.loc[candidate_index]
+                if candidate_index in used_ob_indexes:
+                    continue
+                if candidate["Close"] > candidate["Open"]:
+                    ob_index = candidate_index
+                    break
+
+            if ob_index is not None:
+                ob_bottom = float(result.loc[ob_index, "Low"])
+                ob_top = float(result.loc[ob_index, "High"])
+                result.loc[ob_index, "bearish_order_block"] = 1
+                result.loc[ob_index, "ob_top"] = ob_top
+                result.loc[ob_index, "ob_bottom"] = ob_bottom
+                result.loc[ob_index, "ob_midpoint"] = (ob_top + ob_bottom) / 2.0
+                result.loc[ob_index, "ob_size"] = ob_top - ob_bottom
+                used_ob_indexes.add(ob_index)
+                open_order_blocks.append(
+                    {
+                        "direction": "bearish",
+                        "top": ob_top,
+                        "bottom": ob_bottom,
+                        "created_at": ob_index,
+                    }
+                )
+
+        if open_order_blocks:
+            distances = [
+                _distance_to_gap(float(close), float(order_block["bottom"]), float(order_block["top"]))
+                for order_block in open_order_blocks
+            ]
+            result.loc[index, "distance_to_nearest_ob"] = min(distances)
+
+    result["bullish_order_block"] = result["bullish_order_block"].astype(int)
+    result["bearish_order_block"] = result["bearish_order_block"].astype(int)
+    result["ob_mitigated"] = result["ob_mitigated"].astype(int)
+    return result
+
+
 def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
     """Summarize standalone SMC swing labels for CLI validation output."""
-    missing = [column for column in ["swing_high", "swing_low", *STRUCTURE_COLUMNS] if column not in df.columns]
+    missing = [
+        column
+        for column in ["swing_high", "swing_low", *STRUCTURE_COLUMNS, *FVG_COLUMNS, *ORDER_BLOCK_COLUMNS]
+        if column not in df.columns
+    ]
     if missing:
         raise ValueError(f"Missing swing feature columns: {missing}")
 
@@ -207,6 +450,12 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
             if latest_row[column] == 1:
                 latest_signal = column
                 break
+    fvg_created = df["bullish_fvg"].eq(1) | df["bearish_fvg"].eq(1)
+    filled_fvgs = df.loc[fvg_created, "fvg_filled"].eq(1)
+    nearest_fvg_distance = df["distance_to_nearest_fvg"].dropna()
+    order_blocks = df["bullish_order_block"].eq(1) | df["bearish_order_block"].eq(1)
+    mitigated_order_blocks = df.loc[order_blocks, "ob_mitigated"].eq(1)
+    nearest_ob_distance = df["distance_to_nearest_ob"].dropna()
 
     return SwingValidationSummary(
         total_swing_highs=int(swing_high.sum()),
@@ -219,6 +468,16 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
         total_bearish_choch=int(df["bearish_choch"].eq(1).sum()),
         current_structure_trend=int(df["structure_trend"].iloc[-1]) if total_rows else 0,
         latest_structure_signal=latest_signal,
+        total_bullish_fvg=int(df["bullish_fvg"].eq(1).sum()),
+        total_bearish_fvg=int(df["bearish_fvg"].eq(1).sum()),
+        open_fvgs=int(fvg_created.sum() - filled_fvgs.sum()),
+        filled_fvgs=int(filled_fvgs.sum()),
+        nearest_fvg_distance=float(nearest_fvg_distance.iloc[-1]) if not nearest_fvg_distance.empty else None,
+        total_bullish_order_blocks=int(df["bullish_order_block"].eq(1).sum()),
+        total_bearish_order_blocks=int(df["bearish_order_block"].eq(1).sum()),
+        open_order_blocks=int(order_blocks.sum() - mitigated_order_blocks.sum()),
+        mitigated_order_blocks=int(mitigated_order_blocks.sum()),
+        nearest_ob_distance=float(nearest_ob_distance.iloc[-1]) if not nearest_ob_distance.empty else None,
     )
 
 
@@ -277,6 +536,8 @@ def analyze_gmx_smc_swings(
         min_swing_distance_atr=min_swing_distance_atr,
     )
     features = add_structure_features(features)
+    features = add_order_block_features(features)
+    features = add_fvg_features(features)
     validation = summarize_swing_features(features)
 
     output = Path(output_path or f"v4_smc_features_{normalized_symbol}_{timeframe}.csv")

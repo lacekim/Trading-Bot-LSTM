@@ -83,6 +83,22 @@ def main():
         print(f"total bearish CHOCH: {validation.total_bearish_choch}")
         print(f"current structure_trend: {validation.current_structure_trend}")
         print(f"latest BOS/CHOCH signal: {validation.latest_structure_signal}")
+        print(f"total bullish FVG: {validation.total_bullish_fvg}")
+        print(f"total bearish FVG: {validation.total_bearish_fvg}")
+        print(f"open FVGs: {validation.open_fvgs}")
+        print(f"filled FVGs: {validation.filled_fvgs}")
+        nearest_fvg_distance = "none"
+        if validation.nearest_fvg_distance is not None:
+            nearest_fvg_distance = f"{validation.nearest_fvg_distance:.10f}"
+        print(f"nearest FVG distance: {nearest_fvg_distance}")
+        print(f"total bullish order blocks: {validation.total_bullish_order_blocks}")
+        print(f"total bearish order blocks: {validation.total_bearish_order_blocks}")
+        print(f"open order blocks: {validation.open_order_blocks}")
+        print(f"mitigated order blocks: {validation.mitigated_order_blocks}")
+        nearest_ob_distance = "none"
+        if validation.nearest_ob_distance is not None:
+            nearest_ob_distance = f"{validation.nearest_ob_distance:.10f}"
+        print(f"nearest OB distance: {nearest_ob_distance}")
         return 0
 
     print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --compare-original, --analyze-smc, or --refresh.")
