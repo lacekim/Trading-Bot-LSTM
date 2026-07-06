@@ -40,6 +40,14 @@ class ValidatedWhitelistPerformanceResult:
     end_date: str
 
 
+@dataclass(frozen=True)
+class ValidatedWhitelistRecentSweepResult:
+    symbol: str
+    timeframe: str
+    csv_path: Path
+    sweep_df: pd.DataFrame
+
+
 def _load_validated_whitelist_signals(timeframe: str, assets: list[str], recent_days: int = 0) -> pd.DataFrame:
     _require_file(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH, "validated whitelist paper signals")
     signals = pd.read_csv(VALIDATED_WHITELIST_PAPER_SIGNALS_PATH)
@@ -211,4 +219,65 @@ def run_validated_whitelist_performance(args: Any) -> ValidatedWhitelistPerforma
         report_df=report,
         start_date=start_date,
         end_date=end_date,
+    )
+
+
+def run_validated_whitelist_recent_sweep(args: Any) -> ValidatedWhitelistRecentSweepResult:
+    """Run recent-window constrained paper performance for one asset."""
+    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    starting_capital = float(getattr(args, "capital", 100000.0))
+    symbol = str(getattr(args, "asset", "") or getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
+    windows = [7, 14, 30, 60, 90]
+
+    rows: list[dict[str, Any]] = []
+    for recent_days in windows:
+        signals = _load_validated_whitelist_signals(timeframe, [symbol], recent_days=recent_days)
+        if signals.empty:
+            rows.append(
+                {
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "recent_days": recent_days,
+                    "start_date": "",
+                    "end_date": "",
+                    "return_pct": float("nan"),
+                    "max_drawdown_pct": float("nan"),
+                    "profit_factor": float("nan"),
+                    "win_rate_pct": float("nan"),
+                    "trade_count": 0,
+                }
+            )
+            continue
+
+        row = _build_symbol_report(symbol, timeframe, signals, starting_capital)
+        if row is None:
+            continue
+        rows.append(
+            {
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "recent_days": recent_days,
+                "start_date": row["start_date"],
+                "end_date": row["end_date"],
+                "return_pct": row["return_pct"],
+                "max_drawdown_pct": row["max_drawdown_pct"],
+                "profit_factor": row["profit_factor"],
+                "win_rate_pct": row["win_rate_pct"],
+                "trade_count": row["trade_count"],
+            }
+        )
+
+    sweep = pd.DataFrame(rows)
+    if sweep.empty:
+        raise ValueError(f"No recent sweep rows could be evaluated for {symbol} {timeframe}")
+
+    csv_path = Path("logs") / f"v4_{symbol}_recent_sweep.csv"
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    sweep.to_csv(csv_path, index=False)
+
+    return ValidatedWhitelistRecentSweepResult(
+        symbol=symbol,
+        timeframe=timeframe,
+        csv_path=csv_path,
+        sweep_df=sweep,
     )

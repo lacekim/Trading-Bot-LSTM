@@ -20,7 +20,10 @@ from trading_bot_v4.execution.paper_model_comparison import run_paper_model_comp
 from trading_bot_v4.execution.paper_model_performance import run_paper_model_performance
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
-from trading_bot_v4.execution.validated_whitelist_performance import run_validated_whitelist_performance
+from trading_bot_v4.execution.validated_whitelist_performance import (
+    run_validated_whitelist_performance,
+    run_validated_whitelist_recent_sweep,
+)
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.utils.logger import build_logger
@@ -76,6 +79,7 @@ def parse_args():
     parser.add_argument("--asset", default="", help="Single GMX asset for supported analysis commands")
     parser.add_argument("--timeframe", default=V4Config.TIMEFRAME, help="GMX data timeframe")
     parser.add_argument("--recent-days", type=int, default=0, help="Limit supported analysis commands to the most recent N days")
+    parser.add_argument("--recent-sweep", action="store_true", help="Run supported analysis commands over recent day windows")
     parser.add_argument("--capital", type=float, default=100000.0, help="Starting capital for backtest")
     parser.add_argument("--all-assets", action="store_true", help="Backtest every GMX asset")
     return parser.parse_args()
@@ -222,6 +226,23 @@ def main():
             print(summary_df[display_columns].to_string(index=False))
         return 0
     if args.validated_whitelist_performance:
+        if args.recent_sweep:
+            result = run_validated_whitelist_recent_sweep(args)
+            print("live trading: disabled")
+            print("validated whitelist recent sweep only: no live orders submitted")
+            print(f"symbol: {result.symbol}")
+            print(f"timeframe: {result.timeframe}")
+            print(f"sweep CSV: {result.csv_path}")
+            display_columns = [
+                "recent_days",
+                "return_pct",
+                "max_drawdown_pct",
+                "profit_factor",
+                "win_rate_pct",
+                "trade_count",
+            ]
+            print(result.sweep_df[display_columns].to_string(index=False))
+            return 0
         result = run_validated_whitelist_performance(args)
         report_df = result.report_df
         print("live trading: disabled")
