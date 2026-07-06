@@ -68,7 +68,7 @@ def main():
         run_v4_compare_original(args)
         return 0
     if args.analyze_smc:
-        output_path, summary_path, validation = analyze_gmx_smc_swings(
+        output_path, summary_path, diagnostics, validation = analyze_gmx_smc_swings(
             args.symbol,
             args.timeframe,
             swing_window=args.swing_window,
@@ -76,6 +76,7 @@ def main():
         )
         print(f"V4 SMC swing features saved to {output_path}")
         print(f"V4 SMC summary saved to {summary_path}")
+        print(f"V4 SMC feature diagnostics saved to {diagnostics.output_path}")
         print(f"total swing highs: {validation.total_swing_highs}")
         print(f"total swing lows: {validation.total_swing_lows}")
         print(f"total bullish BOS: {validation.total_bullish_bos}")
@@ -112,6 +113,14 @@ def main():
         print(f"ranging candles count: {validation.ranging_candles_count}")
         print(f"high volatility count: {validation.high_volatility_count}")
         print(f"low volatility count: {validation.low_volatility_count}")
+        print("top 10 SMC feature correlations by absolute value:")
+        for rank, row in enumerate(diagnostics.top_correlations, start=1):
+            print(
+                f"{rank}. {row['feature']} "
+                f"(next {row['future_return_horizon']}): "
+                f"corr={row['correlation']:.6f}, "
+                f"abs={row['abs_correlation']:.6f}"
+            )
         return 0
 
     print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --compare-original, --analyze-smc, or --refresh.")

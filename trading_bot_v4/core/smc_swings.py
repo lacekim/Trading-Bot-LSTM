@@ -104,6 +104,12 @@ class SwingValidationSummary:
     low_volatility_count: int
 
 
+@dataclass(frozen=True)
+class SmcDiagnosticResult:
+    output_path: Path
+    top_correlations: list[dict[str, float | int | str]]
+
+
 def calculate_atr(df: pd.DataFrame, period: int | None = None) -> pd.Series:
     """Calculate ATR locally so standalone SMC analysis does not touch the live pipeline."""
     atr_period = period or Config.ATR_PERIOD
@@ -736,14 +742,62 @@ def build_smc_summary_text(
     )
 
 
+def build_smc_feature_diagnostics(
+    features: pd.DataFrame,
+    output_path: str | Path,
+    horizons: tuple[int, ...] = (1, 3, 6, 12),
+) -> SmcDiagnosticResult:
+    """Compare standalone SMC features against future candle returns."""
+    missing = [column for column in ["Close", *SMC_FEATURE_COLUMNS] if column not in features.columns]
+    if missing:
+        raise ValueError(f"Missing columns for SMC diagnostics: {missing}")
+
+    diagnostic_rows = []
+    close = pd.to_numeric(features["Close"], errors="coerce")
+
+    for horizon in horizons:
+        future_return = close.shift(-horizon) / close - 1.0
+        for feature_name in SMC_FEATURE_COLUMNS:
+            feature = pd.to_numeric(features[feature_name], errors="coerce")
+            pair = pd.concat([feature, future_return], axis=1).dropna()
+            pair.columns = ["feature", "future_return"]
+
+            correlation = pd.NA
+            if len(pair) >= 2 and pair["feature"].nunique() > 1 and pair["future_return"].nunique() > 1:
+                correlation = pair["feature"].corr(pair["future_return"])
+
+            diagnostic_rows.append(
+                {
+                    "feature": feature_name,
+                    "future_return_horizon": horizon,
+                    "correlation": correlation,
+                    "abs_correlation": abs(correlation) if pd.notna(correlation) else pd.NA,
+                    "non_null_rows": int(len(pair)),
+                    "feature_mean": float(pair["feature"].mean()) if len(pair) else pd.NA,
+                    "future_return_mean": float(pair["future_return"].mean()) if len(pair) else pd.NA,
+                }
+            )
+
+    diagnostics = pd.DataFrame(diagnostic_rows)
+    output = Path(output_path)
+    diagnostics.to_csv(output, index=False, float_format="%.10f")
+    top = (
+        diagnostics.dropna(subset=["abs_correlation"])
+        .sort_values("abs_correlation", ascending=False)
+        .head(10)
+    )
+    return SmcDiagnosticResult(output_path=output, top_correlations=top.to_dict("records"))
+
+
 def analyze_gmx_smc_swings(
     symbol: str,
     timeframe: str,
     output_path: str | Path | None = None,
     summary_output_path: str | Path | None = None,
+    diagnostics_output_path: str | Path | None = None,
     swing_window: int | None = None,
     min_swing_distance_atr: float | None = None,
-) -> tuple[Path, Path, SwingValidationSummary]:
+) -> tuple[Path, Path, SmcDiagnosticResult, SwingValidationSummary]:
     """Generate the first V4 SMC feature file for a GMX symbol/timeframe."""
     normalized_symbol = symbol.upper()
     df = load_gmx_ohlcv(normalized_symbol, timeframe)
@@ -772,4 +826,8 @@ def analyze_gmx_smc_swings(
         ),
         encoding="utf-8",
     )
-    return output, summary_output, validation
+    diagnostics = build_smc_feature_diagnostics(
+        features,
+        diagnostics_output_path or f"v4_smc_feature_diagnostics_{normalized_symbol}_{timeframe}.csv",
+    )
+    return output, summary_output, diagnostics, validation
