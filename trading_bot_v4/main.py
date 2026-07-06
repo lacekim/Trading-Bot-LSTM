@@ -11,7 +11,7 @@ from trading_bot_v4.ml.predictor import predict_with_v4_model
 from trading_bot_v4.backtesting.backtest_engine import run_v4_backtest
 from trading_bot_v4.backtesting.comparison_engine import run_v4_compare_original
 from trading_bot_v4.backtesting.ranking_engine import run_v4_backtest_ranking
-from trading_bot_v4.backtesting.asset_selection_engine import run_asset_ranking
+from trading_bot_v4.backtesting.asset_selection_engine import run_asset_ranking, validate_asset_rankings
 from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backtest
 from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
 from trading_bot_v4.backtesting.model_comparison import run_model_comparison
@@ -53,6 +53,7 @@ def parse_args():
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
     parser.add_argument("--rank-assets", action="store_true", help="Rank GMX assets for analysis-only V4 asset selection")
+    parser.add_argument("--validate-asset-rankings", action="store_true", help="Validate asset rankings against constrained paper performance")
     parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
     parser.add_argument("--debug", action="store_true", help="Write debug output for supported analysis commands")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
@@ -381,6 +382,52 @@ def main():
         print(", ".join(result.suggested_live_whitelist) if result.suggested_live_whitelist else "none")
         print("Suggested blacklist")
         print(", ".join(result.suggested_blacklist) if result.suggested_blacklist else "none")
+        return 0
+    if args.validate_asset_rankings:
+        result = validate_asset_rankings(args)
+        print(f"asset rankings: {result.rankings_path}")
+        print(f"constrained performance: {result.performance_path}")
+        print(f"correlation ranking_score vs constrained SMC return: {format_optional_metric(result.ranking_return_correlation)}")
+        top_ranked_columns = [
+            "rank",
+            "symbol",
+            "ranking_score",
+            "smc_return_pct",
+            "original_return_pct",
+            "return_difference_pct",
+            "smc_profit_factor",
+            "smc_max_drawdown_pct",
+            "walk_forward_stability",
+        ]
+        print("Top 20 ranked assets with constrained SMC return")
+        print(result.top_ranked_with_performance[top_ranked_columns].to_string(index=False))
+        top_performer_columns = [
+            "symbol",
+            "smc_return_pct",
+            "rank",
+            "ranking_score",
+            "original_return_pct",
+            "return_difference_pct",
+            "smc_profit_factor",
+            "smc_max_drawdown_pct",
+        ]
+        print("Top 20 constrained performers with ranking score")
+        print(result.top_performers_with_rank[top_performer_columns].to_string(index=False))
+        print("Why AIXBT, DYDX, and PENGU are not in the suggested whitelist")
+        print(result.whitelist_diagnostics.to_string(index=False))
+        print("Why TRX ranks #1 despite poor constrained SMC return")
+        print(result.trx_diagnostics.to_string(index=False))
+        print("Component correlation audit")
+        print(result.component_correlations.to_string(index=False))
+        print("Recommended revised scoring weights")
+        for component, weight in result.recommended_weights.items():
+            print(f"{component}: {weight:.3f}")
+        print(
+            "audit conclusion: current ranking underweights realized constrained performance because "
+            "constrained SMC return is not in the score; it only indirectly uses constrained profit "
+            "factor and trade frequency. Promote constrained return/drawdown/profit factor and reduce "
+            "trend/liquidity/confidence weights before using this as a live whitelist."
+        )
         return 0
     if args.compare_original:
         run_v4_compare_original(args)

@@ -35,6 +35,20 @@ class AssetRankingResult:
     suggested_blacklist: list[str]
 
 
+@dataclass(frozen=True)
+class AssetRankingValidationResult:
+    rankings_path: Path
+    performance_path: Path
+    merged: pd.DataFrame
+    top_ranked_with_performance: pd.DataFrame
+    top_performers_with_rank: pd.DataFrame
+    ranking_return_correlation: float
+    component_correlations: pd.DataFrame
+    whitelist_diagnostics: pd.DataFrame
+    trx_diagnostics: pd.DataFrame
+    recommended_weights: dict[str, float]
+
+
 def _clean_numeric(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series, errors="coerce").replace([np.inf, -np.inf], np.nan)
 
@@ -278,6 +292,200 @@ def _add_ranking_scores(rankings: pd.DataFrame) -> pd.DataFrame:
     return result.sort_values("ranking_score", ascending=False).reset_index(drop=True)
 
 
+def _whitelist_condition_frame(rankings: pd.DataFrame) -> pd.DataFrame:
+    result = pd.DataFrame(index=rankings.index)
+    result["score_at_least_60"] = _clean_numeric(rankings["ranking_score"]) >= 60.0
+    result["drawdown_at_least_minus_50"] = _clean_numeric(rankings["max_drawdown_pct"]) >= -50.0
+    result["profit_factor_at_least_0_7"] = _clean_numeric(rankings["profit_factor"]) >= 0.7
+    result["walk_forward_stability_at_least_50"] = _clean_numeric(rankings["walk_forward_stability"]) >= 50.0
+    result["passes_whitelist"] = result.all(axis=1)
+    return result
+
+
+def _current_weight_table() -> dict[str, float]:
+    return {
+        "historical_return_score": 0.10,
+        "sharpe_score": 0.08,
+        "sortino_score": 0.08,
+        "calmar_score": 0.08,
+        "profit_factor_score": 0.10,
+        "drawdown_score": 0.10,
+        "trade_frequency_score": 0.06,
+        "volatility_score": 0.05,
+        "atr_score": 0.04,
+        "trend_strength_score": 0.07,
+        "liquidity_score": 0.06,
+        "smc_component_score": 0.08,
+        "confidence_score": 0.05,
+        "walk_forward_stability_score": 0.05,
+    }
+
+
+def _recommended_weight_table() -> dict[str, float]:
+    return {
+        "constrained_smc_return_score": 0.24,
+        "constrained_smc_profit_factor_score": 0.14,
+        "constrained_smc_drawdown_score": 0.12,
+        "walk_forward_stability_score": 0.12,
+        "historical_return_score": 0.08,
+        "sharpe_score": 0.06,
+        "sortino_score": 0.06,
+        "calmar_score": 0.05,
+        "smc_component_score": 0.05,
+        "confidence_score": 0.03,
+        "trend_strength_score": 0.02,
+        "liquidity_score": 0.01,
+        "trade_frequency_score": 0.01,
+        "volatility_score": 0.005,
+        "atr_score": 0.005,
+    }
+
+
+def _load_required_csv(path: Path, description: str) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"{description} not found: {path}")
+    frame = pd.read_csv(path)
+    if frame.empty:
+        raise ValueError(f"{description} is empty: {path}")
+    frame["symbol"] = frame["symbol"].astype(str).str.upper()
+    return frame
+
+
+def _component_correlations(merged: pd.DataFrame) -> pd.DataFrame:
+    target = _clean_numeric(merged["smc_return_pct"])
+    rows = []
+    for component, weight in _current_weight_table().items():
+        if component not in merged.columns:
+            continue
+        values = _clean_numeric(merged[component])
+        valid = values.notna() & target.notna()
+        correlation = float(values.loc[valid].corr(target.loc[valid])) if valid.sum() > 2 else float("nan")
+        rows.append(
+            {
+                "component": component,
+                "current_weight": weight,
+                "correlation_to_constrained_smc_return": correlation,
+            }
+        )
+    return pd.DataFrame(rows).sort_values("correlation_to_constrained_smc_return", ascending=False, na_position="last")
+
+
+def _whitelist_diagnostics(merged: pd.DataFrame, symbols: list[str]) -> pd.DataFrame:
+    conditions = _whitelist_condition_frame(merged)
+    rows = []
+    for symbol in symbols:
+        matches = merged.loc[merged["symbol"].eq(symbol.upper())]
+        if matches.empty:
+            rows.append({"symbol": symbol.upper(), "reason": "missing from rankings"})
+            continue
+        index = matches.index[0]
+        failed = [column for column in conditions.columns if column != "passes_whitelist" and not bool(conditions.loc[index, column])]
+        row = matches.loc[index]
+        rows.append(
+            {
+                "symbol": symbol.upper(),
+                "rank": int(row.get("rank", 0)),
+                "ranking_score": float(row.get("ranking_score", np.nan)),
+                "smc_return_pct": float(row.get("smc_return_pct", np.nan)),
+                "smc_profit_factor": float(row.get("smc_profit_factor", np.nan)),
+                "max_drawdown_pct": float(row.get("max_drawdown_pct", np.nan)),
+                "walk_forward_stability": float(row.get("walk_forward_stability", np.nan)),
+                "passes_whitelist": bool(conditions.loc[index, "passes_whitelist"]),
+                "failed_conditions": ", ".join(failed) if failed else "none",
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _trx_diagnostics(merged: pd.DataFrame) -> pd.DataFrame:
+    matches = merged.loc[merged["symbol"].eq("TRX")]
+    if matches.empty:
+        return pd.DataFrame([{"symbol": "TRX", "reason": "missing from rankings"}])
+    columns = [
+        "symbol",
+        "rank",
+        "ranking_score",
+        "smc_return_pct",
+        "historical_return_pct",
+        "sharpe_ratio",
+        "sortino_ratio",
+        "calmar_ratio",
+        "smc_profit_factor",
+        "max_drawdown_pct",
+        "trade_frequency_pct",
+        "volatility_pct",
+        "trend_strength",
+        "liquidity",
+        "smc_score",
+        "cnn_lstm_confidence",
+        "walk_forward_stability",
+        "historical_return_score",
+        "sharpe_score",
+        "sortino_score",
+        "calmar_score",
+        "drawdown_score",
+        "trade_frequency_score",
+        "volatility_score",
+        "atr_score",
+        "trend_strength_score",
+        "liquidity_score",
+        "smc_component_score",
+        "confidence_score",
+        "walk_forward_stability_score",
+    ]
+    return matches[[column for column in columns if column in matches.columns]].copy()
+
+
+def validate_asset_rankings(args: Any) -> AssetRankingValidationResult:
+    """Compare saved asset rankings against constrained paper performance."""
+    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    rankings = _load_required_csv(ASSET_RANKINGS_PATH, "Asset rankings")
+    performance = _load_required_csv(PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH, "Constrained paper performance")
+    rankings = rankings.loc[rankings["timeframe"].astype(str).eq(timeframe)].copy()
+    performance = performance.loc[performance["timeframe"].astype(str).eq(timeframe)].copy()
+    if rankings.empty:
+        raise ValueError(f"No asset rankings for timeframe {timeframe}")
+    if performance.empty:
+        raise ValueError(f"No constrained paper performance rows for timeframe {timeframe}")
+
+    merged = rankings.merge(
+        performance[
+            [
+                "symbol",
+                "timeframe",
+                "smc_return_pct",
+                "original_return_pct",
+                "return_difference_pct",
+                "smc_profit_factor",
+                "smc_max_drawdown_pct",
+                "smc_win_rate_pct",
+                "smc_trade_count",
+            ]
+        ],
+        on=["symbol", "timeframe"],
+        how="inner",
+    )
+    if merged.empty:
+        raise ValueError("No overlapping symbols between asset rankings and constrained paper performance")
+
+    correlation = float(_clean_numeric(merged["ranking_score"]).corr(_clean_numeric(merged["smc_return_pct"])))
+    top_ranked = merged.sort_values("rank").head(20).copy()
+    top_performers = merged.sort_values("smc_return_pct", ascending=False).head(20).copy()
+
+    return AssetRankingValidationResult(
+        rankings_path=ASSET_RANKINGS_PATH,
+        performance_path=PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH,
+        merged=merged,
+        top_ranked_with_performance=top_ranked,
+        top_performers_with_rank=top_performers,
+        ranking_return_correlation=correlation,
+        component_correlations=_component_correlations(merged),
+        whitelist_diagnostics=_whitelist_diagnostics(merged, ["AIXBT", "DYDX", "PENGU"]),
+        trx_diagnostics=_trx_diagnostics(merged),
+        recommended_weights=_recommended_weight_table(),
+    )
+
+
 def run_asset_ranking(args: Any) -> AssetRankingResult:
     """Rank all local GMX assets for analysis-only asset selection."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
@@ -318,11 +526,9 @@ def run_asset_ranking(args: Any) -> AssetRankingResult:
 
     top_assets = rankings["symbol"].head(20).astype(str).tolist() if not rankings.empty else []
     worst_assets = rankings["symbol"].tail(20).astype(str).tolist() if not rankings.empty else []
+    conditions = _whitelist_condition_frame(rankings) if not rankings.empty else pd.DataFrame()
     whitelist = rankings.loc[
-        (rankings["ranking_score"] >= 60.0)
-        & (rankings["max_drawdown_pct"] >= -50.0)
-        & (rankings["profit_factor"] >= 0.7)
-        & (rankings["walk_forward_stability"] >= 50.0),
+        conditions["passes_whitelist"],
         "symbol",
     ].head(20).astype(str).tolist() if not rankings.empty else []
 
