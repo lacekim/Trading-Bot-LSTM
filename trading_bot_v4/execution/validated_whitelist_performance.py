@@ -518,6 +518,28 @@ def _load_go_assets_from_readiness(timeframe: str) -> list[str]:
     return selected
 
 
+def _load_profitable_go_assets(timeframe: str) -> list[str]:
+    path = Path("logs/v4_go_assets_performance.csv")
+    _require_file(path, "GO assets performance")
+    performance = pd.read_csv(path)
+    required = ["symbol", "timeframe", "return_pct"]
+    missing = [column for column in required if column not in performance.columns]
+    if missing:
+        raise ValueError(f"Missing GO assets performance columns: {missing}")
+
+    performance["symbol"] = performance["symbol"].astype(str).str.upper()
+    performance["timeframe"] = performance["timeframe"].astype(str)
+    performance["return_pct"] = pd.to_numeric(performance["return_pct"], errors="coerce")
+    selected = performance.loc[
+        performance["timeframe"].eq(str(timeframe))
+        & performance["return_pct"].gt(0),
+        "symbol",
+    ].tolist()
+    if not selected:
+        raise ValueError(f"No profitable GO assets found in {path} for timeframe {timeframe}")
+    return selected
+
+
 def _combined_capital_curve(debug_frames: list[pd.DataFrame], starting_capital_per_asset: float) -> pd.Series:
     curves = []
     for debug in debug_frames:
@@ -627,7 +649,8 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
     """Run constrained paper performance for assets marked GO by top-validated readiness."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
-    selected_assets = _load_go_assets_from_readiness(timeframe)
+    profitable_only = bool(getattr(args, "profitable_only", False))
+    selected_assets = _load_profitable_go_assets(timeframe) if profitable_only else _load_go_assets_from_readiness(timeframe)
     signals = _load_validated_whitelist_signals(timeframe, selected_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
     if signals.empty:
         raise ValueError(f"No SMC model paper signals found for GO assets on {timeframe}")
@@ -663,8 +686,12 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
         combined_drawdown = float(((equity / running_max) - 1.0).min() * 100.0)
     combined_trade_metrics = _combined_trade_metrics(debug_frames, per_asset_capital)
 
-    csv_path = Path("logs/v4_go_assets_performance.csv")
-    html_path = Path("logs/v4_go_assets_performance.html")
+    if profitable_only:
+        csv_path = Path("logs/v4_profitable_go_assets_performance.csv")
+        html_path = Path("logs/v4_profitable_go_assets_performance.html")
+    else:
+        csv_path = Path("logs/v4_go_assets_performance.csv")
+        html_path = Path("logs/v4_go_assets_performance.html")
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     report.to_csv(csv_path, index=False)
     _write_go_assets_html(

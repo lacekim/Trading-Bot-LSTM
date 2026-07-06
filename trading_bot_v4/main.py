@@ -68,6 +68,7 @@ def parse_args():
     parser.add_argument("--test-only", action="store_true", help="Use the final 15 percent of each asset for model comparison")
     parser.add_argument("--debug", action="store_true", help="Write debug output for supported analysis commands")
     parser.add_argument("--strict", action="store_true", help="Use stricter filters for supported analysis commands")
+    parser.add_argument("--profitable-only", action="store_true", help="Use only profitable assets for supported analysis commands")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
