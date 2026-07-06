@@ -110,6 +110,12 @@ class SmcDiagnosticResult:
     top_correlations: list[dict[str, float | int | str]]
 
 
+@dataclass(frozen=True)
+class SmcFeatureRankingResult:
+    output_path: Path
+    top_features: list[dict[str, float | int | str]]
+
+
 def calculate_atr(df: pd.DataFrame, period: int | None = None) -> pd.Series:
     """Calculate ATR locally so standalone SMC analysis does not touch the live pipeline."""
     atr_period = period or Config.ATR_PERIOD
@@ -789,15 +795,117 @@ def build_smc_feature_diagnostics(
     return SmcDiagnosticResult(output_path=output, top_correlations=top.to_dict("records"))
 
 
+def _normalize_score(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce").abs()
+    max_value = numeric.max(skipna=True)
+    if pd.isna(max_value) or max_value == 0:
+        return pd.Series(pd.NA, index=series.index, dtype="Float64")
+    return numeric / max_value
+
+
+def build_smc_feature_ranking(
+    features: pd.DataFrame,
+    output_path: str | Path,
+    horizon: int = 1,
+) -> SmcFeatureRankingResult:
+    """Rank SMC features against next-horizon returns without touching model inputs."""
+    missing = [column for column in ["Close", *SMC_FEATURE_COLUMNS] if column not in features.columns]
+    if missing:
+        raise ValueError(f"Missing columns for SMC feature ranking: {missing}")
+
+    close = pd.to_numeric(features["Close"], errors="coerce")
+    target = close.shift(-horizon) / close - 1.0
+    raw_features = features[SMC_FEATURE_COLUMNS].apply(pd.to_numeric, errors="coerce")
+    dataset = raw_features.copy()
+    dataset["target"] = target
+    dataset = dataset.dropna(subset=["target"])
+    x_raw = dataset[SMC_FEATURE_COLUMNS].replace([float("inf"), float("-inf")], pd.NA)
+    y = pd.to_numeric(dataset["target"], errors="coerce")
+
+    rows = []
+    for feature_name in SMC_FEATURE_COLUMNS:
+        pair = pd.concat([x_raw[feature_name], y], axis=1).dropna()
+        pair.columns = ["feature", "target"]
+        pearson = pd.NA
+        spearman = pd.NA
+        if len(pair) >= 2 and pair["feature"].nunique() > 1 and pair["target"].nunique() > 1:
+            pearson = pair["feature"].corr(pair["target"], method="pearson")
+            spearman = pair["feature"].corr(pair["target"], method="spearman")
+        rows.append(
+            {
+                "feature": feature_name,
+                "Pearson": pearson,
+                "Spearman": spearman,
+                "Mutual Information": pd.NA,
+                "RF importance": pd.NA,
+                "XGBoost importance": pd.NA,
+            }
+        )
+
+    ranking = pd.DataFrame(rows)
+    x_model = x_raw.fillna(x_raw.median()).fillna(0.0).astype(float)
+    y_model = y.astype(float)
+
+    try:
+        from sklearn.ensemble import RandomForestRegressor
+        from sklearn.feature_selection import mutual_info_regression
+
+        mi_scores = mutual_info_regression(x_model, y_model, random_state=42)
+        rf = RandomForestRegressor(n_estimators=250, random_state=42, n_jobs=-1, min_samples_leaf=5)
+        rf.fit(x_model, y_model)
+        ranking["Mutual Information"] = mi_scores
+        ranking["RF importance"] = rf.feature_importances_
+    except ImportError:
+        pass
+
+    try:
+        from xgboost import XGBRegressor
+
+        xgb = XGBRegressor(
+            n_estimators=250,
+            max_depth=3,
+            learning_rate=0.05,
+            subsample=0.9,
+            colsample_bytree=0.9,
+            objective="reg:squarederror",
+            random_state=42,
+            n_jobs=-1,
+        )
+        xgb.fit(x_model, y_model)
+        ranking["XGBoost importance"] = xgb.feature_importances_
+    except ImportError:
+        pass
+
+    score_columns = [
+        "Pearson",
+        "Spearman",
+        "Mutual Information",
+        "RF importance",
+        "XGBoost importance",
+    ]
+    normalized_scores = pd.concat(
+        [_normalize_score(ranking[column]) for column in score_columns],
+        axis=1,
+    )
+    ranking["combined_score"] = normalized_scores.mean(axis=1, skipna=True)
+    ranking = ranking.sort_values("combined_score", ascending=False, na_position="last").reset_index(drop=True)
+    ranking["ranking"] = range(1, len(ranking) + 1)
+
+    output = Path(output_path)
+    ranking.to_csv(output, index=False, float_format="%.10f")
+    return SmcFeatureRankingResult(output_path=output, top_features=ranking.head(20).to_dict("records"))
+
+
 def analyze_gmx_smc_swings(
     symbol: str,
     timeframe: str,
     output_path: str | Path | None = None,
     summary_output_path: str | Path | None = None,
     diagnostics_output_path: str | Path | None = None,
+    ranking_output_path: str | Path | None = None,
     swing_window: int | None = None,
     min_swing_distance_atr: float | None = None,
-) -> tuple[Path, Path, SmcDiagnosticResult, SwingValidationSummary]:
+) -> tuple[Path, Path, SmcDiagnosticResult, SmcFeatureRankingResult, SwingValidationSummary]:
     """Generate the first V4 SMC feature file for a GMX symbol/timeframe."""
     normalized_symbol = symbol.upper()
     df = load_gmx_ohlcv(normalized_symbol, timeframe)
@@ -830,4 +938,8 @@ def analyze_gmx_smc_swings(
         features,
         diagnostics_output_path or f"v4_smc_feature_diagnostics_{normalized_symbol}_{timeframe}.csv",
     )
-    return output, summary_output, diagnostics, validation
+    ranking = build_smc_feature_ranking(
+        features,
+        ranking_output_path or "v4_smc_feature_ranking.csv",
+    )
+    return output, summary_output, diagnostics, ranking, validation

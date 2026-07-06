@@ -17,6 +17,16 @@ from trading_bot_v4.utils.logger import build_logger
 logger = build_logger("v4_main")
 
 
+def format_optional_metric(value):
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return "none"
+    if numeric != numeric:
+        return "none"
+    return f"{numeric:.6f}"
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Modular V4 trading bot")
     parser.add_argument("--train", action="store_true", help="Train the original CNN/LSTM model via V4 modules")
@@ -68,7 +78,7 @@ def main():
         run_v4_compare_original(args)
         return 0
     if args.analyze_smc:
-        output_path, summary_path, diagnostics, validation = analyze_gmx_smc_swings(
+        output_path, summary_path, diagnostics, ranking, validation = analyze_gmx_smc_swings(
             args.symbol,
             args.timeframe,
             swing_window=args.swing_window,
@@ -77,6 +87,7 @@ def main():
         print(f"V4 SMC swing features saved to {output_path}")
         print(f"V4 SMC summary saved to {summary_path}")
         print(f"V4 SMC feature diagnostics saved to {diagnostics.output_path}")
+        print(f"V4 SMC feature ranking saved to {ranking.output_path}")
         print(f"total swing highs: {validation.total_swing_highs}")
         print(f"total swing lows: {validation.total_swing_lows}")
         print(f"total bullish BOS: {validation.total_bullish_bos}")
@@ -120,6 +131,17 @@ def main():
                 f"(next {row['future_return_horizon']}): "
                 f"corr={row['correlation']:.6f}, "
                 f"abs={row['abs_correlation']:.6f}"
+            )
+        print("top 20 SMC features by combined ranking score:")
+        for row in ranking.top_features:
+            print(
+                f"{row['ranking']}. {row['feature']}: "
+                f"score={format_optional_metric(row['combined_score'])}, "
+                f"Pearson={format_optional_metric(row['Pearson'])}, "
+                f"Spearman={format_optional_metric(row['Spearman'])}, "
+                f"MI={format_optional_metric(row['Mutual Information'])}, "
+                f"RF={format_optional_metric(row['RF importance'])}, "
+                f"XGB={format_optional_metric(row['XGBoost importance'])}"
             )
         return 0
 
