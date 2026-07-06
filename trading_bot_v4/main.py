@@ -99,6 +99,13 @@ def main():
         if validation.nearest_ob_distance is not None:
             nearest_ob_distance = f"{validation.nearest_ob_distance:.10f}"
         print(f"nearest OB distance: {nearest_ob_distance}")
+        print(f"total bullish liquidity sweeps: {validation.total_bullish_liquidity_sweeps}")
+        print(f"total bearish liquidity sweeps: {validation.total_bearish_liquidity_sweeps}")
+        print(f"latest liquidity sweep type: {validation.latest_liquidity_sweep_type}")
+        bars_since_sweep = "none"
+        if validation.bars_since_latest_liquidity_sweep is not None:
+            bars_since_sweep = str(validation.bars_since_latest_liquidity_sweep)
+        print(f"bars since latest liquidity sweep: {bars_since_sweep}")
         return 0
 
     print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --compare-original, --analyze-smc, or --refresh.")

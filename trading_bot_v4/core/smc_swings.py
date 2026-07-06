@@ -46,6 +46,14 @@ ORDER_BLOCK_COLUMNS = [
     "ob_mitigated",
     "distance_to_nearest_ob",
 ]
+LIQUIDITY_SWEEP_COLUMNS = [
+    "bullish_liquidity_sweep",
+    "bearish_liquidity_sweep",
+    "swept_swing_high",
+    "swept_swing_low",
+    "sweep_distance",
+    "bars_since_liquidity_sweep",
+]
 
 
 @dataclass(frozen=True)
@@ -70,6 +78,10 @@ class SwingValidationSummary:
     open_order_blocks: int
     mitigated_order_blocks: int
     nearest_ob_distance: float | None
+    total_bullish_liquidity_sweeps: int
+    total_bearish_liquidity_sweeps: int
+    latest_liquidity_sweep_type: str
+    bars_since_latest_liquidity_sweep: int | None
 
 
 def calculate_atr(df: pd.DataFrame, period: int | None = None) -> pd.Series:
@@ -426,11 +438,72 @@ def add_order_block_features(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def add_liquidity_sweep_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add liquidity sweep labels from prior confirmed swing highs/lows."""
+    required = ["High", "Low", "Close", "last_swing_high", "last_swing_low"]
+    missing = [column for column in required if column not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required liquidity sweep columns: {missing}")
+
+    result = df.copy()
+    for column in required:
+        result[column] = pd.to_numeric(result[column], errors="coerce")
+
+    for column in LIQUIDITY_SWEEP_COLUMNS:
+        result[column] = 0
+    for column in ["swept_swing_high", "swept_swing_low", "sweep_distance"]:
+        result[column] = pd.NA
+
+    prior_swing_high = result["last_swing_high"].shift(1)
+    prior_swing_low = result["last_swing_low"].shift(1)
+    latest_sweep_position: int | None = None
+
+    for position, (index, row) in enumerate(result.iterrows()):
+        high = row["High"]
+        low = row["Low"]
+        close = row["Close"]
+
+        high_level = prior_swing_high.loc[index]
+        low_level = prior_swing_low.loc[index]
+
+        bearish_sweep = pd.notna(high_level) and pd.notna(high) and pd.notna(close)
+        bearish_sweep = bearish_sweep and float(high) > float(high_level) and float(close) < float(high_level)
+        bullish_sweep = pd.notna(low_level) and pd.notna(low) and pd.notna(close)
+        bullish_sweep = bullish_sweep and float(low) < float(low_level) and float(close) > float(low_level)
+
+        if bearish_sweep:
+            result.loc[index, "bearish_liquidity_sweep"] = 1
+            result.loc[index, "swept_swing_high"] = float(high_level)
+            result.loc[index, "sweep_distance"] = float(high) - float(high_level)
+            latest_sweep_position = position
+
+        if bullish_sweep:
+            result.loc[index, "bullish_liquidity_sweep"] = 1
+            result.loc[index, "swept_swing_low"] = float(low_level)
+            result.loc[index, "sweep_distance"] = float(low_level) - float(low)
+            latest_sweep_position = position
+
+        if latest_sweep_position is not None:
+            result.loc[index, "bars_since_liquidity_sweep"] = position - latest_sweep_position
+
+    result["bullish_liquidity_sweep"] = result["bullish_liquidity_sweep"].astype(int)
+    result["bearish_liquidity_sweep"] = result["bearish_liquidity_sweep"].astype(int)
+    result["bars_since_liquidity_sweep"] = result["bars_since_liquidity_sweep"].astype(int)
+    return result
+
+
 def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
     """Summarize standalone SMC swing labels for CLI validation output."""
     missing = [
         column
-        for column in ["swing_high", "swing_low", *STRUCTURE_COLUMNS, *FVG_COLUMNS, *ORDER_BLOCK_COLUMNS]
+        for column in [
+            "swing_high",
+            "swing_low",
+            *STRUCTURE_COLUMNS,
+            *FVG_COLUMNS,
+            *ORDER_BLOCK_COLUMNS,
+            *LIQUIDITY_SWEEP_COLUMNS,
+        ]
         if column not in df.columns
     ]
     if missing:
@@ -456,6 +529,17 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
     order_blocks = df["bullish_order_block"].eq(1) | df["bearish_order_block"].eq(1)
     mitigated_order_blocks = df.loc[order_blocks, "ob_mitigated"].eq(1)
     nearest_ob_distance = df["distance_to_nearest_ob"].dropna()
+    liquidity_sweeps = df["bullish_liquidity_sweep"].eq(1) | df["bearish_liquidity_sweep"].eq(1)
+    latest_liquidity_sweep_type = "none"
+    bars_since_latest_liquidity_sweep = None
+    if liquidity_sweeps.any():
+        latest_sweep_row = df.loc[liquidity_sweeps].iloc[-1]
+        if latest_sweep_row["bullish_liquidity_sweep"] == 1:
+            latest_liquidity_sweep_type = "bullish"
+        elif latest_sweep_row["bearish_liquidity_sweep"] == 1:
+            latest_liquidity_sweep_type = "bearish"
+        latest_bars_since = df["bars_since_liquidity_sweep"].iloc[-1]
+        bars_since_latest_liquidity_sweep = int(latest_bars_since)
 
     return SwingValidationSummary(
         total_swing_highs=int(swing_high.sum()),
@@ -478,6 +562,10 @@ def summarize_swing_features(df: pd.DataFrame) -> SwingValidationSummary:
         open_order_blocks=int(order_blocks.sum() - mitigated_order_blocks.sum()),
         mitigated_order_blocks=int(mitigated_order_blocks.sum()),
         nearest_ob_distance=float(nearest_ob_distance.iloc[-1]) if not nearest_ob_distance.empty else None,
+        total_bullish_liquidity_sweeps=int(df["bullish_liquidity_sweep"].eq(1).sum()),
+        total_bearish_liquidity_sweeps=int(df["bearish_liquidity_sweep"].eq(1).sum()),
+        latest_liquidity_sweep_type=latest_liquidity_sweep_type,
+        bars_since_latest_liquidity_sweep=bars_since_latest_liquidity_sweep,
     )
 
 
@@ -536,6 +624,7 @@ def analyze_gmx_smc_swings(
         min_swing_distance_atr=min_swing_distance_atr,
     )
     features = add_structure_features(features)
+    features = add_liquidity_sweep_features(features)
     features = add_order_block_features(features)
     features = add_fvg_features(features)
     validation = summarize_swing_features(features)
