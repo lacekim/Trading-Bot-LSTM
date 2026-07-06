@@ -18,12 +18,26 @@ from trading_bot_v4.utils.logger import build_logger
 logger = build_logger("v4_data_handler")
 
 
+def build_legacy_data_handler(scaler_path: str | None = None, scaler: Any | None = None):
+    """Create a legacy trading_bot.DataHandler while honoring a v4 cached scaler."""
+    from trading_bot import DataHandler as TradingBotDataHandler
+
+    if scaler is None:
+        return TradingBotDataHandler(scaler_path=scaler_path or "")
+
+    legacy_handler = TradingBotDataHandler.__new__(TradingBotDataHandler)
+    legacy_handler.scaler = scaler
+    return legacy_handler
+
+
 class V4DataHandler(TrainingDataHandler):
     """Compatibility wrapper around the original training DataHandler logic."""
 
-    def __init__(self, scaler_path: str | None = None, logger_obj: Any | None = None):
+    def __init__(self, scaler_path: str | None = None, scaler: Any | None = None, logger_obj: Any | None = None):
         super().__init__()
         self.scaler_path = scaler_path
+        if scaler is not None:
+            self.scaler = scaler
         self.logger = logger_obj or logger
 
     def ensure_atr(self, df: pd.DataFrame, period: int = None) -> pd.DataFrame:
@@ -34,8 +48,16 @@ class V4DataHandler(TrainingDataHandler):
         return df
 
     def prepare_features(self, df: pd.DataFrame, prediction_horizon: int = 1):
-        df = self.ensure_atr(df)
-        return super().prepare_features(df, prediction_horizon=prediction_horizon)
+        try:
+            legacy_handler = build_legacy_data_handler(
+                scaler_path=self.scaler_path,
+                scaler=getattr(self, "scaler", None),
+            )
+            return legacy_handler.prepare_features(df.copy())
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            self.logger.warning("Falling back to V4 feature pipeline: %s", exc)
+            df = self.ensure_atr(df)
+            return super().prepare_features(df, prediction_horizon=prediction_horizon)
 
     def refresh_gmx_cache(self, force: bool = False) -> bool:
         """Refresh the local GMX OHLC cache from source before loading CSVs."""
@@ -129,9 +151,10 @@ class V4DataHandler(TrainingDataHandler):
     def merge_sentiment_data(self, df, interval, symbol=None):
         """Best-effort sentiment merge using the original bot logic if available."""
         try:
-            from trading_bot import DataHandler as TradingBotDataHandler
-
-            legacy_handler = TradingBotDataHandler(scaler_path=self.scaler_path or "")
+            legacy_handler = build_legacy_data_handler(
+                scaler_path=self.scaler_path,
+                scaler=getattr(self, "scaler", None),
+            )
             return legacy_handler.merge_sentiment_data(df, interval, symbol=symbol)
         except Exception as exc:  # pragma: no cover - defensive fallback
             self.logger.debug("Sentiment merge unavailable: %s", exc)
