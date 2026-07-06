@@ -59,6 +59,21 @@ class PaperReadinessResult:
     readiness_df: pd.DataFrame | None = None
 
 
+@dataclass(frozen=True)
+class GoAssetsPerformanceResult:
+    selected_assets: list[str]
+    timeframe: str
+    combined_portfolio_return_pct: float
+    combined_max_drawdown_pct: float
+    combined_profit_factor: float
+    combined_win_rate_pct: float
+    combined_trade_count: int
+    combined_daily_loss_events: int
+    csv_path: Path
+    html_path: Path
+    report_df: pd.DataFrame
+
+
 def _load_validated_whitelist_signals(
     timeframe: str,
     assets: list[str],
@@ -135,6 +150,52 @@ def _build_symbol_report(symbol: str, timeframe: str, signals: pd.DataFrame, sta
         "latest_probability": float(latest["model_probability"]),
         "latest_price": float(latest["price"]) if "price" in latest and pd.notna(latest["price"]) else float("nan"),
     }
+
+
+def _build_symbol_report_with_debug(
+    symbol: str,
+    timeframe: str,
+    signals: pd.DataFrame,
+    starting_capital: float,
+) -> tuple[dict[str, Any], pd.DataFrame] | None:
+    symbol_signals = signals.loc[signals["symbol"].eq(symbol)].copy()
+    if symbol_signals.empty:
+        return None
+
+    execution = _build_execution_frame(symbol, timeframe, symbol_signals["timestamp"]).reset_index(drop=True)
+    base = symbol_signals.reset_index(drop=True).join(execution)
+    metrics, debug = _simulate_prepared_signals(
+        base[["timestamp", "model_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
+        "model_direction",
+        starting_capital,
+    )
+
+    candidates = int(symbol_signals["is_trade_candidate"].astype(bool).sum())
+    latest = symbol_signals.iloc[-1]
+    row = {
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "start_date": symbol_signals["timestamp"].min(),
+        "end_date": symbol_signals["timestamp"].max(),
+        **_constraints_used(),
+        "predictions": int(len(symbol_signals)),
+        "trade_candidates": candidates,
+        "return_pct": float(metrics["return_pct"]),
+        "final_capital": float(metrics["final_capital"]),
+        "max_drawdown_pct": float(metrics["max_drawdown_pct"]),
+        "profit_factor": float(metrics["profit_factor"]),
+        "win_rate_pct": float(metrics["win_rate_pct"]),
+        "trade_count": int(metrics["trade_count"]),
+        "average_trade_pct": float(metrics["average_trade_pct"]),
+        "expectancy": float(metrics["expectancy"]),
+        "daily_loss_events": _daily_loss_events(debug),
+        "latest_signal": str(latest["model_direction"]),
+        "latest_probability": float(latest["model_probability"]),
+        "latest_price": float(latest["price"]) if "price" in latest and pd.notna(latest["price"]) else float("nan"),
+    }
+    debug = debug.copy()
+    debug["symbol"] = symbol
+    return row, debug
 
 
 def _write_html_report(report: pd.DataFrame, combined_return: float, html_path: Path, assets: list[str], recent_days: int = 0) -> None:
@@ -432,4 +493,202 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
         failed_conditions=failed,
         sweep_csv_path=sweep_result.csv_path,
         sweep_df=sweep,
+    )
+
+
+def _load_go_assets_from_readiness(timeframe: str) -> list[str]:
+    path = Path("logs/v4_top_validated10_paper_readiness.csv")
+    _require_file(path, "top validated paper readiness")
+    readiness = pd.read_csv(path)
+    required = ["symbol", "timeframe", "decision"]
+    missing = [column for column in required if column not in readiness.columns]
+    if missing:
+        raise ValueError(f"Missing readiness columns: {missing}")
+
+    readiness["symbol"] = readiness["symbol"].astype(str).str.upper()
+    readiness["timeframe"] = readiness["timeframe"].astype(str)
+    readiness["decision"] = readiness["decision"].astype(str).str.upper()
+    selected = readiness.loc[
+        readiness["timeframe"].eq(str(timeframe))
+        & readiness["decision"].eq("GO"),
+        "symbol",
+    ].tolist()
+    if not selected:
+        raise ValueError(f"No GO assets found in {path} for timeframe {timeframe}")
+    return selected
+
+
+def _combined_capital_curve(debug_frames: list[pd.DataFrame], starting_capital_per_asset: float) -> pd.Series:
+    curves = []
+    for debug in debug_frames:
+        if debug.empty:
+            continue
+        symbol = str(debug["symbol"].iloc[0])
+        curve = debug[["timestamp", "capital"]].copy()
+        curve["timestamp"] = pd.to_datetime(curve["timestamp"], errors="coerce")
+        curve["capital"] = pd.to_numeric(curve["capital"], errors="coerce")
+        curve = curve.dropna(subset=["timestamp", "capital"]).drop_duplicates("timestamp", keep="last")
+        curve = curve.set_index("timestamp").sort_index().rename(columns={"capital": symbol})
+        curves.append(curve)
+    if not curves:
+        return pd.Series(dtype=float)
+    combined = pd.concat(curves, axis=1).sort_index().ffill().fillna(float(starting_capital_per_asset))
+    return combined.sum(axis=1)
+
+
+def _combined_trade_metrics(debug_frames: list[pd.DataFrame], starting_capital_per_asset: float) -> dict[str, float | int]:
+    trade_pnls: list[float] = []
+    trade_results: list[str] = []
+    daily_loss_events = 0
+    for debug in debug_frames:
+        if debug.empty:
+            continue
+        frame = debug.copy()
+        frame["timestamp"] = pd.to_datetime(frame["timestamp"], errors="coerce")
+        frame["capital"] = pd.to_numeric(frame["capital"], errors="coerce")
+        frame = frame.dropna(subset=["timestamp", "capital"]).sort_values("timestamp").reset_index(drop=True)
+        frame["previous_capital"] = frame["capital"].shift(1).fillna(float(starting_capital_per_asset))
+        frame["pnl"] = frame["capital"] - frame["previous_capital"]
+        result = frame["trade_result"].astype(str)
+        executed = frame.loc[result.str.contains("_WIN|_LOSS|_FLAT", regex=True)].copy()
+        trade_pnls.extend(executed["pnl"].astype(float).tolist())
+        trade_results.extend(executed["trade_result"].astype(str).tolist())
+        daily_loss_events += _daily_loss_events(frame)
+
+    if not trade_pnls:
+        return {
+            "profit_factor": 0.0,
+            "win_rate_pct": 0.0,
+            "trade_count": 0,
+            "daily_loss_events": int(daily_loss_events),
+        }
+
+    pnls = np.array(trade_pnls, dtype=float)
+    gross_profit = float(pnls[pnls > 0].sum()) if np.any(pnls > 0) else 0.0
+    gross_loss = abs(float(pnls[pnls < 0].sum())) if np.any(pnls < 0) else 0.0
+    profit_factor = gross_profit / gross_loss if gross_loss > 0 else (float("inf") if gross_profit > 0 else 0.0)
+    wins = sum(1 for item in trade_results if item.endswith("_WIN"))
+    return {
+        "profit_factor": float(profit_factor),
+        "win_rate_pct": float(wins / len(trade_results) * 100.0) if trade_results else 0.0,
+        "trade_count": int(len(trade_results)),
+        "daily_loss_events": int(daily_loss_events),
+    }
+
+
+def _write_go_assets_html(
+    report: pd.DataFrame,
+    selected_assets: list[str],
+    combined_return: float,
+    combined_drawdown: float,
+    combined_profit_factor: float,
+    combined_win_rate: float,
+    combined_trade_count: int,
+    combined_daily_loss_events: int,
+    html_path: Path,
+) -> None:
+    html_path.parent.mkdir(parents=True, exist_ok=True)
+    display = report.copy()
+    numeric_columns = display.select_dtypes(include=[np.number]).columns
+    display[numeric_columns] = display[numeric_columns].round(6)
+    html = f"""<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>V4 GO Assets Performance</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; margin: 24px; color: #1f2933; }}
+    table {{ border-collapse: collapse; width: 100%; font-size: 12px; }}
+    th, td {{ border-bottom: 1px solid #d9e2ec; padding: 6px 8px; text-align: right; }}
+    th:first-child, td:first-child {{ text-align: left; }}
+    th {{ background: #f0f4f8; }}
+    tr:nth-child(even) {{ background: #f8fafc; }}
+  </style>
+</head>
+<body>
+  <h1>V4 GO Assets Performance</h1>
+  <p>Paper-only constrained V4-style execution for {", ".join(selected_assets)}. No live orders are submitted.</p>
+  <ul>
+    <li>Combined portfolio return: {combined_return:.6f}%</li>
+    <li>Combined max drawdown: {combined_drawdown:.6f}%</li>
+    <li>Combined profit factor: {combined_profit_factor:.6f}</li>
+    <li>Combined win rate: {combined_win_rate:.6f}%</li>
+    <li>Combined trade count: {combined_trade_count}</li>
+    <li>Combined daily loss events: {combined_daily_loss_events}</li>
+  </ul>
+  {display.to_html(index=False, classes="performance", border=0)}
+</body>
+</html>
+"""
+    html_path.write_text(html, encoding="utf-8")
+
+
+def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
+    """Run constrained paper performance for assets marked GO by top-validated readiness."""
+    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    starting_capital = float(getattr(args, "capital", 100000.0))
+    selected_assets = _load_go_assets_from_readiness(timeframe)
+    signals = _load_validated_whitelist_signals(timeframe, selected_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
+    if signals.empty:
+        raise ValueError(f"No SMC model paper signals found for GO assets on {timeframe}")
+
+    per_asset_capital = starting_capital / len(selected_assets)
+    rows: list[dict[str, Any]] = []
+    debug_frames: list[pd.DataFrame] = []
+    for symbol in selected_assets:
+        result = _build_symbol_report_with_debug(symbol, timeframe, signals, per_asset_capital)
+        if result is None:
+            continue
+        row, debug = result
+        rows.append(row)
+        debug_frames.append(debug)
+
+    report = pd.DataFrame(rows)
+    if report.empty:
+        raise ValueError("No GO assets could be evaluated")
+    report["start_date"] = pd.to_datetime(report["start_date"], errors="coerce")
+    report["end_date"] = pd.to_datetime(report["end_date"], errors="coerce")
+    report = report.sort_values("return_pct", ascending=False).reset_index(drop=True)
+    report.insert(0, "portfolio_weight_pct", 100.0 / len(report))
+
+    combined_starting_capital = per_asset_capital * len(report)
+    combined_final_capital = float(report["final_capital"].sum())
+    combined_return = ((combined_final_capital / combined_starting_capital) - 1.0) * 100.0
+    combined_curve = _combined_capital_curve(debug_frames, per_asset_capital)
+    if combined_curve.empty:
+        combined_drawdown = 0.0
+    else:
+        equity = np.concatenate([[combined_starting_capital], combined_curve.to_numpy(dtype=float)])
+        running_max = np.maximum.accumulate(equity)
+        combined_drawdown = float(((equity / running_max) - 1.0).min() * 100.0)
+    combined_trade_metrics = _combined_trade_metrics(debug_frames, per_asset_capital)
+
+    csv_path = Path("logs/v4_go_assets_performance.csv")
+    html_path = Path("logs/v4_go_assets_performance.html")
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    report.to_csv(csv_path, index=False)
+    _write_go_assets_html(
+        report,
+        selected_assets,
+        combined_return,
+        combined_drawdown,
+        float(combined_trade_metrics["profit_factor"]),
+        float(combined_trade_metrics["win_rate_pct"]),
+        int(combined_trade_metrics["trade_count"]),
+        int(combined_trade_metrics["daily_loss_events"]),
+        html_path,
+    )
+
+    return GoAssetsPerformanceResult(
+        selected_assets=selected_assets,
+        timeframe=timeframe,
+        combined_portfolio_return_pct=float(combined_return),
+        combined_max_drawdown_pct=float(combined_drawdown),
+        combined_profit_factor=float(combined_trade_metrics["profit_factor"]),
+        combined_win_rate_pct=float(combined_trade_metrics["win_rate_pct"]),
+        combined_trade_count=int(combined_trade_metrics["trade_count"]),
+        combined_daily_loss_events=int(combined_trade_metrics["daily_loss_events"]),
+        csv_path=csv_path,
+        html_path=html_path,
+        report_df=report,
     )
