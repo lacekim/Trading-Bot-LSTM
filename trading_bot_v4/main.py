@@ -15,6 +15,7 @@ from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backte
 from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
+from trading_bot_v4.features.smc_feature_builder import build_smc_training_data
 from trading_bot_v4.utils.logger import build_logger
 
 logger = build_logger("v4_main")
@@ -39,6 +40,7 @@ def parse_args():
     parser.add_argument("--smc-shadow-backtest", action="store_true", help="Compare baseline model behavior against selected SMC filters")
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
+    parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -176,6 +178,16 @@ def main():
             print(f"latest model direction: {latest.get('model_direction', 'none')}")
             print(f"latest SMC context: {latest.get('smc_context', 'none')}")
             print(f"latest price: {format_optional_metric(latest.get('price'))}")
+        return 0
+    if args.build_smc_training_data:
+        result = build_smc_training_data(args.symbol, args.timeframe)
+        print(f"symbol: {result.symbol}")
+        print(f"timeframe: {result.timeframe}")
+        print(f"original feature count: {result.original_feature_count}")
+        print(f"SMC feature count: {result.smc_feature_count}")
+        print(f"total feature count: {result.total_feature_count}")
+        print(f"rows written: {result.rows_written}")
+        print(f"output path: {result.output_path}")
         return 0
     if args.compare_original:
         run_v4_compare_original(args)
