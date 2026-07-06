@@ -16,6 +16,7 @@ from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WA
 from trading_bot_v4.backtesting.model_comparison import run_model_comparison
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
+from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.utils.logger import build_logger
@@ -42,6 +43,7 @@ def parse_args():
     parser.add_argument("--smc-shadow-backtest", action="store_true", help="Compare baseline model behavior against selected SMC filters")
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
+    parser.add_argument("--paper-trade-smc-model", action="store_true", help="Generate paper-only signals from the optional SMC-enhanced model")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
@@ -183,6 +185,24 @@ def main():
             print(f"latest model direction: {latest.get('model_direction', 'none')}")
             print(f"latest SMC context: {latest.get('smc_context', 'none')}")
             print(f"latest price: {format_optional_metric(latest.get('price'))}")
+        return 0
+    if args.paper_trade_smc_model:
+        result = run_smc_model_paper_trading(args)
+        summary_df = result.get("summary_df")
+        print("live trading: disabled")
+        print("SMC model paper trading only: no live orders submitted")
+        print(f"assets evaluated: {result['assets_evaluated']}")
+        print(f"predictions evaluated: {result['predictions_evaluated']}")
+        print(f"trade candidates: {result['trade_candidates']}")
+        print(f"paper summary: {result['summary_path']}")
+        print(f"paper signals: {result['signals_path']}")
+        if summary_df is not None and not summary_df.empty:
+            display_columns = [
+                "symbol",
+                "latest_signal",
+            ]
+            print("latest signal per asset:")
+            print(summary_df[display_columns].to_string(index=False))
         return 0
     if args.build_smc_training_data:
         if args.all_assets:

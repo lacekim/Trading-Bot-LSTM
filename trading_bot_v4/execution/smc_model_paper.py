@@ -1,0 +1,174 @@
+"""Paper-only signal generation for the optional SMC-enhanced model."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from trading_bot import list_gmx_symbols, load_gmx_ohlc
+from trading_bot_v4.config_v4 import V4Config as Config
+from trading_bot_v4.core.data_handler import V4DataHandler
+from trading_bot_v4.core.smc_swings import SMC_FEATURE_COLUMNS
+from trading_bot_v4.features.smc_feature_builder import _build_smc_feature_frame
+from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
+from trading_bot_v4.utils.logger import build_logger
+from trading_bot_v4.utils.model_cache import ModelScalerCache
+
+
+logger = build_logger("v4_smc_model_paper")
+
+SMC_MODEL_PAPER_SUMMARY_PATH = Path("logs/v4_smc_model_paper_summary.csv")
+SMC_MODEL_PAPER_SIGNALS_PATH = Path("logs/v4_smc_model_paper_signals.csv")
+
+
+def _direction_from_probability(probability: float) -> str:
+    threshold = float(Config.MIN_SIGNAL_THRESHOLD)
+    if probability > threshold:
+        return "LONG"
+    if probability < (1.0 - threshold):
+        return "SHORT"
+    return "HOLD"
+
+
+def _format_latest_signal(row: pd.Series | None) -> str:
+    if row is None:
+        return ""
+    return (
+        f"{row['timestamp']} {row['model_direction']} "
+        f"p={float(row['model_probability']):.6f} "
+        f"price={float(row['price']):.10f}"
+    )
+
+
+def _build_smc_model_feature_frame(symbol: str, timeframe: str) -> pd.DataFrame:
+    raw = load_gmx_ohlc(symbol, timeframe)
+    handler = V4DataHandler()
+    original = handler.prepare_features(raw.copy())
+
+    missing_original = [column for column in Config.FEATURE_COLUMNS if column not in original.columns]
+    if missing_original:
+        raise ValueError(f"Missing original model feature columns for {symbol}: {missing_original}")
+
+    original_features = original[Config.FEATURE_COLUMNS].copy()
+    original_features.index.name = "timestamp"
+    smc_features = _build_smc_feature_frame(symbol, timeframe)
+    combined = original_features.join(smc_features.reindex(original_features.index), how="inner")
+    feature_columns = [*Config.FEATURE_COLUMNS, *SMC_FEATURE_COLUMNS]
+    combined[feature_columns] = combined[feature_columns].apply(pd.to_numeric, errors="coerce")
+    combined = combined.replace([np.inf, -np.inf], np.nan)
+    combined[SMC_FEATURE_COLUMNS] = combined[SMC_FEATURE_COLUMNS].ffill().fillna(0.0)
+    combined = combined.dropna(subset=Config.FEATURE_COLUMNS)
+
+    prices = pd.to_numeric(raw["Close"], errors="coerce").reindex(combined.index)
+    combined["price"] = prices
+    combined = combined.dropna(subset=["price"])
+    return combined
+
+
+def _predict_smc_model_signals(model: Any, scaler: Any, symbol: str, timeframe: str) -> pd.DataFrame:
+    features = _build_smc_model_feature_frame(symbol, timeframe)
+    feature_columns = [*Config.FEATURE_COLUMNS, *SMC_FEATURE_COLUMNS]
+    if len(features) <= Config.SEQUENCE_LENGTH:
+        raise ValueError(f"Insufficient SMC model feature rows for {symbol} {timeframe}: {len(features)}")
+
+    feature_values = features[feature_columns].to_numpy(dtype=np.float32)
+    scaled = scaler.transform(feature_values).astype(np.float32)
+    seq_len = Config.SEQUENCE_LENGTH
+    sequences = np.array([scaled[start : start + seq_len] for start in range(0, len(scaled) - seq_len)], dtype=np.float32)
+    probabilities = model.predict(sequences, verbose=0).reshape(-1)
+    signal_frame = features.iloc[seq_len:].copy()
+
+    signals = pd.DataFrame(
+        {
+            "timestamp": signal_frame.index,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "model_probability": probabilities,
+            "model_direction": [_direction_from_probability(float(probability)) for probability in probabilities],
+            "price": signal_frame["price"].to_numpy(dtype=float),
+        }
+    )
+    signals["is_trade_candidate"] = signals["model_direction"].isin(["LONG", "SHORT"])
+    signals["threshold"] = float(Config.MIN_SIGNAL_THRESHOLD)
+    signals["feature_count"] = len(feature_columns)
+    return signals
+
+
+def _summarize_asset(signals: pd.DataFrame, symbol: str, timeframe: str) -> dict[str, Any]:
+    candidates = signals.loc[signals["is_trade_candidate"]].copy()
+    latest_candidate = candidates.iloc[-1] if not candidates.empty else None
+    latest_prediction = signals.iloc[-1] if not signals.empty else None
+    latest_signal = _format_latest_signal(latest_candidate if latest_candidate is not None else latest_prediction)
+    latest_direction = "" if latest_prediction is None else str(latest_prediction["model_direction"])
+    latest_probability = float("nan") if latest_prediction is None else float(latest_prediction["model_probability"])
+    latest_price = float("nan") if latest_prediction is None else float(latest_prediction["price"])
+
+    return {
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "predictions": int(len(signals)),
+        "trade_candidates": int(len(candidates)),
+        "latest_direction": latest_direction,
+        "latest_probability": latest_probability,
+        "latest_price": latest_price,
+        "latest_signal": latest_signal,
+    }
+
+
+def _write_outputs(signals: pd.DataFrame, summaries: list[dict[str, Any]]) -> pd.DataFrame:
+    SMC_MODEL_PAPER_SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    signals.to_csv(SMC_MODEL_PAPER_SIGNALS_PATH, index=False)
+
+    summary = pd.DataFrame(summaries)
+    SMC_MODEL_PAPER_SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    summary.to_csv(SMC_MODEL_PAPER_SUMMARY_PATH, index=False)
+    return summary
+
+
+def run_smc_model_paper_trading(args: Any) -> dict[str, Any]:
+    """Generate paper-only signals from the separate SMC-enhanced model."""
+    timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
+    use_all_assets = bool(getattr(args, "all_assets", False))
+    selected_symbol = str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
+    symbols = [str(symbol).upper() for symbol in list_gmx_symbols(timeframe)] if use_all_assets else [selected_symbol]
+
+    cache = ModelScalerCache(model_path=SMC_MODEL_PATH, scaler_path=SMC_SCALER_PATH)
+    model, scaler = cache.load()
+
+    signal_frames = []
+    summaries = []
+    for symbol in symbols:
+        try:
+            signals = _predict_smc_model_signals(model, scaler, symbol, timeframe)
+        except Exception as exc:
+            logger.warning("Skipping %s %s during SMC model paper generation: %s", symbol, timeframe, exc)
+            continue
+        signal_frames.append(signals)
+        summaries.append(_summarize_asset(signals, symbol, timeframe))
+
+    all_signals = pd.concat(signal_frames, ignore_index=True) if signal_frames else pd.DataFrame(
+        columns=[
+            "timestamp",
+            "symbol",
+            "timeframe",
+            "model_probability",
+            "model_direction",
+            "price",
+            "is_trade_candidate",
+            "threshold",
+            "feature_count",
+        ]
+    )
+    summary = _write_outputs(all_signals, summaries)
+    return {
+        "all_assets": use_all_assets,
+        "assets_evaluated": int(len(summaries)),
+        "predictions_evaluated": int(len(all_signals)),
+        "trade_candidates": int(all_signals["is_trade_candidate"].sum()) if not all_signals.empty else 0,
+        "summary_path": SMC_MODEL_PAPER_SUMMARY_PATH,
+        "signals_path": SMC_MODEL_PAPER_SIGNALS_PATH,
+        "summary_df": summary,
+    }
