@@ -15,7 +15,7 @@ from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backte
 from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
-from trading_bot_v4.features.smc_feature_builder import build_smc_training_data
+from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.utils.logger import build_logger
 
 logger = build_logger("v4_main")
@@ -180,6 +180,16 @@ def main():
             print(f"latest price: {format_optional_metric(latest.get('price'))}")
         return 0
     if args.build_smc_training_data:
+        if args.all_assets:
+            result = build_all_assets_smc_training_data(args.timeframe)
+            print(f"assets processed: {result.assets_processed}")
+            print(f"total rows: {result.total_rows}")
+            print(f"original feature count: {result.original_feature_count}")
+            print(f"SMC feature count: {result.smc_feature_count}")
+            print(f"total feature count: {result.total_feature_count}")
+            print(f"output path: {result.output_path}")
+            return 0
+
         result = build_smc_training_data(args.symbol, args.timeframe)
         print(f"symbol: {result.symbol}")
         print(f"timeframe: {result.timeframe}")

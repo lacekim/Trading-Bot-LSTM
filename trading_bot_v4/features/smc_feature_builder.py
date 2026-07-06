@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from trading_bot import load_gmx_ohlc
+from trading_bot import list_gmx_symbols, load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.core.data_handler import V4DataHandler
 from trading_bot_v4.core.smc_swings import (
@@ -31,6 +31,18 @@ class SmcTrainingDataResult:
     smc_feature_count: int
     total_feature_count: int
     rows_written: int
+    output_path: Path
+    dataset: pd.DataFrame
+
+
+@dataclass(frozen=True)
+class SmcAllAssetsTrainingDataResult:
+    timeframe: str
+    assets_processed: int
+    original_feature_count: int
+    smc_feature_count: int
+    total_feature_count: int
+    total_rows: int
     output_path: Path
     dataset: pd.DataFrame
 
@@ -71,14 +83,7 @@ def _build_smc_feature_frame(symbol: str, timeframe: str) -> pd.DataFrame:
     return features
 
 
-def build_smc_training_data(
-    symbol: str,
-    timeframe: str,
-    output_path: str | Path | None = None,
-    prediction_horizon: int = 1,
-) -> SmcTrainingDataResult:
-    """Build one timestamp-aligned dataset with original model features, SMC features, and target."""
-    symbol = symbol.upper()
+def _build_combined_symbol_dataset(symbol: str, timeframe: str, prediction_horizon: int = 1) -> pd.DataFrame:
     raw = load_gmx_ohlc(symbol, timeframe)
     original = _build_original_training_frame(raw, prediction_horizon=prediction_horizon)
     smc = _build_smc_feature_frame(symbol, timeframe)
@@ -92,7 +97,18 @@ def build_smc_training_data(
     dataset[SMC_FEATURE_COLUMNS] = dataset[SMC_FEATURE_COLUMNS].ffill().fillna(0.0)
     dataset = dataset.dropna(subset=[*Config.FEATURE_COLUMNS, "future_return", "target"])
     dataset["target"] = dataset["target"].astype(int)
-    dataset = dataset[numeric_columns]
+    return dataset[numeric_columns]
+
+
+def build_smc_training_data(
+    symbol: str,
+    timeframe: str,
+    output_path: str | Path | None = None,
+    prediction_horizon: int = 1,
+) -> SmcTrainingDataResult:
+    """Build one timestamp-aligned dataset with original model features, SMC features, and target."""
+    symbol = symbol.upper()
+    dataset = _build_combined_symbol_dataset(symbol, timeframe, prediction_horizon=prediction_horizon)
 
     path = Path(output_path) if output_path is not None else Path("models") / f"training_data_smc_{symbol}_{timeframe}.csv"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -109,4 +125,49 @@ def build_smc_training_data(
         rows_written=int(len(dataset)),
         output_path=path,
         dataset=dataset,
+    )
+
+
+def build_all_assets_smc_training_data(
+    timeframe: str,
+    output_path: str | Path | None = None,
+    prediction_horizon: int = 1,
+) -> SmcAllAssetsTrainingDataResult:
+    """Build one combined SMC-enhanced training dataset across all local GMX assets."""
+    symbols = [str(symbol).upper() for symbol in list_gmx_symbols(timeframe)]
+    frames = []
+    original_feature_count = len(Config.FEATURE_COLUMNS)
+    smc_feature_count = len(SMC_FEATURE_COLUMNS)
+
+    for symbol in symbols:
+        dataset = _build_combined_symbol_dataset(
+            symbol,
+            timeframe,
+            prediction_horizon=prediction_horizon,
+        )
+        frame = dataset.copy()
+        frame.insert(0, "symbol", symbol)
+        frames.append(frame)
+
+    if frames:
+        combined = pd.concat(frames, axis=0).sort_index()
+    else:
+        combined = pd.DataFrame(
+            columns=["symbol", *Config.FEATURE_COLUMNS, *SMC_FEATURE_COLUMNS, "future_return", "target"]
+        )
+        combined.index.name = "timestamp"
+
+    path = Path(output_path) if output_path is not None else Path("models") / f"training_data_smc_all_assets_{timeframe}.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(path, index=True)
+
+    return SmcAllAssetsTrainingDataResult(
+        timeframe=timeframe,
+        assets_processed=len(frames),
+        original_feature_count=original_feature_count,
+        smc_feature_count=smc_feature_count,
+        total_feature_count=original_feature_count + smc_feature_count,
+        total_rows=int(len(combined)),
+        output_path=path,
+        dataset=combined,
     )
