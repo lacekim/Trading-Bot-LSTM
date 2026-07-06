@@ -13,6 +13,7 @@ from trading_bot_v4.backtesting.comparison_engine import run_v4_compare_original
 from trading_bot_v4.backtesting.ranking_engine import run_v4_backtest_ranking
 from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backtest
 from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
+from trading_bot_v4.backtesting.model_comparison import run_model_comparison
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
@@ -43,6 +44,7 @@ def parse_args():
     parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
+    parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -215,6 +217,19 @@ def main():
         print(f"model path: {result.model_path}")
         print(f"scaler path: {result.scaler_path}")
         return 0
+    if args.compare_models:
+        result = run_model_comparison(timeframe=args.timeframe, starting_capital=args.capital)
+        print(f"models compared: original vs SMC")
+        print(f"assets compared: {result.assets_compared}")
+        print(f"Assets where SMC is better: {len(result.smc_better_assets)}")
+        print(", ".join(result.smc_better_assets) if result.smc_better_assets else "none")
+        print(f"Assets where Original is better: {len(result.original_better_assets)}")
+        print(", ".join(result.original_better_assets) if result.original_better_assets else "none")
+        print(f"Average improvement: {format_optional_metric(result.average_improvement)}%")
+        print(f"Median improvement: {format_optional_metric(result.median_improvement)}%")
+        print(f"comparison CSV: {result.csv_path}")
+        print(f"comparison HTML: {result.html_path}")
+        return 0
     if args.compare_original:
         run_v4_compare_original(args)
         return 0
@@ -286,7 +301,7 @@ def main():
             )
         return 0
 
-    print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --smc-shadow-backtest, --walk-forward-smc, --compare-original, --analyze-smc, or --refresh.")
+    print("V4 bot scaffold ready. Use --train, --predict, --backtest, --backtest-rank, --smc-shadow-backtest, --walk-forward-smc, --compare-models, --compare-original, --analyze-smc, or --refresh.")
     return 0
 
 
