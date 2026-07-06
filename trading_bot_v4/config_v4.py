@@ -17,6 +17,7 @@ class V4Config(LegacyConfig):
     SMC_USE_LIQUIDITY_SWEEPS = os.getenv("V4_USE_LIQUIDITY_SWEEPS", "false").lower() in {"1", "true", "yes", "on"}
     SMC_SWING_WINDOW = int(os.getenv("V4_SMC_SWING_WINDOW", "5"))
     SMC_MIN_SWING_DISTANCE_ATR = float(os.getenv("V4_SMC_MIN_SWING_DISTANCE_ATR", "0.5"))
+    USE_SMC_FILTER = False
 
 
 Config = V4Config

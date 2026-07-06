@@ -14,6 +14,7 @@ from trading_bot_v4.backtesting.ranking_engine import run_v4_backtest_ranking
 from trading_bot_v4.backtesting.smc_shadow_backtest import run_smc_shadow_backtest
 from trading_bot_v4.backtesting.walk_forward import WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation
 from trading_bot_v4.core.smc_swings import analyze_gmx_smc_swings
+from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.utils.logger import build_logger
 
 logger = build_logger("v4_main")
@@ -37,6 +38,7 @@ def parse_args():
     parser.add_argument("--backtest-rank", action="store_true", help="Backtest every GMX asset and rank them by risk-adjusted performance")
     parser.add_argument("--smc-shadow-backtest", action="store_true", help="Compare baseline model behavior against selected SMC filters")
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
+    parser.add_argument("--paper-trade-smc", action="store_true", help="Run paper-only model signal evaluation with the optional SMC filter")
     parser.add_argument("--compare", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--compare-original", action="store_true", dest="compare_original", help="Compare the original bot and V4 on the same asset")
     parser.add_argument("--analyze-smc", action="store_true", help="Generate standalone V4 SMC swing high/low features")
@@ -135,6 +137,22 @@ def main():
                 "win_rate_pct",
             ]
             print(summary_df[display_columns].head(30).to_string(index=False))
+        return 0
+    if args.paper_trade_smc:
+        result = run_paper_trade_smc_filter(args)
+        latest = result.get("latest") or {}
+        print(f"V4 paper SMC filter: {result['symbol']} {result['timeframe']}")
+        print("live trading: disabled")
+        print(f"predictions evaluated: {result['predictions']}")
+        print(f"paper trade candidates: {result['paper_candidates']}")
+        print(f"SMC allowed candidates: {result['allowed']}")
+        print(f"SMC blocked candidates: {result['blocked']}")
+        print(f"blocked trade log: {result['blocked_log_path']}")
+        if latest:
+            print(f"latest model probability: {format_optional_metric(latest.get('model_probability'))}")
+            print(f"latest model direction: {latest.get('model_direction', 'none')}")
+            print(f"latest SMC context: {latest.get('smc_context', 'none')}")
+            print(f"latest price: {format_optional_metric(latest.get('price'))}")
         return 0
     if args.compare_original:
         run_v4_compare_original(args)
