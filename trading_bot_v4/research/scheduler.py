@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
+import json
+import subprocess
+import sys
 import time
 import traceback
 
@@ -157,7 +160,75 @@ def _hourly_refresh_symbols() -> list[str]:
     return [str(symbol).upper() for symbol in symbols]
 
 
+def _refresh_live_market_data(symbols: list[str], timeframe: str) -> bool:
+    """Refresh active GMX symbols from source using a temporary symbol-scoped config."""
+    if getattr(Config, "DATA_SOURCE", "").upper() != "GMX":
+        return True
+    if not getattr(Config, "GMX_AUTO_REFRESH_ENABLED", True):
+        _log("hourly.live_market_data disabled by GMX_AUTO_REFRESH_ENABLED")
+        return False
+
+    update_script = Path(getattr(Config, "GMX_UPDATE_SCRIPT"))
+    update_config = Path(getattr(Config, "GMX_UPDATE_CONFIG"))
+    if not update_script.exists():
+        _log(f"WARNING hourly.live_market_data update script not found: {update_script}")
+        return False
+    if not update_config.exists():
+        _log(f"WARNING hourly.live_market_data update config not found: {update_config}")
+        return False
+
+    active_config_path = SCHEDULER_LOG_PATH.parent / "v4_hourly_gmx_config.json"
+    try:
+        with update_config.open("r", encoding="utf-8") as handle:
+            active_config = json.load(handle)
+    except Exception as exc:
+        _log(f"WARNING hourly.live_market_data failed to read base config: {exc}")
+        return False
+
+    active_config["gmx_token_symbol"] = "ALL"
+    active_config["gmx_token_symbols"] = symbols
+    active_config["gmx_primary_symbol"] = symbols[0] if symbols else active_config.get("gmx_primary_symbol", "BTC")
+    active_config_path.parent.mkdir(parents=True, exist_ok=True)
+    active_config_path.write_text(json.dumps(active_config, indent=2), encoding="utf-8")
+
+    cmd = [
+        sys.executable,
+        str(update_script),
+        "--config",
+        str(active_config_path.resolve()),
+        "--period",
+        timeframe,
+        "--chain",
+        getattr(Config, "GMX_UPDATE_CHAIN", "arbitrum"),
+    ]
+    _log(f"hourly.live_market_data refreshing source symbols: {', '.join(symbols)}")
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=update_script.parent,
+            text=True,
+            capture_output=True,
+            timeout=int(getattr(Config, "GMX_UPDATE_TIMEOUT_SECONDS", 900)),
+        )
+    except Exception as exc:
+        _log(f"WARNING hourly.live_market_data failed; using cached OHLC fallback: {exc}")
+        return False
+
+    if result.stdout:
+        _log(result.stdout.strip())
+    if result.stderr:
+        _log(result.stderr.strip())
+    if result.returncode != 0:
+        _log(f"WARNING hourly.live_market_data exited {result.returncode}; using cached OHLC fallback")
+        return False
+    return True
+
+
 def _refresh_active_market_data(symbols: list[str], timeframe: str) -> int:
+    live_refreshed = _refresh_live_market_data(symbols, timeframe)
+    if not live_refreshed:
+        _log("hourly.refresh_active_market_data using cached OHLC backup")
+
     refreshed = 0
     for symbol in symbols:
         data = load_gmx_ohlc(symbol, timeframe)
