@@ -286,6 +286,7 @@ def run_auto_scheduler(args: Any) -> None:
         next_hourly_update=now,
         next_daily_research=_next_daily_time(now),
     )
+    displayed_next_hourly = _next_hour_boundary(now)
     models = _load_scheduler_models("scheduler startup")
     hourly_symbols = _hourly_refresh_symbols()
 
@@ -294,31 +295,35 @@ def run_auto_scheduler(args: Any) -> None:
     print("Scaler loaded.")
     print(f"Hourly refresh symbols: {', '.join(hourly_symbols)}")
     print("Daily research refresh: all assets")
-    print(f"Next hourly update: {state.next_hourly_update.isoformat(timespec='seconds')}")
+    print(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     print(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
     print("No live trading.")
     _log("Scheduler started")
     _log(f"Hourly refresh symbols: {', '.join(hourly_symbols)}")
     _log("Daily research refresh: all assets")
-    _log(f"Next hourly update: {state.next_hourly_update.isoformat(timespec='seconds')}")
+    _log(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     _log(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
     _log("No live trading")
 
     next_hourly = state.next_hourly_update
     next_daily = state.next_daily_research
-    while True:
-        now = datetime.now()
-        if now >= next_hourly:
-            models = _maybe_reload_models(models)
-            _run_hourly_update(timeframe, models)
-            next_hourly = _next_hour_boundary(datetime.now())
-            _log(f"Next hourly update: {next_hourly.isoformat(timespec='seconds')}")
+    try:
+        while True:
+            now = datetime.now()
+            if now >= next_hourly:
+                models = _maybe_reload_models(models)
+                _run_hourly_update(timeframe, models)
+                next_hourly = _next_hour_boundary(datetime.now())
+                _log(f"Next hourly update: {next_hourly.isoformat(timespec='seconds')}")
 
-        now = datetime.now()
-        if now >= next_daily:
-            models = _maybe_reload_models(models)
-            _run_daily_research(timeframe, top_validated, models)
-            next_daily = _next_daily_time(datetime.now())
-            _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")
+            now = datetime.now()
+            if now >= next_daily:
+                models = _maybe_reload_models(models)
+                _run_daily_research(timeframe, top_validated, models)
+                next_daily = _next_daily_time(datetime.now())
+                _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")
 
-        time.sleep(30)
+            time.sleep(30)
+    except KeyboardInterrupt:
+        _log("Scheduler stopped by user.")
+        print("Scheduler stopped.")

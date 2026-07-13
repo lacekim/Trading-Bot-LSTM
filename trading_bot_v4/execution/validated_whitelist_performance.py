@@ -25,6 +25,11 @@ VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH = Path("logs/v4_validated_whitelist_per
 VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH = Path("logs/v4_validated_whitelist_performance.html")
 STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH = Path("logs/v4_strict_validated_whitelist_performance.csv")
 STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH = Path("logs/v4_strict_validated_whitelist_performance.html")
+GO_ASSET_SELECTION_AUDIT_PATH = Path("logs/v4_go_asset_selection_audit.csv")
+GO_MIN_PROFIT_FACTOR = 1.10
+GO_MIN_RETURN_PCT = 0.0
+GO_MAX_DRAWDOWN_PCT = -5.0
+GO_MAX_DAILY_LOSS_EVENTS = 0
 
 
 @dataclass(frozen=True)
@@ -496,7 +501,7 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
     )
 
 
-def _load_go_assets_from_readiness(timeframe: str) -> list[str]:
+def _load_top_validated_readiness(timeframe: str) -> pd.DataFrame:
     path = Path("logs/v4_top_validated10_paper_readiness.csv")
     _require_file(path, "top validated paper readiness")
     readiness = pd.read_csv(path)
@@ -508,13 +513,15 @@ def _load_go_assets_from_readiness(timeframe: str) -> list[str]:
     readiness["symbol"] = readiness["symbol"].astype(str).str.upper()
     readiness["timeframe"] = readiness["timeframe"].astype(str)
     readiness["decision"] = readiness["decision"].astype(str).str.upper()
+    return readiness.loc[readiness["timeframe"].eq(str(timeframe))].copy().reset_index(drop=True)
+
+
+def _load_go_assets_from_readiness(timeframe: str) -> list[str]:
+    readiness = _load_top_validated_readiness(timeframe)
     selected = readiness.loc[
-        readiness["timeframe"].eq(str(timeframe))
-        & readiness["decision"].eq("GO"),
+        readiness["decision"].eq("GO"),
         "symbol",
     ].tolist()
-    if not selected:
-        raise ValueError(f"No GO assets found in {path} for timeframe {timeframe}")
     return selected
 
 
@@ -613,6 +620,7 @@ def _write_go_assets_html(
     display = report.copy()
     numeric_columns = display.select_dtypes(include=[np.number]).columns
     display[numeric_columns] = display[numeric_columns].round(6)
+    assets = ", ".join(selected_assets) if selected_assets else "none"
     html = f"""<!doctype html>
 <html>
 <head>
@@ -629,7 +637,7 @@ def _write_go_assets_html(
 </head>
 <body>
   <h1>V4 GO Assets Performance</h1>
-  <p>Paper-only constrained V4-style execution for {", ".join(selected_assets)}. No live orders are submitted.</p>
+  <p>Paper-only constrained V4-style execution for {assets}. No live orders are submitted.</p>
   <ul>
     <li>Combined portfolio return: {combined_return:.6f}%</li>
     <li>Combined max drawdown: {combined_drawdown:.6f}%</li>
@@ -645,17 +653,228 @@ def _write_go_assets_html(
     html_path.write_text(html, encoding="utf-8")
 
 
+def _empty_go_assets_report(csv_path: Path, html_path: Path, timeframe: str) -> GoAssetsPerformanceResult:
+    columns = [
+        "portfolio_weight_pct",
+        "symbol",
+        "timeframe",
+        "start_date",
+        "end_date",
+        "return_pct",
+        "final_capital",
+        "max_drawdown_pct",
+        "profit_factor",
+        "win_rate_pct",
+        "trade_count",
+        "daily_loss_events",
+    ]
+    report = pd.DataFrame(columns=columns)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    report.to_csv(csv_path, index=False)
+    _write_go_assets_html(
+        report,
+        [],
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0,
+        0,
+        html_path,
+    )
+    return GoAssetsPerformanceResult(
+        selected_assets=[],
+        timeframe=timeframe,
+        combined_portfolio_return_pct=0.0,
+        combined_max_drawdown_pct=0.0,
+        combined_profit_factor=0.0,
+        combined_win_rate_pct=0.0,
+        combined_trade_count=0,
+        combined_daily_loss_events=0,
+        csv_path=csv_path,
+        html_path=html_path,
+        report_df=report,
+    )
+
+
+def _passes_strict_go_performance(row: pd.Series) -> bool:
+    return_pct = pd.to_numeric(pd.Series([row.get("return_pct")]), errors="coerce").iloc[0]
+    profit_factor = pd.to_numeric(pd.Series([row.get("profit_factor")]), errors="coerce").iloc[0]
+    max_drawdown = pd.to_numeric(pd.Series([row.get("max_drawdown_pct")]), errors="coerce").iloc[0]
+    daily_loss_events = pd.to_numeric(pd.Series([row.get("daily_loss_events")]), errors="coerce").iloc[0]
+    return bool(
+        pd.notna(return_pct)
+        and pd.notna(profit_factor)
+        and pd.notna(max_drawdown)
+        and pd.notna(daily_loss_events)
+        and float(return_pct) > GO_MIN_RETURN_PCT
+        and float(profit_factor) > GO_MIN_PROFIT_FACTOR
+        and float(max_drawdown) > GO_MAX_DRAWDOWN_PCT
+        and int(daily_loss_events) == GO_MAX_DAILY_LOSS_EVENTS
+    )
+
+
+def _go_rule_failures(row: pd.Series) -> list[str]:
+    reasons: list[str] = []
+    readiness_decision = str(row.get("readiness_decision", "")).upper()
+    if readiness_decision != "GO":
+        reasons.append("paper readiness decision != GO")
+
+    return_pct = pd.to_numeric(pd.Series([row.get("constrained_return_pct")]), errors="coerce").iloc[0]
+    profit_factor = pd.to_numeric(pd.Series([row.get("constrained_profit_factor")]), errors="coerce").iloc[0]
+    max_drawdown = pd.to_numeric(pd.Series([row.get("constrained_max_drawdown_pct")]), errors="coerce").iloc[0]
+    daily_loss_events = pd.to_numeric(pd.Series([row.get("daily_loss_events")]), errors="coerce").iloc[0]
+
+    if pd.isna(return_pct):
+        reasons.append("constrained return unavailable")
+    elif not float(return_pct) > GO_MIN_RETURN_PCT:
+        reasons.append(f"constrained return > 0 failed: {float(return_pct):.6f}%")
+
+    if pd.isna(profit_factor):
+        reasons.append("constrained profit factor unavailable")
+    elif not float(profit_factor) > GO_MIN_PROFIT_FACTOR:
+        reasons.append(f"constrained profit factor > {GO_MIN_PROFIT_FACTOR:.2f} failed: {float(profit_factor):.6f}")
+
+    if pd.isna(max_drawdown):
+        reasons.append("constrained max drawdown unavailable")
+    elif not float(max_drawdown) > GO_MAX_DRAWDOWN_PCT:
+        reasons.append(f"constrained max drawdown > {GO_MAX_DRAWDOWN_PCT:.2f}% failed: {float(max_drawdown):.6f}%")
+
+    if pd.isna(daily_loss_events):
+        reasons.append("daily loss events unavailable")
+    elif int(daily_loss_events) != GO_MAX_DAILY_LOSS_EVENTS:
+        reasons.append(f"daily loss events == 0 failed: {int(daily_loss_events)}")
+
+    return reasons
+
+
+def _write_go_asset_selection_audit(readiness: pd.DataFrame, performance: pd.DataFrame) -> pd.DataFrame:
+    audit = readiness.copy()
+    if audit.empty:
+        audit = pd.DataFrame(
+            columns=[
+                "symbol",
+                "readiness_decision",
+                "constrained_return_pct",
+                "constrained_profit_factor",
+                "constrained_max_drawdown_pct",
+                "daily_loss_events",
+                "final_decision",
+                "failed_rule_reasons",
+            ]
+        )
+        GO_ASSET_SELECTION_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        audit.to_csv(GO_ASSET_SELECTION_AUDIT_PATH, index=False)
+        return audit
+
+    audit["symbol"] = audit["symbol"].astype(str).str.upper()
+    audit["readiness_decision"] = audit["decision"].astype(str).str.upper()
+
+    perf_columns = [
+        "symbol",
+        "return_pct",
+        "profit_factor",
+        "max_drawdown_pct",
+        "daily_loss_events",
+    ]
+    if performance.empty:
+        perf = pd.DataFrame(columns=perf_columns)
+    else:
+        perf = performance[[column for column in perf_columns if column in performance.columns]].copy()
+        perf["symbol"] = perf["symbol"].astype(str).str.upper()
+
+    audit = audit.merge(perf, on="symbol", how="left")
+    audit = audit.rename(
+        columns={
+            "return_pct": "constrained_return_pct",
+            "profit_factor": "constrained_profit_factor",
+            "max_drawdown_pct": "constrained_max_drawdown_pct",
+        }
+    )
+    for column in [
+        "constrained_return_pct",
+        "constrained_profit_factor",
+        "constrained_max_drawdown_pct",
+        "daily_loss_events",
+    ]:
+        if column not in audit.columns:
+            audit[column] = np.nan
+
+    audit["failed_rule_reasons"] = audit.apply(lambda row: "; ".join(_go_rule_failures(row)), axis=1)
+    audit["final_decision"] = np.where(audit["failed_rule_reasons"].astype(str).eq(""), "GO", "NO-GO")
+    output_columns = [
+        "symbol",
+        "readiness_decision",
+        "constrained_return_pct",
+        "constrained_profit_factor",
+        "constrained_max_drawdown_pct",
+        "daily_loss_events",
+        "final_decision",
+        "failed_rule_reasons",
+    ]
+    GO_ASSET_SELECTION_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    audit[output_columns].to_csv(GO_ASSET_SELECTION_AUDIT_PATH, index=False)
+    return audit[output_columns]
+
+
 def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
     """Run constrained paper performance for assets marked GO by top-validated readiness."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
     profitable_only = bool(getattr(args, "profitable_only", False))
-    selected_assets = _load_profitable_go_assets(timeframe) if profitable_only else _load_go_assets_from_readiness(timeframe)
-    signals = _load_validated_whitelist_signals(timeframe, selected_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
+    csv_path = Path("logs/v4_profitable_go_assets_performance.csv") if profitable_only else Path("logs/v4_go_assets_performance.csv")
+    html_path = Path("logs/v4_profitable_go_assets_performance.html") if profitable_only else Path("logs/v4_go_assets_performance.html")
+
+    readiness = pd.DataFrame()
+    if profitable_only:
+        candidate_assets = _load_profitable_go_assets(timeframe)
+    else:
+        readiness = _load_top_validated_readiness(timeframe)
+        candidate_assets = readiness["symbol"].astype(str).str.upper().tolist()
+
+    if not candidate_assets:
+        if not profitable_only:
+            _write_go_asset_selection_audit(readiness, pd.DataFrame())
+        return _empty_go_assets_report(csv_path, html_path, timeframe)
+
+    signals = _load_validated_whitelist_signals(timeframe, candidate_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
     if signals.empty:
-        raise ValueError(f"No SMC model paper signals found for GO assets on {timeframe}")
+        if not profitable_only:
+            _write_go_asset_selection_audit(readiness, pd.DataFrame())
+        return _empty_go_assets_report(csv_path, html_path, timeframe)
+
+    candidate_capital = starting_capital / len(candidate_assets)
+    candidate_rows: list[dict[str, Any]] = []
+    for symbol in candidate_assets:
+        candidate_result = _build_symbol_report_with_debug(symbol, timeframe, signals, candidate_capital)
+        if candidate_result is None:
+            continue
+        row, _ = candidate_result
+        candidate_rows.append(row)
+
+    candidate_report = pd.DataFrame(candidate_rows)
+    if candidate_report.empty:
+        if not profitable_only:
+            _write_go_asset_selection_audit(readiness, pd.DataFrame())
+        return _empty_go_assets_report(csv_path, html_path, timeframe)
+
+    if profitable_only:
+        selected_assets = candidate_report.loc[
+            pd.to_numeric(candidate_report["return_pct"], errors="coerce").gt(0),
+            "symbol",
+        ].astype(str).tolist()
+    else:
+        audit = _write_go_asset_selection_audit(readiness, candidate_report)
+        selected_assets = audit.loc[
+            audit["final_decision"].astype(str).str.upper().eq("GO"),
+            "symbol",
+        ].astype(str).tolist()
+
+    if not selected_assets:
+        return _empty_go_assets_report(csv_path, html_path, timeframe)
 
     per_asset_capital = starting_capital / len(selected_assets)
+    signals = _load_validated_whitelist_signals(timeframe, selected_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
     rows: list[dict[str, Any]] = []
     debug_frames: list[pd.DataFrame] = []
     for symbol in selected_assets:
@@ -668,7 +887,7 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
 
     report = pd.DataFrame(rows)
     if report.empty:
-        raise ValueError("No GO assets could be evaluated")
+        return _empty_go_assets_report(csv_path, html_path, timeframe)
     report["start_date"] = pd.to_datetime(report["start_date"], errors="coerce")
     report["end_date"] = pd.to_datetime(report["end_date"], errors="coerce")
     report = report.sort_values("return_pct", ascending=False).reset_index(drop=True)
@@ -686,12 +905,6 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
         combined_drawdown = float(((equity / running_max) - 1.0).min() * 100.0)
     combined_trade_metrics = _combined_trade_metrics(debug_frames, per_asset_capital)
 
-    if profitable_only:
-        csv_path = Path("logs/v4_profitable_go_assets_performance.csv")
-        html_path = Path("logs/v4_profitable_go_assets_performance.html")
-    else:
-        csv_path = Path("logs/v4_go_assets_performance.csv")
-        html_path = Path("logs/v4_go_assets_performance.html")
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     report.to_csv(csv_path, index=False)
     _write_go_assets_html(

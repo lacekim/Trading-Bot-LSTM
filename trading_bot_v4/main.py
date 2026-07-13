@@ -287,7 +287,9 @@ def main():
         result = run_go_assets_performance(args)
         print("live trading: disabled")
         print("GO assets performance only: no live orders submitted")
-        print(f"selected assets: {', '.join(result.selected_assets)}")
+        if not result.selected_assets:
+            print("NO GO ASSETS TODAY")
+        print(f"selected assets: {', '.join(result.selected_assets) if result.selected_assets else 'none'}")
         print(f"timeframe: {result.timeframe}")
         print(f"combined portfolio return: {format_optional_metric(result.combined_portfolio_return_pct)}%")
         print(f"combined max drawdown: {format_optional_metric(result.combined_max_drawdown_pct)}%")
@@ -306,7 +308,9 @@ def main():
             "trade_count",
             "daily_loss_events",
         ]
-        print(result.report_df[display_columns].to_string(index=False))
+        available_columns = [column for column in display_columns if column in result.report_df.columns]
+        if available_columns:
+            print(result.report_df[available_columns].to_string(index=False))
         return 0
     if args.daily_research:
         result = run_daily_research(args)
@@ -319,6 +323,8 @@ def main():
         print(f"GO performance CSV: {result.performance_csv_path}")
         print(f"GO performance HTML: {result.performance_html_path}")
         print(f"dashboard: {result.dashboard_path}")
+        if not result.go_assets:
+            print("NO GO ASSETS TODAY")
         print(f"current whitelist: {', '.join(result.go_assets) if result.go_assets else 'none'}")
         print(f"selected performance assets: {', '.join(result.selected_assets) if result.selected_assets else 'none'}")
         print(f"portfolio return: {format_optional_metric(result.combined_return)}%")
@@ -339,7 +345,7 @@ def main():
             "trade_count_30d",
         ]
         print("GO / NO-GO status:")
-        print(result.readiness_df[readiness_columns].to_string(index=False))
+        print(result.readiness_df[[column for column in readiness_columns if column in result.readiness_df.columns]].to_string(index=False))
         performance_columns = [
             "symbol",
             "return_pct",
@@ -350,7 +356,9 @@ def main():
             "daily_loss_events",
         ]
         print("paper performance:")
-        print(result.performance_df[performance_columns].to_string(index=False))
+        performance_available = [column for column in performance_columns if column in result.performance_df.columns]
+        if performance_available:
+            print(result.performance_df[performance_available].to_string(index=False))
         return 0
     if args.validated_whitelist_performance:
         if args.recent_sweep:

@@ -135,6 +135,29 @@ def _readiness_recent_metrics(readiness: pd.DataFrame) -> pd.DataFrame:
     return readiness[[column for column in columns if column in readiness.columns]].copy()
 
 
+def _apply_strict_go_status(readiness: pd.DataFrame, selected_assets: list[str]) -> pd.DataFrame:
+    strict = readiness.copy()
+    if strict.empty or "symbol" not in strict.columns or "decision" not in strict.columns:
+        return strict
+
+    selected = {symbol.upper() for symbol in selected_assets}
+    strict["symbol"] = strict["symbol"].astype(str).str.upper()
+    strict["decision"] = strict["decision"].astype(str).str.upper()
+    readiness_go = strict["decision"].eq("GO")
+    strict_fail = readiness_go & ~strict["symbol"].isin(selected)
+    strict.loc[strict_fail, "decision"] = "NO-GO"
+    if "failed_conditions" not in strict.columns:
+        strict["failed_conditions"] = ""
+    strict.loc[strict_fail, "failed_conditions"] = strict.loc[strict_fail, "failed_conditions"].apply(
+        lambda value: (
+            f"{value}; strict GO performance filter failed"
+            if isinstance(value, str) and value.strip()
+            else "strict GO performance filter failed"
+        )
+    )
+    return strict
+
+
 def _write_dashboard(
     result: DailyResearchResult,
     rankings: pd.DataFrame,
@@ -246,9 +269,16 @@ def run_daily_research(args: Any) -> DailyResearchResult:
     performance_result = run_go_assets_performance(_daily_args(timeframe=timeframe))
     performance = performance_result.report_df
 
-    go_assets = readiness.loc[readiness["decision"].astype(str).str.upper().eq("GO"), "symbol"].astype(str).tolist()
-    no_go_assets = readiness.loc[readiness["decision"].astype(str).str.upper().ne("GO"), "symbol"].astype(str).tolist()
-    alerts = _status_alerts(readiness)
+    strict_readiness = _apply_strict_go_status(readiness, performance_result.selected_assets)
+    go_assets = strict_readiness.loc[
+        strict_readiness["decision"].astype(str).str.upper().eq("GO"),
+        "symbol",
+    ].astype(str).tolist()
+    no_go_assets = strict_readiness.loc[
+        strict_readiness["decision"].astype(str).str.upper().ne("GO"),
+        "symbol",
+    ].astype(str).tolist()
+    alerts = _status_alerts(strict_readiness)
 
     result = DailyResearchResult(
         dashboard_path=DAILY_DASHBOARD_PATH,
@@ -263,8 +293,8 @@ def run_daily_research(args: Any) -> DailyResearchResult:
         no_go_assets=no_go_assets,
         alerts=alerts,
         combined_return=performance_result.combined_portfolio_return_pct,
-        readiness_df=readiness,
+        readiness_df=strict_readiness,
         performance_df=performance,
     )
-    _write_dashboard(result, rankings, readiness, performance)
+    _write_dashboard(result, rankings, strict_readiness, performance)
     return result
