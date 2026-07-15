@@ -233,10 +233,6 @@ def run_symbol_v4_backtest_ranking(model: Any, data_handler: Any, symbol: str, t
             direction = "LONG"
             stop_loss = entry_price - atr * Config.ATR_SL_MULTIPLIER
             take_profit = entry_price + atr * Config.ATR_TP_MULTIPLIER
-        elif probability < (1 - threshold):
-            direction = "SHORT"
-            stop_loss = entry_price + atr * Config.ATR_SL_MULTIPLIER
-            take_profit = entry_price - atr * Config.ATR_TP_MULTIPLIER
         else:
             equity.append((timestamp, capital))
             continue

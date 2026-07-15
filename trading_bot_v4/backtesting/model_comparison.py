@@ -206,11 +206,6 @@ def _trading_metrics(signals: pd.DataFrame, probabilities: np.ndarray, starting_
             effective_entry_price = entry_price * (1.0 + slippage_rate)
             stop_loss = effective_entry_price - atr * Config.ATR_SL_MULTIPLIER
             take_profit = effective_entry_price + atr * Config.ATR_TP_MULTIPLIER
-        elif probability < (1.0 - threshold):
-            direction = "SHORT"
-            effective_entry_price = entry_price * (1.0 - slippage_rate)
-            stop_loss = effective_entry_price + atr * Config.ATR_SL_MULTIPLIER
-            take_profit = effective_entry_price - atr * Config.ATR_TP_MULTIPLIER
         else:
             equity.append(capital)
             continue

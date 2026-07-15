@@ -21,6 +21,7 @@ from trading_bot_v4.core.smc_swings import (
     load_gmx_ohlcv,
 )
 from trading_bot_v4.utils.logger import build_logger
+from trading_bot_v4.utils.signal_direction import binary_upside_direction
 from trading_bot_v4.utils.model_cache import ModelScalerCache
 
 
@@ -111,12 +112,7 @@ def _build_smc_context(symbol: str, timeframe: str, signal_index: pd.Index) -> p
 
 
 def _direction_from_probability(probability: float) -> str:
-    threshold = float(Config.MIN_SIGNAL_THRESHOLD)
-    if probability > threshold:
-        return "LONG"
-    if probability < (1 - threshold):
-        return "SHORT"
-    return "HOLD"
+    return binary_upside_direction(probability, Config.MIN_SIGNAL_THRESHOLD)
 
 
 def _smc_allows(direction: str, context: str) -> bool:

@@ -182,13 +182,6 @@ def _run_filtered_signal_backtest(
             direction = "LONG"
             stop_loss = entry_price - atr * Config.ATR_SL_MULTIPLIER
             take_profit = entry_price + atr * Config.ATR_TP_MULTIPLIER
-        elif probability < (1 - threshold):
-            if not bool(row["smc_allow_short"]):
-                equity.append((timestamp, capital))
-                continue
-            direction = "SHORT"
-            stop_loss = entry_price + atr * Config.ATR_SL_MULTIPLIER
-            take_profit = entry_price - atr * Config.ATR_TP_MULTIPLIER
         else:
             equity.append((timestamp, capital))
             continue

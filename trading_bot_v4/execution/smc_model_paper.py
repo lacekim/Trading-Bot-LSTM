@@ -16,6 +16,7 @@ from trading_bot_v4.features.smc_feature_builder import _build_smc_feature_frame
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
 from trading_bot_v4.utils.logger import build_logger
 from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.signal_direction import binary_upside_direction
 
 
 logger = build_logger("v4_smc_model_paper")
@@ -28,12 +29,7 @@ VALIDATED_WHITELIST_PAPER_SIGNALS_PATH = Path("logs/v4_validated_whitelist_paper
 
 
 def _direction_from_probability(probability: float) -> str:
-    threshold = float(Config.MIN_SIGNAL_THRESHOLD)
-    if probability > threshold:
-        return "LONG"
-    if probability < (1.0 - threshold):
-        return "SHORT"
-    return "HOLD"
+    return binary_upside_direction(probability, Config.MIN_SIGNAL_THRESHOLD)
 
 
 def _format_latest_signal(row: pd.Series | None) -> str:
