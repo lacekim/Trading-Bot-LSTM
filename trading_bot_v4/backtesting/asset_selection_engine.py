@@ -314,9 +314,14 @@ def _trade_count_sanity_score(trade_count: pd.Series, shared_timestamps: pd.Seri
 
 def _add_validated_ranking_scores(rankings: pd.DataFrame) -> pd.DataFrame:
     result = rankings.copy()
-    result["constrained_smc_return_score"] = _percentile_score(result["constrained_smc_return_pct"])
-    result["constrained_smc_profit_factor_score"] = _percentile_score(result["constrained_smc_profit_factor"])
-    result["constrained_smc_drawdown_score"] = _percentile_score(result["constrained_smc_max_drawdown_pct"])
+    constrained_return = _clean_numeric(result["constrained_smc_return_pct"]).fillna(-100.0)
+    constrained_pf = _clean_numeric(result["constrained_smc_profit_factor"]).fillna(0.0)
+    constrained_drawdown = _clean_numeric(result["constrained_smc_max_drawdown_pct"]).fillna(-100.0)
+    # Absolute economic scores prevent the least-bad asset in a weak universe
+    # from receiving an elite percentile score.
+    result["constrained_smc_return_score"] = (constrained_return / 10.0 * 100.0).clip(0.0, 100.0)
+    result["constrained_smc_profit_factor_score"] = ((constrained_pf - 1.0) / 0.50 * 100.0).clip(0.0, 100.0)
+    result["constrained_smc_drawdown_score"] = ((10.0 - constrained_drawdown.abs()) / 10.0 * 100.0).clip(0.0, 100.0)
     result["walk_forward_stability_score"] = _clean_numeric(result["walk_forward_stability"]).clip(0.0, 100.0).fillna(0.0)
     result["smc_improvement_score"] = _percentile_score(result["smc_vs_original_improvement_pct"])
     result["trade_count_sanity_score"] = _trade_count_sanity_score(
@@ -342,6 +347,10 @@ def _add_validated_ranking_scores(rankings: pd.DataFrame) -> pd.DataFrame:
         "secondary_filter_score": 0.03,
     }
     result["validated_score"] = sum(result[column] * weight for column, weight in weights.items())
+    economically_unattractive = constrained_return.le(0.0) | constrained_pf.le(1.0)
+    result.loc[economically_unattractive, "validated_score"] = result.loc[
+        economically_unattractive, "validated_score"
+    ].clip(upper=25.0)
     result["ranking_score"] = result["validated_score"]
     return result.sort_values("validated_score", ascending=False).reset_index(drop=True)
 

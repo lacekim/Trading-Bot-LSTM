@@ -449,8 +449,9 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
     """Evaluate go/no-go paper readiness using recent sweep metrics."""
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     top_validated = int(getattr(args, "top_validated", 0) or 0)
-    if top_validated > 0:
-        symbols = _load_top_validated_symbols(timeframe, top_validated)
+    explicit_symbols = [str(symbol).upper() for symbol in getattr(args, "symbols", []) or []]
+    if top_validated > 0 or explicit_symbols:
+        symbols = list(dict.fromkeys(explicit_symbols or _load_top_validated_symbols(timeframe, top_validated)))
         readiness_rows: list[dict[str, Any]] = []
         sweep_rows: list[pd.DataFrame] = []
         for symbol in symbols:
@@ -473,12 +474,13 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
 
         readiness = pd.DataFrame(readiness_rows)
         sweep = pd.concat(sweep_rows, ignore_index=True) if sweep_rows else pd.DataFrame()
-        csv_path = Path("logs") / f"v4_top_validated{top_validated}_paper_readiness.csv"
+        # Keep the established path because downstream GO-performance code consumes it.
+        csv_path = Path("logs/v4_top_validated10_paper_readiness.csv")
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         readiness.to_csv(csv_path, index=False)
         failed_assets = readiness.loc[readiness["decision"].ne("GO"), "symbol"].tolist()
         return PaperReadinessResult(
-            symbol=f"TOP_VALIDATED_{top_validated}",
+            symbol=f"MARKET_CANDIDATES_{len(symbols)}",
             timeframe=timeframe,
             decision="GO" if not failed_assets else "NO-GO",
             failed_conditions=[f"{symbol}: NO-GO" for symbol in failed_assets],

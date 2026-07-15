@@ -2,32 +2,141 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>V4 Daily Research Dashboard</title>
+  <title>V5 Daily Decision Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 24px; color: #1f2933; }
+    body { font-family: Arial, sans-serif; margin: 24px; color: #e5e7eb; background: #0b1220; }
     h1, h2 { margin-bottom: 8px; }
     table { border-collapse: collapse; width: 100%; font-size: 12px; margin-bottom: 24px; }
-    th, td { border-bottom: 1px solid #d9e2ec; padding: 6px 8px; text-align: right; vertical-align: top; }
+    th, td { border-bottom: 1px solid #263449; padding: 8px; text-align: right; vertical-align: top; }
     th:first-child, td:first-child { text-align: left; }
-    th { background: #f0f4f8; }
-    tr:nth-child(even) { background: #f8fafc; }
+    th { background: #172033; }
+    tr:nth-child(even) { background: #111a2b; }
     .summary { display: grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 12px; margin: 16px 0 24px; }
-    .metric { border: 1px solid #d9e2ec; padding: 12px; border-radius: 6px; }
-    .label { color: #52606d; font-size: 12px; }
+    .metric { border: 1px solid #263449; background:#111a2b; padding: 12px; border-radius: 8px; }
+    .label { color: #9ca3af; font-size: 12px; }
     .value { font-size: 20px; margin-top: 4px; }
+    .decision { padding:24px; border-radius:10px; font-size:30px; font-weight:700; margin:16px 0; }
+    .safe { background:#064e3b; color:#a7f3d0; } .stop { background:#7f1d1d; color:#fecaca; }
+    .regime { display:flex; gap:16px; padding:14px; background:#111a2b; border-radius:8px; }
   </style>
 </head>
 <body>
-  <h1>V4 Daily Research Dashboard</h1>
+  <h1>V5 Daily Decision Dashboard</h1>
   <p>Paper-only research report. No live orders are submitted.</p>
+  <div class="decision stop">DO NOT TRADE TODAY</div>
   <div class="summary">
     <div class="metric"><div class="label">Market data refresh</div><div class="value">True</div></div>
     <div class="metric"><div class="label">SMC feature files updated</div><div class="value">10</div></div>
     <div class="metric"><div class="label">Current whitelist</div><div class="value">none</div></div>
     <div class="metric"><div class="label">Portfolio return</div><div class="value">0.000000%</div></div>
     <div class="metric"><div class="label">GO assets</div><div class="value">0</div></div>
-    <div class="metric"><div class="label">NO-GO assets</div><div class="value">10</div></div>
+    <div class="metric"><div class="label">NO-GO assets</div><div class="value">7</div></div>
+    <div class="metric"><div class="label">WATCHLIST assets</div><div class="value">3</div></div>
   </div>
+
+  <h2>Market Regime</h2>
+  <div class="regime"><b>BULLISH</b><span>Risk: Low</span><span>Positive breadth: 85.0%</span><span>Trend strength: 40</span></div>
+
+  <h2>Today's Opportunity</h2>
+  <table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>symbol</th>
+      <th>status</th>
+      <th>today_opportunity_score</th>
+      <th>confidence_pct</th>
+      <th>return_24h_pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SPX6900</td>
+      <td>NO-GO</td>
+      <td>84.523428</td>
+      <td>65.607617</td>
+      <td>12.321982</td>
+    </tr>
+    <tr>
+      <td>PENGU</td>
+      <td>NO-GO</td>
+      <td>78.895745</td>
+      <td>65.323878</td>
+      <td>6.566530</td>
+    </tr>
+    <tr>
+      <td>AERO</td>
+      <td>NO-GO</td>
+      <td>72.879371</td>
+      <td>64.176381</td>
+      <td>5.536476</td>
+    </tr>
+    <tr>
+      <td>LIT</td>
+      <td>NO-GO</td>
+      <td>71.232406</td>
+      <td>72.738681</td>
+      <td>6.475115</td>
+    </tr>
+    <tr>
+      <td>BOME</td>
+      <td>NO-GO</td>
+      <td>56.886233</td>
+      <td>53.080517</td>
+      <td>4.148136</td>
+    </tr>
+    <tr>
+      <td>AIXBT</td>
+      <td>WATCHLIST</td>
+      <td>52.596088</td>
+      <td>55.769085</td>
+      <td>2.667332</td>
+    </tr>
+    <tr>
+      <td>XPL</td>
+      <td>NO-GO</td>
+      <td>48.992826</td>
+      <td>59.984057</td>
+      <td>2.911890</td>
+    </tr>
+    <tr>
+      <td>TAO</td>
+      <td>WATCHLIST</td>
+      <td>39.974099</td>
+      <td>52.164665</td>
+      <td>0.166928</td>
+    </tr>
+    <tr>
+      <td>DYDX</td>
+      <td>NO-GO</td>
+      <td>38.582344</td>
+      <td>61.294098</td>
+      <td>-1.069913</td>
+    </tr>
+    <tr>
+      <td>EIGEN</td>
+      <td>WATCHLIST</td>
+      <td>32.210572</td>
+      <td>59.356826</td>
+      <td>-2.439915</td>
+    </tr>
+  </tbody>
+</table>
+
+  <h2>Today's Paper Portfolio</h2>
+  <table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>asset</th>
+      <th>allocation_pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Cash</td>
+      <td>100.0</td>
+    </tr>
+  </tbody>
+</table>
 
   <h2>Alerts</h2>
   <ul><li>No GO status changes detected.</li></ul>
@@ -43,20 +152,22 @@
   <thead>
     <tr style="text-align: right;">
       <th>symbol</th>
-      <th>decision</th>
+      <th>status</th>
+      <th>confidence_pct</th>
       <th>return_7d_pct</th>
       <th>return_14d_pct</th>
       <th>return_30d_pct</th>
       <th>profit_factor_30d</th>
       <th>max_drawdown_30d_pct</th>
       <th>trade_count_30d</th>
-      <th>failed_conditions</th>
+      <th>criteria</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>PENGU</td>
       <td>NO-GO</td>
+      <td>65.323878</td>
       <td>-0.172470</td>
       <td>0.377611</td>
       <td>0.020719</td>
@@ -68,6 +179,7 @@
     <tr>
       <td>DYDX</td>
       <td>NO-GO</td>
+      <td>61.294098</td>
       <td>-0.088105</td>
       <td>-0.664498</td>
       <td>-1.466712</td>
@@ -78,18 +190,20 @@
     </tr>
     <tr>
       <td>AIXBT</td>
-      <td>NO-GO</td>
+      <td>WATCHLIST</td>
+      <td>55.769085</td>
       <td>0.785515</td>
       <td>1.649957</td>
       <td>0.226174</td>
       <td>1.051229</td>
       <td>-1.777275</td>
       <td>58</td>
-      <td>strict GO performance filter failed</td>
+      <td>Almost GO —</td>
     </tr>
     <tr>
       <td>XPL</td>
       <td>NO-GO</td>
+      <td>59.984057</td>
       <td>-0.310343</td>
       <td>-0.023891</td>
       <td>0.424187</td>
@@ -100,18 +214,20 @@
     </tr>
     <tr>
       <td>EIGEN</td>
-      <td>NO-GO</td>
+      <td>WATCHLIST</td>
+      <td>59.356826</td>
       <td>0.883973</td>
       <td>1.799423</td>
       <td>2.698085</td>
       <td>1.442567</td>
       <td>-1.474591</td>
       <td>81</td>
-      <td>strict GO performance filter failed</td>
+      <td>Almost GO —</td>
     </tr>
     <tr>
       <td>BOME</td>
       <td>NO-GO</td>
+      <td>53.080517</td>
       <td>-0.191233</td>
       <td>0.183205</td>
       <td>-1.160403</td>
@@ -123,6 +239,7 @@
     <tr>
       <td>LIT</td>
       <td>NO-GO</td>
+      <td>72.738681</td>
       <td>0.723800</td>
       <td>0.221359</td>
       <td>-0.444556</td>
@@ -134,6 +251,7 @@
     <tr>
       <td>SPX6900</td>
       <td>NO-GO</td>
+      <td>65.607617</td>
       <td>-0.832405</td>
       <td>-0.011305</td>
       <td>-2.232635</td>
@@ -144,18 +262,20 @@
     </tr>
     <tr>
       <td>TAO</td>
-      <td>NO-GO</td>
+      <td>WATCHLIST</td>
+      <td>52.164665</td>
       <td>0.014525</td>
       <td>0.595468</td>
       <td>1.143266</td>
       <td>1.598335</td>
       <td>-0.479152</td>
       <td>31</td>
-      <td>30d trade count &gt;= 50 failed: 31</td>
+      <td>Almost GO — 30d trade count &gt;= 50 failed: 31</td>
     </tr>
     <tr>
       <td>AERO</td>
       <td>NO-GO</td>
+      <td>64.176381</td>
       <td>-0.506730</td>
       <td>0.244435</td>
       <td>0.006051</td>
@@ -163,6 +283,1345 @@
       <td>-1.617468</td>
       <td>66</td>
       <td>7d return &gt; 0 failed: -0.506730%; 30d profit factor &gt; 1.05 failed: 1.003759</td>
+    </tr>
+  </tbody>
+</table>
+
+  <h2>Current Market Momentum Leaders</h2>
+  <table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>momentum_rank</th>
+      <th>symbol</th>
+      <th>timeframe</th>
+      <th>return_1h_pct</th>
+      <th>return_4h_pct</th>
+      <th>return_24h_pct</th>
+      <th>momentum_score</th>
+      <th>latest_timestamp</th>
+      <th>latest_price</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>PI</td>
+      <td>1h</td>
+      <td>0.412086</td>
+      <td>9.012679</td>
+      <td>14.810594</td>
+      <td>10.911443</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.533240e-02</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>MET</td>
+      <td>1h</td>
+      <td>0.177075</td>
+      <td>2.474324</td>
+      <td>18.174611</td>
+      <td>10.764894</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.714170e-01</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>PUMP</td>
+      <td>1h</td>
+      <td>0.624592</td>
+      <td>0.103864</td>
+      <td>13.915039</td>
+      <td>7.778119</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.648100e-03</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>SPX6900</td>
+      <td>1h</td>
+      <td>-0.177013</td>
+      <td>0.190095</td>
+      <td>12.321982</td>
+      <td>6.807567</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.868560e-01</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>CC</td>
+      <td>1h</td>
+      <td>0.539466</td>
+      <td>2.462260</td>
+      <td>10.196788</td>
+      <td>6.427832</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.436900e-01</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>ZEC</td>
+      <td>1h</td>
+      <td>-0.282949</td>
+      <td>-0.644652</td>
+      <td>9.605594</td>
+      <td>5.047239</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.533000e+02</td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>VIRTUAL</td>
+      <td>1h</td>
+      <td>-0.364783</td>
+      <td>1.347878</td>
+      <td>8.149220</td>
+      <td>4.831717</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.954350e-01</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>FARTCOIN</td>
+      <td>1h</td>
+      <td>-0.394559</td>
+      <td>0.482751</td>
+      <td>8.181140</td>
+      <td>4.585269</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.494490e-01</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>PENGU</td>
+      <td>1h</td>
+      <td>-0.450502</td>
+      <td>1.423289</td>
+      <td>6.566530</td>
+      <td>3.971003</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.149720e-03</td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>0G</td>
+      <td>1h</td>
+      <td>0.514342</td>
+      <td>2.174398</td>
+      <td>5.144001</td>
+      <td>3.558671</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.833070e-01</td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>LINK</td>
+      <td>1h</td>
+      <td>-0.061257</td>
+      <td>0.454584</td>
+      <td>5.559740</td>
+      <td>3.185044</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.353090e+00</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>HYPE</td>
+      <td>1h</td>
+      <td>-0.266671</td>
+      <td>-0.121702</td>
+      <td>5.851893</td>
+      <td>3.142030</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.713180e+01</td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td>PENDLE</td>
+      <td>1h</td>
+      <td>-0.041979</td>
+      <td>-0.037460</td>
+      <td>5.699008</td>
+      <td>3.116919</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.547740e+00</td>
+    </tr>
+    <tr>
+      <td>14</td>
+      <td>AERO</td>
+      <td>1h</td>
+      <td>-0.188635</td>
+      <td>-0.186104</td>
+      <td>5.536476</td>
+      <td>2.960936</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.116630e-01</td>
+    </tr>
+    <tr>
+      <td>15</td>
+      <td>WSTETH</td>
+      <td>1h</td>
+      <td>-0.022806</td>
+      <td>-0.055060</td>
+      <td>5.417803</td>
+      <td>2.959853</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.323440e+03</td>
+    </tr>
+    <tr>
+      <td>16</td>
+      <td>ETH</td>
+      <td>1h</td>
+      <td>-0.058678</td>
+      <td>-0.066674</td>
+      <td>5.334915</td>
+      <td>2.905400</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.873550e+03</td>
+    </tr>
+    <tr>
+      <td>17</td>
+      <td>IP</td>
+      <td>1h</td>
+      <td>-0.365903</td>
+      <td>-0.869951</td>
+      <td>5.298844</td>
+      <td>2.598493</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.837330e-01</td>
+    </tr>
+    <tr>
+      <td>18</td>
+      <td>LIT</td>
+      <td>1h</td>
+      <td>-1.491462</td>
+      <td>-2.857143</td>
+      <td>6.475115</td>
+      <td>2.480451</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.542860e+00</td>
+    </tr>
+    <tr>
+      <td>19</td>
+      <td>BOME</td>
+      <td>1h</td>
+      <td>0.079760</td>
+      <td>0.474712</td>
+      <td>4.148136</td>
+      <td>2.435852</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.203450e-04</td>
+    </tr>
+    <tr>
+      <td>20</td>
+      <td>SYRUP</td>
+      <td>1h</td>
+      <td>-0.043995</td>
+      <td>0.045083</td>
+      <td>4.287408</td>
+      <td>2.365000</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.908470e-01</td>
+    </tr>
+    <tr>
+      <td>21</td>
+      <td>DASH</td>
+      <td>1h</td>
+      <td>-0.260679</td>
+      <td>-0.677543</td>
+      <td>4.545566</td>
+      <td>2.257696</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.424390e+01</td>
+    </tr>
+    <tr>
+      <td>22</td>
+      <td>GMX</td>
+      <td>1h</td>
+      <td>0.130287</td>
+      <td>0.071346</td>
+      <td>3.984044</td>
+      <td>2.232171</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.933080e+00</td>
+    </tr>
+    <tr>
+      <td>23</td>
+      <td>SOL</td>
+      <td>1h</td>
+      <td>-0.087674</td>
+      <td>0.138563</td>
+      <td>3.963172</td>
+      <td>2.208162</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>7.783390e+01</td>
+    </tr>
+    <tr>
+      <td>24</td>
+      <td>APE_DEPRECATED</td>
+      <td>1h</td>
+      <td>0.135860</td>
+      <td>-0.069477</td>
+      <td>3.924884</td>
+      <td>2.158222</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.481470e-01</td>
+    </tr>
+    <tr>
+      <td>25</td>
+      <td>APE</td>
+      <td>1h</td>
+      <td>0.133157</td>
+      <td>-0.072175</td>
+      <td>3.922078</td>
+      <td>2.155464</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.481430e-01</td>
+    </tr>
+    <tr>
+      <td>26</td>
+      <td>XRP</td>
+      <td>1h</td>
+      <td>-0.062349</td>
+      <td>0.237456</td>
+      <td>3.611478</td>
+      <td>2.048197</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.105980e+00</td>
+    </tr>
+    <tr>
+      <td>27</td>
+      <td>SUI</td>
+      <td>1h</td>
+      <td>0.082281</td>
+      <td>0.357397</td>
+      <td>3.475272</td>
+      <td>2.030961</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>7.553550e-01</td>
+    </tr>
+    <tr>
+      <td>28</td>
+      <td>JUP</td>
+      <td>1h</td>
+      <td>-0.114855</td>
+      <td>-1.582937</td>
+      <td>4.519314</td>
+      <td>1.993513</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.104580e-01</td>
+    </tr>
+    <tr>
+      <td>29</td>
+      <td>BTC</td>
+      <td>1h</td>
+      <td>-0.047968</td>
+      <td>0.002286</td>
+      <td>3.636004</td>
+      <td>1.993293</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.474136e+04</td>
+    </tr>
+    <tr>
+      <td>30</td>
+      <td>TBTC</td>
+      <td>1h</td>
+      <td>-0.060782</td>
+      <td>-0.010534</td>
+      <td>3.622718</td>
+      <td>1.980217</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.473306e+04</td>
+    </tr>
+    <tr>
+      <td>31</td>
+      <td>MOODENG</td>
+      <td>1h</td>
+      <td>0.186381</td>
+      <td>1.069814</td>
+      <td>2.855083</td>
+      <td>1.919197</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.881000e-02</td>
+    </tr>
+    <tr>
+      <td>32</td>
+      <td>LINEA</td>
+      <td>1h</td>
+      <td>0.103722</td>
+      <td>0.427438</td>
+      <td>3.198835</td>
+      <td>1.903149</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.509290e-03</td>
+    </tr>
+    <tr>
+      <td>33</td>
+      <td>DOGE</td>
+      <td>1h</td>
+      <td>-0.029311</td>
+      <td>0.504462</td>
+      <td>3.147860</td>
+      <td>1.878265</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>7.435300e-02</td>
+    </tr>
+    <tr>
+      <td>34</td>
+      <td>ADA</td>
+      <td>1h</td>
+      <td>-0.121248</td>
+      <td>-0.067058</td>
+      <td>3.403077</td>
+      <td>1.833388</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.639280e-01</td>
+    </tr>
+    <tr>
+      <td>35</td>
+      <td>HBAR</td>
+      <td>1h</td>
+      <td>0.202312</td>
+      <td>0.619547</td>
+      <td>2.880631</td>
+      <td>1.800558</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.785420e-02</td>
+    </tr>
+    <tr>
+      <td>36</td>
+      <td>AVAX</td>
+      <td>1h</td>
+      <td>-0.121532</td>
+      <td>0.301359</td>
+      <td>3.099358</td>
+      <td>1.776825</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.673240e+00</td>
+    </tr>
+    <tr>
+      <td>37</td>
+      <td>LTC</td>
+      <td>1h</td>
+      <td>-0.119371</td>
+      <td>0.071938</td>
+      <td>3.215551</td>
+      <td>1.772229</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.493200e+01</td>
+    </tr>
+    <tr>
+      <td>38</td>
+      <td>FIL</td>
+      <td>1h</td>
+      <td>-0.090177</td>
+      <td>-0.226732</td>
+      <td>3.281905</td>
+      <td>1.723502</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>7.810880e-01</td>
+    </tr>
+    <tr>
+      <td>39</td>
+      <td>ONDO</td>
+      <td>1h</td>
+      <td>-0.402970</td>
+      <td>-0.938624</td>
+      <td>3.739507</td>
+      <td>1.714696</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.188330e-01</td>
+    </tr>
+    <tr>
+      <td>40</td>
+      <td>AR</td>
+      <td>1h</td>
+      <td>0.033022</td>
+      <td>-0.725933</td>
+      <td>3.492471</td>
+      <td>1.708032</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.999340e+00</td>
+    </tr>
+    <tr>
+      <td>41</td>
+      <td>AIXBT</td>
+      <td>1h</td>
+      <td>-0.035367</td>
+      <td>0.689611</td>
+      <td>2.667332</td>
+      <td>1.668611</td>
+      <td>2026-07-15 09:00:00</td>
+      <td>1.893740e-02</td>
+    </tr>
+    <tr>
+      <td>42</td>
+      <td>BRETT</td>
+      <td>1h</td>
+      <td>0.018615</td>
+      <td>-0.335601</td>
+      <td>3.162849</td>
+      <td>1.641679</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.211880e-03</td>
+    </tr>
+    <tr>
+      <td>43</td>
+      <td>AVNT</td>
+      <td>1h</td>
+      <td>-0.070394</td>
+      <td>0.816663</td>
+      <td>2.548390</td>
+      <td>1.636054</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>9.468580e-02</td>
+    </tr>
+    <tr>
+      <td>44</td>
+      <td>BERA</td>
+      <td>1h</td>
+      <td>0.029717</td>
+      <td>0.262756</td>
+      <td>2.789199</td>
+      <td>1.617344</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.885010e-01</td>
+    </tr>
+    <tr>
+      <td>45</td>
+      <td>DOLO</td>
+      <td>1h</td>
+      <td>-0.207961</td>
+      <td>0.011653</td>
+      <td>2.933443</td>
+      <td>1.585696</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.231350e-02</td>
+    </tr>
+    <tr>
+      <td>46</td>
+      <td>SHIB</td>
+      <td>1h</td>
+      <td>-0.197830</td>
+      <td>0.763076</td>
+      <td>2.324460</td>
+      <td>1.477701</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.242720e-06</td>
+    </tr>
+    <tr>
+      <td>47</td>
+      <td>RENDER</td>
+      <td>1h</td>
+      <td>-0.189567</td>
+      <td>0.113694</td>
+      <td>2.578917</td>
+      <td>1.424078</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.532170e+00</td>
+    </tr>
+    <tr>
+      <td>48</td>
+      <td>APT</td>
+      <td>1h</td>
+      <td>-0.098906</td>
+      <td>-0.911968</td>
+      <td>3.102003</td>
+      <td>1.417675</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.171490e-01</td>
+    </tr>
+    <tr>
+      <td>49</td>
+      <td>GLV [ETH-USDC]</td>
+      <td>1h</td>
+      <td>-0.048924</td>
+      <td>-0.040191</td>
+      <td>2.582311</td>
+      <td>1.400875</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.144080e+00</td>
+    </tr>
+    <tr>
+      <td>50</td>
+      <td>AAVE</td>
+      <td>1h</td>
+      <td>-0.165925</td>
+      <td>-0.642679</td>
+      <td>2.933304</td>
+      <td>1.395625</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>9.795370e+01</td>
+    </tr>
+    <tr>
+      <td>51</td>
+      <td>MORPHO</td>
+      <td>1h</td>
+      <td>-0.284622</td>
+      <td>2.280246</td>
+      <td>1.290173</td>
+      <td>1.350975</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.053010e+00</td>
+    </tr>
+    <tr>
+      <td>52</td>
+      <td>XLM</td>
+      <td>1h</td>
+      <td>-0.157115</td>
+      <td>0.028421</td>
+      <td>2.473698</td>
+      <td>1.345493</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.830170e-01</td>
+    </tr>
+    <tr>
+      <td>53</td>
+      <td>XMR</td>
+      <td>1h</td>
+      <td>0.553975</td>
+      <td>0.429327</td>
+      <td>2.055426</td>
+      <td>1.342379</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.321700e+02</td>
+    </tr>
+    <tr>
+      <td>54</td>
+      <td>FLOKI</td>
+      <td>1h</td>
+      <td>-0.105398</td>
+      <td>0.562434</td>
+      <td>2.087137</td>
+      <td>1.300846</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.236770e-05</td>
+    </tr>
+    <tr>
+      <td>55</td>
+      <td>STX</td>
+      <td>1h</td>
+      <td>0.008332</td>
+      <td>0.460306</td>
+      <td>1.973325</td>
+      <td>1.224670</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.680500e-01</td>
+    </tr>
+    <tr>
+      <td>56</td>
+      <td>CRO</td>
+      <td>1h</td>
+      <td>-0.084280</td>
+      <td>-0.729648</td>
+      <td>2.632869</td>
+      <td>1.216542</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.548220e-02</td>
+    </tr>
+    <tr>
+      <td>57</td>
+      <td>MKR</td>
+      <td>1h</td>
+      <td>-0.052978</td>
+      <td>-0.506986</td>
+      <td>2.467321</td>
+      <td>1.196984</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.414920e+03</td>
+    </tr>
+    <tr>
+      <td>58</td>
+      <td>KAS</td>
+      <td>1h</td>
+      <td>-0.139105</td>
+      <td>0.569429</td>
+      <td>1.865494</td>
+      <td>1.175985</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.885880e-02</td>
+    </tr>
+    <tr>
+      <td>59</td>
+      <td>TRUMP</td>
+      <td>1h</td>
+      <td>-0.042182</td>
+      <td>0.103048</td>
+      <td>2.064136</td>
+      <td>1.159862</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.563990e+00</td>
+    </tr>
+    <tr>
+      <td>60</td>
+      <td>MON</td>
+      <td>1h</td>
+      <td>0.181471</td>
+      <td>0.251781</td>
+      <td>1.883882</td>
+      <td>1.138890</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.285500e-02</td>
+    </tr>
+    <tr>
+      <td>61</td>
+      <td>XPL</td>
+      <td>1h</td>
+      <td>-0.135677</td>
+      <td>-1.597774</td>
+      <td>2.911890</td>
+      <td>1.101856</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>9.369860e-02</td>
+    </tr>
+    <tr>
+      <td>62</td>
+      <td>ALGO</td>
+      <td>1h</td>
+      <td>0.138490</td>
+      <td>0.570530</td>
+      <td>1.551084</td>
+      <td>1.045029</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.510580e-02</td>
+    </tr>
+    <tr>
+      <td>63</td>
+      <td>CHZ</td>
+      <td>1h</td>
+      <td>0.199258</td>
+      <td>0.382409</td>
+      <td>1.607337</td>
+      <td>1.028647</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.669500e-02</td>
+    </tr>
+    <tr>
+      <td>64</td>
+      <td>ZRO</td>
+      <td>1h</td>
+      <td>-0.174789</td>
+      <td>0.098034</td>
+      <td>1.858098</td>
+      <td>1.025146</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.709560e-01</td>
+    </tr>
+    <tr>
+      <td>65</td>
+      <td>MELANIA</td>
+      <td>1h</td>
+      <td>0.033611</td>
+      <td>0.359723</td>
+      <td>1.584287</td>
+      <td>0.984316</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.065640e-02</td>
+    </tr>
+    <tr>
+      <td>66</td>
+      <td>CAKE</td>
+      <td>1h</td>
+      <td>-0.172762</td>
+      <td>-0.353974</td>
+      <td>2.017126</td>
+      <td>0.977313</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.427240e+00</td>
+    </tr>
+    <tr>
+      <td>67</td>
+      <td>ASTER</td>
+      <td>1h</td>
+      <td>0.019967</td>
+      <td>0.992166</td>
+      <td>1.218726</td>
+      <td>0.970944</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.361850e-01</td>
+    </tr>
+    <tr>
+      <td>68</td>
+      <td>OKB</td>
+      <td>1h</td>
+      <td>0.073408</td>
+      <td>0.396675</td>
+      <td>1.516104</td>
+      <td>0.963871</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.152200e+01</td>
+    </tr>
+    <tr>
+      <td>69</td>
+      <td>DOT</td>
+      <td>1h</td>
+      <td>0.001984</td>
+      <td>0.229774</td>
+      <td>1.565960</td>
+      <td>0.930508</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.567170e-01</td>
+    </tr>
+    <tr>
+      <td>70</td>
+      <td>ANIME</td>
+      <td>1h</td>
+      <td>-0.027849</td>
+      <td>-0.273480</td>
+      <td>1.805847</td>
+      <td>0.906994</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.764100e-03</td>
+    </tr>
+    <tr>
+      <td>71</td>
+      <td>ATOM</td>
+      <td>1h</td>
+      <td>-0.006424</td>
+      <td>-0.827578</td>
+      <td>2.051988</td>
+      <td>0.879356</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.556650e+00</td>
+    </tr>
+    <tr>
+      <td>72</td>
+      <td>BNB</td>
+      <td>1h</td>
+      <td>-0.050051</td>
+      <td>-0.201623</td>
+      <td>1.717778</td>
+      <td>0.876784</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.791200e+02</td>
+    </tr>
+    <tr>
+      <td>73</td>
+      <td>KTA</td>
+      <td>1h</td>
+      <td>-0.081276</td>
+      <td>-0.489791</td>
+      <td>1.863454</td>
+      <td>0.865771</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.204790e-01</td>
+    </tr>
+    <tr>
+      <td>74</td>
+      <td>S</td>
+      <td>1h</td>
+      <td>-0.405132</td>
+      <td>-0.254516</td>
+      <td>1.786652</td>
+      <td>0.845534</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.559120e-02</td>
+    </tr>
+    <tr>
+      <td>75</td>
+      <td>SKY</td>
+      <td>1h</td>
+      <td>-0.319287</td>
+      <td>-0.946783</td>
+      <td>2.139491</td>
+      <td>0.844792</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.081610e-02</td>
+    </tr>
+    <tr>
+      <td>76</td>
+      <td>TON</td>
+      <td>1h</td>
+      <td>-0.189470</td>
+      <td>-0.589644</td>
+      <td>1.896892</td>
+      <td>0.837977</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.606700e+00</td>
+    </tr>
+    <tr>
+      <td>77</td>
+      <td>BONK</td>
+      <td>1h</td>
+      <td>-0.012948</td>
+      <td>0.277728</td>
+      <td>1.341232</td>
+      <td>0.819054</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.783960e-06</td>
+    </tr>
+    <tr>
+      <td>78</td>
+      <td>UNI</td>
+      <td>1h</td>
+      <td>-0.082438</td>
+      <td>-0.571505</td>
+      <td>1.785959</td>
+      <td>0.798460</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.636110e+00</td>
+    </tr>
+    <tr>
+      <td>79</td>
+      <td>NEAR</td>
+      <td>1h</td>
+      <td>-0.239745</td>
+      <td>-0.057941</td>
+      <td>1.527340</td>
+      <td>0.786693</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.018130e+00</td>
+    </tr>
+    <tr>
+      <td>80</td>
+      <td>MNT</td>
+      <td>1h</td>
+      <td>-0.075716</td>
+      <td>0.770683</td>
+      <td>1.021257</td>
+      <td>0.781539</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.249540e-01</td>
+    </tr>
+    <tr>
+      <td>81</td>
+      <td>SEI</td>
+      <td>1h</td>
+      <td>0.078043</td>
+      <td>-0.076682</td>
+      <td>1.432813</td>
+      <td>0.776749</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.834440e-02</td>
+    </tr>
+    <tr>
+      <td>82</td>
+      <td>PEPE</td>
+      <td>1h</td>
+      <td>-0.231513</td>
+      <td>-0.621499</td>
+      <td>1.629649</td>
+      <td>0.675130</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.783880e-06</td>
+    </tr>
+    <tr>
+      <td>83</td>
+      <td>BCH</td>
+      <td>1h</td>
+      <td>0.000000</td>
+      <td>0.959931</td>
+      <td>0.417715</td>
+      <td>0.517722</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.355900e+02</td>
+    </tr>
+    <tr>
+      <td>84</td>
+      <td>TRX</td>
+      <td>1h</td>
+      <td>0.051057</td>
+      <td>0.164058</td>
+      <td>0.780995</td>
+      <td>0.486423</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.272500e-01</td>
+    </tr>
+    <tr>
+      <td>85</td>
+      <td>SILVER</td>
+      <td>1h</td>
+      <td>0.068499</td>
+      <td>0.000000</td>
+      <td>0.723951</td>
+      <td>0.408448</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.843500e+01</td>
+    </tr>
+    <tr>
+      <td>86</td>
+      <td>MEME</td>
+      <td>1h</td>
+      <td>-0.147778</td>
+      <td>-0.499070</td>
+      <td>1.040640</td>
+      <td>0.400464</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.452840e-04</td>
+    </tr>
+    <tr>
+      <td>87</td>
+      <td>WIF</td>
+      <td>1h</td>
+      <td>-0.125706</td>
+      <td>-0.611290</td>
+      <td>1.083407</td>
+      <td>0.393631</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.541340e-01</td>
+    </tr>
+    <tr>
+      <td>88</td>
+      <td>FET</td>
+      <td>1h</td>
+      <td>-0.013616</td>
+      <td>0.382139</td>
+      <td>0.497664</td>
+      <td>0.386315</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.615510e-01</td>
+    </tr>
+    <tr>
+      <td>89</td>
+      <td>NATGAS</td>
+      <td>1h</td>
+      <td>0.034801</td>
+      <td>-0.086896</td>
+      <td>0.735938</td>
+      <td>0.383917</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.874500e+00</td>
+    </tr>
+    <tr>
+      <td>90</td>
+      <td>OP</td>
+      <td>1h</td>
+      <td>-0.010860</td>
+      <td>-0.390475</td>
+      <td>0.857459</td>
+      <td>0.352831</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.012740e-01</td>
+    </tr>
+    <tr>
+      <td>91</td>
+      <td>LDO</td>
+      <td>1h</td>
+      <td>-0.519601</td>
+      <td>-1.664804</td>
+      <td>1.676814</td>
+      <td>0.344866</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.308350e-01</td>
+    </tr>
+    <tr>
+      <td>92</td>
+      <td>WLD</td>
+      <td>1h</td>
+      <td>-0.147701</td>
+      <td>-0.677853</td>
+      <td>1.021103</td>
+      <td>0.336096</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.096830e-01</td>
+    </tr>
+    <tr>
+      <td>93</td>
+      <td>TAO</td>
+      <td>1h</td>
+      <td>0.060637</td>
+      <td>0.415822</td>
+      <td>0.166928</td>
+      <td>0.225652</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.980200e+02</td>
+    </tr>
+    <tr>
+      <td>94</td>
+      <td>MEW</td>
+      <td>1h</td>
+      <td>-0.333308</td>
+      <td>-0.257327</td>
+      <td>0.516985</td>
+      <td>0.157148</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.624160e-04</td>
+    </tr>
+    <tr>
+      <td>95</td>
+      <td>XAUT</td>
+      <td>1h</td>
+      <td>-0.057344</td>
+      <td>-0.028556</td>
+      <td>0.310448</td>
+      <td>0.153578</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.026020e+03</td>
+    </tr>
+    <tr>
+      <td>96</td>
+      <td>XAUT.V2</td>
+      <td>1h</td>
+      <td>-0.057344</td>
+      <td>-0.028556</td>
+      <td>0.310448</td>
+      <td>0.153578</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.026020e+03</td>
+    </tr>
+    <tr>
+      <td>97</td>
+      <td>VVV</td>
+      <td>1h</td>
+      <td>-0.270256</td>
+      <td>0.217079</td>
+      <td>0.221631</td>
+      <td>0.146482</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.103370e+01</td>
+    </tr>
+    <tr>
+      <td>98</td>
+      <td>GOLD</td>
+      <td>1h</td>
+      <td>-0.023793</td>
+      <td>-0.001487</td>
+      <td>0.265217</td>
+      <td>0.141854</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.033790e+03</td>
+    </tr>
+    <tr>
+      <td>99</td>
+      <td>ICP</td>
+      <td>1h</td>
+      <td>0.050961</td>
+      <td>0.084205</td>
+      <td>0.019104</td>
+      <td>0.043413</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.198880e+00</td>
+    </tr>
+    <tr>
+      <td>100</td>
+      <td>OM</td>
+      <td>1h</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>2026-06-02 15:00:00</td>
+      <td>6.685000e-02</td>
+    </tr>
+    <tr>
+      <td>101</td>
+      <td>ZORA</td>
+      <td>1h</td>
+      <td>-0.006418</td>
+      <td>1.204770</td>
+      <td>-0.706101</td>
+      <td>-0.027887</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.699270e-03</td>
+    </tr>
+    <tr>
+      <td>102</td>
+      <td>BRENTOIL</td>
+      <td>1h</td>
+      <td>0.285595</td>
+      <td>0.237883</td>
+      <td>-0.283973</td>
+      <td>-0.041981</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.427500e+01</td>
+    </tr>
+    <tr>
+      <td>103</td>
+      <td>SATS</td>
+      <td>1h</td>
+      <td>-0.066048</td>
+      <td>-0.303433</td>
+      <td>0.095104</td>
+      <td>-0.048630</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>9.577580e-09</td>
+    </tr>
+    <tr>
+      <td>104</td>
+      <td>ENA</td>
+      <td>1h</td>
+      <td>-0.209900</td>
+      <td>-0.911333</td>
+      <td>0.285648</td>
+      <td>-0.147778</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.296050e-02</td>
+    </tr>
+    <tr>
+      <td>105</td>
+      <td>WTIOIL</td>
+      <td>1h</td>
+      <td>0.214741</td>
+      <td>0.265403</td>
+      <td>-0.613843</td>
+      <td>-0.225781</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>7.933500e+01</td>
+    </tr>
+    <tr>
+      <td>106</td>
+      <td>SPCX</td>
+      <td>1h</td>
+      <td>-0.021747</td>
+      <td>-0.130340</td>
+      <td>-0.346821</td>
+      <td>-0.233116</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.379200e+02</td>
+    </tr>
+    <tr>
+      <td>107</td>
+      <td>POL</td>
+      <td>1h</td>
+      <td>0.018941</td>
+      <td>-1.053369</td>
+      <td>-0.033070</td>
+      <td>-0.331358</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.343170e-02</td>
+    </tr>
+    <tr>
+      <td>108</td>
+      <td>CVX</td>
+      <td>1h</td>
+      <td>0.012742</td>
+      <td>0.011993</td>
+      <td>-0.618939</td>
+      <td>-0.334907</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>1.334310e+00</td>
+    </tr>
+    <tr>
+      <td>109</td>
+      <td>AI16Z</td>
+      <td>1h</td>
+      <td>-0.075016</td>
+      <td>-2.496555</td>
+      <td>0.510756</td>
+      <td>-0.479303</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.862950e-04</td>
+    </tr>
+    <tr>
+      <td>110</td>
+      <td>DYDX</td>
+      <td>1h</td>
+      <td>-0.000828</td>
+      <td>0.132670</td>
+      <td>-1.069913</td>
+      <td>-0.548775</td>
+      <td>2026-07-15 09:00:00</td>
+      <td>1.207600e-01</td>
+    </tr>
+    <tr>
+      <td>111</td>
+      <td>WLFI</td>
+      <td>1h</td>
+      <td>-0.166447</td>
+      <td>0.293286</td>
+      <td>-1.141737</td>
+      <td>-0.564937</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>5.680030e-02</td>
+    </tr>
+    <tr>
+      <td>112</td>
+      <td>ARB</td>
+      <td>1h</td>
+      <td>-0.094737</td>
+      <td>-1.861986</td>
+      <td>-0.025886</td>
+      <td>-0.587043</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>8.921560e-02</td>
+    </tr>
+    <tr>
+      <td>113</td>
+      <td>TIA</td>
+      <td>1h</td>
+      <td>-0.023621</td>
+      <td>-1.288075</td>
+      <td>-0.618080</td>
+      <td>-0.729909</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.063200e-01</td>
+    </tr>
+    <tr>
+      <td>114</td>
+      <td>INJ</td>
+      <td>1h</td>
+      <td>-0.286881</td>
+      <td>-0.967690</td>
+      <td>-0.837780</td>
+      <td>-0.794118</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.928640e+00</td>
+    </tr>
+    <tr>
+      <td>115</td>
+      <td>MEGA</td>
+      <td>1h</td>
+      <td>-0.404568</td>
+      <td>-2.433582</td>
+      <td>-0.097229</td>
+      <td>-0.844236</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>4.788150e-02</td>
+    </tr>
+    <tr>
+      <td>116</td>
+      <td>CRV</td>
+      <td>1h</td>
+      <td>-0.424073</td>
+      <td>-3.038092</td>
+      <td>-1.047460</td>
+      <td>-1.551142</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.195460e-01</td>
+    </tr>
+    <tr>
+      <td>117</td>
+      <td>EIGEN</td>
+      <td>1h</td>
+      <td>-0.157495</td>
+      <td>-0.678635</td>
+      <td>-2.439915</td>
+      <td>-1.569168</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>2.351920e-01</td>
+    </tr>
+    <tr>
+      <td>118</td>
+      <td>WELL</td>
+      <td>1h</td>
+      <td>-0.969200</td>
+      <td>-1.181726</td>
+      <td>-2.158217</td>
+      <td>-1.686917</td>
+      <td>2026-06-02 14:00:00</td>
+      <td>3.900130e-03</td>
+    </tr>
+    <tr>
+      <td>119</td>
+      <td>ORDI</td>
+      <td>1h</td>
+      <td>-0.657723</td>
+      <td>-1.530896</td>
+      <td>-3.259651</td>
+      <td>-2.350735</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>3.418030e+00</td>
+    </tr>
+    <tr>
+      <td>120</td>
+      <td>JTO</td>
+      <td>1h</td>
+      <td>-1.774230</td>
+      <td>-2.255084</td>
+      <td>-3.798164</td>
+      <td>-3.031650</td>
+      <td>2026-07-15 07:00:00</td>
+      <td>6.165720e-01</td>
     </tr>
   </tbody>
 </table>

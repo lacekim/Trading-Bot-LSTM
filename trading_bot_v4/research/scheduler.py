@@ -12,18 +12,20 @@ import sys
 import time
 import traceback
 
+import pandas as pd
+
 from trading_bot import load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
-from trading_bot_v4.research.daily_research import _update_smc_features, run_daily_research
+from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH, _update_smc_features, run_daily_research
 from trading_bot_v4.utils.model_cache import ModelScalerCache
 
 
 SCHEDULER_LOG_PATH = Path("logs/v4_scheduler.log")
 RELOAD_MODEL_REQUEST_PATH = Path("logs/v4_reload_model.request")
-DAILY_RESEARCH_HOUR = 0
-DAILY_RESEARCH_MINUTE = 5
+DAILY_RESEARCH_HOUR = 5
+DAILY_RESEARCH_MINUTE = 0
 
 
 @dataclass(frozen=True)
@@ -155,9 +157,23 @@ def _next_daily_time(now: datetime) -> datetime:
     return candidate
 
 
-def _hourly_refresh_symbols() -> list[str]:
-    symbols = getattr(Config, "HOURLY_REFRESH_SYMBOLS", ["AIXBT", "DYDX"])
-    return [str(symbol).upper() for symbol in symbols]
+def _hourly_refresh_symbols(timeframe: str) -> list[str]:
+    del timeframe  # The daily status is produced for the scheduler's active timeframe.
+    if not DAILY_GO_STATUS_PATH.exists():
+        return []
+    try:
+        status = pd.read_csv(DAILY_GO_STATUS_PATH)
+    except Exception as exc:
+        _log(f"WARNING failed to load daily GO list: {exc}")
+        return []
+    if not {"symbol", "decision"}.issubset(status.columns):
+        _log(f"WARNING daily GO list has invalid columns: {DAILY_GO_STATUS_PATH}")
+        return []
+    selected = status.loc[
+        status["decision"].astype(str).str.upper().eq("GO"),
+        "symbol",
+    ]
+    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
 
 
 def _refresh_live_market_data(symbols: list[str], timeframe: str) -> bool:
@@ -239,8 +255,11 @@ def _refresh_active_market_data(symbols: list[str], timeframe: str) -> int:
 
 
 def _run_hourly_update(timeframe: str, models: SchedulerModelBundle) -> None:
-    symbols = _hourly_refresh_symbols()
-    _log(f"Hourly refresh symbols: {', '.join(symbols)}")
+    symbols = _hourly_refresh_symbols(timeframe)
+    if not symbols:
+        _log("Hourly paper cycle skipped: today's qualified GO list is empty")
+        return
+    _log(f"Hourly qualified assets: {', '.join(symbols)}")
 
     _run_guarded(
         "hourly.refresh_active_market_data",
@@ -288,18 +307,18 @@ def run_auto_scheduler(args: Any) -> None:
     )
     displayed_next_hourly = _next_hour_boundary(now)
     models = _load_scheduler_models("scheduler startup")
-    hourly_symbols = _hourly_refresh_symbols()
+    hourly_symbols = _hourly_refresh_symbols(timeframe)
 
     print("Scheduler started.")
     print("Model loaded.")
     print("Scaler loaded.")
-    print(f"Hourly refresh symbols: {', '.join(hourly_symbols)}")
+    print(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     print("Daily research refresh: all assets")
     print(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     print(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
     print("No live trading.")
     _log("Scheduler started")
-    _log(f"Hourly refresh symbols: {', '.join(hourly_symbols)}")
+    _log(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     _log("Daily research refresh: all assets")
     _log(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     _log(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
