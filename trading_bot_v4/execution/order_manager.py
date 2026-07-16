@@ -88,10 +88,16 @@ class OrderManager:
           timestamp TEXT PRIMARY KEY, equity REAL NOT NULL, cash REAL NOT NULL,
           realized_pnl REAL NOT NULL, unrealized_pnl REAL NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS runtime_state (
+          key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
         """)
         self.connection.execute(
             "INSERT OR IGNORE INTO account(id,starting_balance,cash,updated_at) VALUES(1,?,?,?)",
             (Config.PAPER_STARTING_BALANCE, Config.PAPER_STARTING_BALANCE, _now()),
+        )
+        self.connection.execute(
+            "INSERT OR IGNORE INTO runtime_state VALUES('allow_new_entries','true',?)", (_now(),)
         )
         self.connection.commit()
 
@@ -105,6 +111,46 @@ class OrderManager:
 
     def _positions(self) -> list[sqlite3.Row]:
         return self.connection.execute("SELECT * FROM positions ORDER BY symbol").fetchall()
+
+    def set_new_entries(self, allowed: bool) -> None:
+        self.connection.execute(
+            "INSERT OR REPLACE INTO runtime_state VALUES('allow_new_entries',?,?)",
+            ("true" if allowed else "false", _now()),
+        )
+        self.connection.commit()
+
+    def new_entries_allowed(self) -> bool:
+        row = self.connection.execute(
+            "SELECT value FROM runtime_state WHERE key='allow_new_entries'"
+        ).fetchone()
+        return bool(row and row["value"] == "true")
+
+    def cancel_pending_entries(self) -> int:
+        cursor = self.connection.execute(
+            "UPDATE orders SET status='CANCELLED' WHERE status='PENDING'"
+        )
+        self.connection.commit()
+        return int(cursor.rowcount)
+
+    def close_all_positions(self, reason: str) -> int:
+        positions = self._positions()
+        for position in positions:
+            shutdown_id = f"shutdown_{hashlib.sha256(f'{position['position_id']}|{_now()}'.encode()).hexdigest()[:16]}"
+            self._close_position(position, float(position["current_price"]), reason, shutdown_id)
+        self.connection.commit()
+        return len(positions)
+
+    def is_flat(self) -> bool:
+        return not bool(self._positions())
+
+    def save_state(self) -> None:
+        equity, unrealized = self._equity()
+        account = self._account()
+        self.connection.execute(
+            "INSERT OR REPLACE INTO equity_history VALUES(?,?,?,?,?)",
+            (_now(), equity, account["cash"], account["realized_pnl"], unrealized),
+        )
+        self.connection.commit()
 
     def _equity(self) -> tuple[float, float]:
         unrealized = sum(float(row["unrealized_pnl"]) for row in self._positions())
@@ -140,6 +186,9 @@ class OrderManager:
         )
 
     def _open_position(self, row: Any, signal_id: str) -> bool:
+        if not self.new_entries_allowed():
+            self._reject(row, signal_id, "new entries are blocked")
+            return False
         equity, _ = self._equity()
         account = self._account()
         positions = self._positions()

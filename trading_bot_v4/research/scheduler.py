@@ -19,6 +19,7 @@ from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
+from trading_bot_v4.execution.shutdown import ShutdownCoordinator
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
 from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH, _update_smc_features, run_daily_research
 from trading_bot_v4.utils.model_cache import ModelScalerCache
@@ -335,6 +336,7 @@ def run_auto_scheduler(args: Any) -> None:
 
     print("V5 Scheduler started.")
     print(f"Execution mode: {Config.EXECUTION_MODE}")
+    print(f"New entries: {'enabled' if orders.new_entries_allowed() else 'BLOCKED (run --resume-paper to recover)'}")
     print("Model loaded.")
     print("Scaler loaded.")
     print(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
@@ -372,7 +374,9 @@ def run_auto_scheduler(args: Any) -> None:
 
             time.sleep(30)
     except KeyboardInterrupt:
-        _log("Scheduler stopped by user.")
-        print("Scheduler stopped.")
+        _log(f"Scheduler shutdown requested: {Config.SHUTDOWN_MODE}")
+        report = ShutdownCoordinator(orders, alert=lambda message: _log(f"ALERT {message}")).execute(Config.SHUTDOWN_MODE)
+        _log(f"Scheduler shutdown complete: {report}")
+        print(f"Scheduler stopped using {report.mode.value}; account flat: {report.account_flat}")
     finally:
         orders.close()

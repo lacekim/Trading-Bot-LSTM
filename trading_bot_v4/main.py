@@ -21,6 +21,8 @@ from trading_bot_v4.execution.paper_model_performance import run_paper_model_per
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
+from trading_bot_v4.execution.order_manager import OrderManager
+from trading_bot_v4.execution.shutdown import ShutdownCoordinator, ShutdownMode
 from trading_bot_v4.execution.validated_whitelist_performance import (
     run_go_assets_performance,
     run_paper_readiness,
@@ -61,6 +63,8 @@ def parse_args():
     parser.add_argument("--daily-research", action="store_true", help="Run the daily paper-only V4 research pipeline")
     parser.add_argument("--auto", action="store_true", help="Run the paper-only automatic research scheduler")
     parser.add_argument("--web3-read-only", action="store_true", help="Check Arbitrum RPC and public wallet state without signing")
+    parser.add_argument("--shutdown", choices=[mode.value for mode in ShutdownMode], help="Stop paper execution using an explicit shutdown policy")
+    parser.add_argument("--resume-paper", action="store_true", help="Explicitly allow new paper entries after a shutdown")
     parser.add_argument("--reload-model", action="store_true", help="Request a running scheduler to reload model artifacts")
     parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
@@ -100,6 +104,23 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.resume_paper:
+        orders = OrderManager()
+        try:
+            orders.set_new_entries(True)
+            print("Paper entries enabled.")
+            return 0
+        finally:
+            orders.close()
+    if args.shutdown:
+        orders = OrderManager()
+        try:
+            report = ShutdownCoordinator(orders, alert=logger.critical).execute(args.shutdown)
+            for key, value in report.__dict__.items():
+                print(f"{key}: {value.value if isinstance(value, ShutdownMode) else value}")
+            return 0 if not report.manual_intervention_required else 2
+        finally:
+            orders.close()
     if args.web3_read_only:
         status = check_web3_readiness()
         for key, value in status.to_dict().items():

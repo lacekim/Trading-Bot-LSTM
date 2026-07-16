@@ -34,6 +34,7 @@ class V4Config(LegacyConfig):
     # Explicit execution modes.  LIVE is intentionally unavailable until a
     # separate live adapter is configured and armed.
     EXECUTION_MODE = os.getenv("EXECUTION_MODE", "PAPER").upper()
+    SHUTDOWN_MODE = os.getenv("SHUTDOWN_MODE", "GRACEFUL").upper()
     PAPER_DB_PATH = Path(os.getenv("PAPER_DB_PATH", "data/v5_paper_trading.sqlite3"))
     PAPER_STARTING_BALANCE = float(os.getenv("PAPER_STARTING_BALANCE", "10000"))
     PAPER_LEVERAGE = float(os.getenv("PAPER_LEVERAGE", "1"))
