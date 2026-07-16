@@ -92,6 +92,11 @@ class OrderManager:
           key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL
         );
         """)
+        order_columns = {row[1] for row in self.connection.execute("PRAGMA table_info(orders)")}
+        if "order_kind" not in order_columns:
+            self.connection.execute("ALTER TABLE orders ADD COLUMN order_kind TEXT NOT NULL DEFAULT 'ENTRY'")
+        if "reduce_only" not in order_columns:
+            self.connection.execute("ALTER TABLE orders ADD COLUMN reduce_only INTEGER NOT NULL DEFAULT 0")
         self.connection.execute(
             "INSERT OR IGNORE INTO account(id,starting_balance,cash,updated_at) VALUES(1,?,?,?)",
             (Config.PAPER_STARTING_BALANCE, Config.PAPER_STARTING_BALANCE, _now()),
@@ -125,9 +130,50 @@ class OrderManager:
         ).fetchone()
         return bool(row and row["value"] == "true")
 
+    def _set_state(self, key: str, value: str) -> None:
+        self.connection.execute("INSERT OR REPLACE INTO runtime_state VALUES(?,?,?)", (key, value, _now()))
+
+    def _get_state(self, key: str, default: str = "") -> str:
+        row = self.connection.execute("SELECT value FROM runtime_state WHERE key=?", (key,)).fetchone()
+        return str(row["value"]) if row else default
+
+    def record_shutdown(self, mode: str, completed: bool, error: str | None = None) -> None:
+        self._set_state("shutdown_mode", mode)
+        self._set_state("shutdown_timestamp", _now())
+        self._set_state("previous_shutdown_clean", "true" if completed else "false")
+        self._set_state("shutdown_error", error or "")
+        self.connection.commit()
+
+    def restore_and_reconcile(self, execution_mode: str, whitelist: list[str] | None = None) -> dict[str, Any]:
+        self.set_new_entries(False)
+        previous_clean = self._get_state("previous_shutdown_clean", "true") == "true"
+        # A running process is deliberately marked unclean. Only the shutdown
+        # coordinator may mark it clean again, so power loss is detectable.
+        self._set_state("previous_shutdown_clean", "false")
+        self._set_state("shutdown_mode", "RUNNING")
+        self._set_state("execution_mode", execution_mode)
+        if whitelist is not None:
+            self._set_state("current_whitelist", ",".join(whitelist))
+        self.connection.commit()
+        summary = self.sync()
+        return {"previous_shutdown_clean": previous_clean, "balance": self._account()["cash"],
+                "open_positions": summary.open_positions, "pending_orders": self.pending_order_count(),
+                "equity": summary.equity}
+
+    def pending_order_count(self) -> int:
+        return int(self.connection.execute("SELECT COUNT(*) FROM orders WHERE status='PENDING'").fetchone()[0])
+
+    def open_position_count(self) -> int:
+        return int(self.connection.execute("SELECT COUNT(*) FROM positions").fetchone()[0])
+
+    def position_snapshots(self) -> list[dict[str, Any]]:
+        fields = ("symbol", "direction", "entry_price", "current_price", "unrealized_pnl",
+                  "stop_price", "target_price", "quantity", "notional", "leverage")
+        return [{field: row[field] for field in fields} for row in self._positions()]
+
     def cancel_pending_entries(self) -> int:
         cursor = self.connection.execute(
-            "UPDATE orders SET status='CANCELLED' WHERE status='PENDING'"
+            "UPDATE orders SET status='CANCELLED' WHERE status='PENDING' AND order_kind='ENTRY'"
         )
         self.connection.commit()
         return int(cursor.rowcount)
@@ -137,6 +183,10 @@ class OrderManager:
         for position in positions:
             shutdown_id = f"shutdown_{hashlib.sha256(f'{position['position_id']}|{_now()}'.encode()).hexdigest()[:16]}"
             self._close_position(position, float(position["current_price"]), reason, shutdown_id)
+            self.connection.execute(
+                "UPDATE orders SET status='CANCELLED' WHERE symbol=? AND status='PENDING' AND order_kind='EXIT'",
+                (position["symbol"],),
+            )
         self.connection.commit()
         return len(positions)
 
@@ -165,13 +215,17 @@ class OrderManager:
         )
 
     def _close_position(self, position: sqlite3.Row, price: float, reason: str, signal_id: str) -> None:
-        slip = Config.PAPER_SLIPPAGE_BPS / 10000.0
+        slip = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
         exit_price = price * (1 - slip if position["direction"] == "LONG" else 1 + slip)
         signed_move = exit_price - position["entry_price"]
         if position["direction"] == "SHORT":
             signed_move *= -1
         gross = signed_move * position["quantity"]
-        exit_fee = position["notional"] * Config.PAPER_FEE_BPS / 10000.0
+        held_days = max(0.0, (datetime.now(timezone.utc) - datetime.fromisoformat(position["entry_time"])).total_seconds() / 86400.0)
+        carrying_cost = position["notional"] * held_days * (
+            Config.PAPER_FUNDING_BPS_PER_DAY + Config.PAPER_BORROWING_BPS_PER_DAY
+        ) / 10000.0
+        exit_fee = position["notional"] * Config.PAPER_FEE_BPS / 10000.0 + carrying_cost
         net = gross - position["entry_fee"] - exit_fee
         self.connection.execute(
             "INSERT INTO closed_trades VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -206,7 +260,7 @@ class OrderManager:
             self._reject(row, signal_id, "insufficient exposure capacity or cash buffer")
             return False
         direction, price = str(row["model_direction"]), float(row["price"])
-        slip = Config.PAPER_SLIPPAGE_BPS / 10000.0
+        slip = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
         fill = price * (1 + slip if direction == "LONG" else 1 - slip)
         fee = notional * Config.PAPER_FEE_BPS / 10000.0
         quantity = notional / fill
@@ -217,8 +271,10 @@ class OrderManager:
         order_id, position_id = f"po_{signal_id}", f"pp_{signal_id}"
         self.connection.execute("INSERT INTO signals VALUES(?,?,?,?,?,?,?,?,?)",
             (signal_id, str(row["timestamp"]), str(row["symbol"]), direction, float(row["model_probability"]), price, "ACCEPTED", "", _now()))
-        self.connection.execute("INSERT INTO orders VALUES(?,?,?,?,?,?,?,?,?,?)",
-            (order_id, signal_id, str(row["symbol"]), direction, "FILLED", price, fill, notional, fee, _now()))
+        self.connection.execute("""INSERT INTO orders(
+            order_id,signal_id,symbol,side,status,expected_price,fill_price,notional,fee,created_at,order_kind,reduce_only
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (order_id, signal_id, str(row["symbol"]), direction, "FILLED", price, fill, notional, fee, _now(), "ENTRY", 0))
         self.connection.execute("INSERT INTO positions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (position_id, str(row["symbol"]), direction, _now(), fill, quantity, notional, collateral,
              leverage, stop, target, fee, signal_id, fill, 0.0))
@@ -231,6 +287,7 @@ class OrderManager:
         latest = signals.sort_values("timestamp").groupby("symbol", as_index=False).tail(1) if not signals.empty else signals
         opened = closed = rejected = generated = 0
         for _, row in latest.iterrows():
+            self._set_state(f"last_processed_candle:{row['symbol']}", str(row["timestamp"]))
             symbol, price = str(row["symbol"]), float(row["price"])
             position = self.connection.execute("SELECT * FROM positions WHERE symbol=?", (symbol,)).fetchone()
             if position:

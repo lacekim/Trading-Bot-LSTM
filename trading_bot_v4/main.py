@@ -4,6 +4,19 @@ import argparse
 import sys
 from pathlib import Path
 
+# Handle second-terminal control before importing TensorFlow/model modules.
+if "--request-shutdown" in sys.argv or "--shutdown" in sys.argv:
+    from trading_bot_v4.runtime_control import send_shutdown_request
+    _flag = "--request-shutdown" if "--request-shutdown" in sys.argv else "--shutdown"
+    try:
+        _mode = sys.argv[sys.argv.index(_flag) + 1]
+        _response = send_shutdown_request(_mode)
+        print(_response)
+        raise SystemExit(0 if _response.get("ok") else 1)
+    except (IndexError, OSError, ValueError) as _exc:
+        print(f"Shutdown request failed: {_exc}", file=sys.stderr)
+        raise SystemExit(1)
+
 from trading_bot_v4.config_v4 import V4Config
 from trading_bot_v4.core.data_handler import V4DataHandler
 from trading_bot_v4.ml.trainer import train_v4_model
@@ -63,7 +76,8 @@ def parse_args():
     parser.add_argument("--daily-research", action="store_true", help="Run the daily paper-only V4 research pipeline")
     parser.add_argument("--auto", action="store_true", help="Run the paper-only automatic research scheduler")
     parser.add_argument("--web3-read-only", action="store_true", help="Check Arbitrum RPC and public wallet state without signing")
-    parser.add_argument("--shutdown", choices=[mode.value for mode in ShutdownMode], help="Stop paper execution using an explicit shutdown policy")
+    parser.add_argument("--request-shutdown", choices=["graceful", "close-positions", "emergency"], help="Request shutdown from the running bot over local IPC")
+    parser.add_argument("--shutdown", choices=["graceful", "close-positions", "emergency"], help="Alias for --request-shutdown")
     parser.add_argument("--resume-paper", action="store_true", help="Explicitly allow new paper entries after a shutdown")
     parser.add_argument("--reload-model", action="store_true", help="Request a running scheduler to reload model artifacts")
     parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
@@ -110,15 +124,6 @@ def main():
             orders.set_new_entries(True)
             print("Paper entries enabled.")
             return 0
-        finally:
-            orders.close()
-    if args.shutdown:
-        orders = OrderManager()
-        try:
-            report = ShutdownCoordinator(orders, alert=logger.critical).execute(args.shutdown)
-            for key, value in report.__dict__.items():
-                print(f"{key}: {value.value if isinstance(value, ShutdownMode) else value}")
-            return 0 if not report.manual_intervention_required else 2
         finally:
             orders.close()
     if args.web3_read_only:

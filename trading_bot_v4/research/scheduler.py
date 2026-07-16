@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import traceback
+import signal
 
 import pandas as pd
 
@@ -20,6 +21,9 @@ from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.execution.shutdown import ShutdownCoordinator
+from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode, graceful_signal_handler
+from trading_bot_v4.runtime_control import ControlServer, InstanceLock
+from trading_bot_v4.telegram.control_listener import TelegramControlListener
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
 from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH, _update_smc_features, run_daily_research
 from trading_bot_v4.utils.model_cache import ModelScalerCache
@@ -29,6 +33,7 @@ SCHEDULER_LOG_PATH = Path("logs/v4_scheduler.log")
 RELOAD_MODEL_REQUEST_PATH = Path("logs/v4_reload_model.request")
 DAILY_RESEARCH_HOUR = 5
 DAILY_RESEARCH_MINUTE = 0
+TELEGRAM_EXECUTION_MODES = {"PAPER", "WEB3_READ_ONLY", "LIVE_SMALL", "LIVE"}
 
 
 @dataclass(frozen=True)
@@ -67,6 +72,44 @@ def _log(message: str) -> None:
     timestamp = datetime.now().isoformat(timespec="seconds")
     with SCHEDULER_LOG_PATH.open("a", encoding="utf-8") as handle:
         handle.write(f"{timestamp} {message}\n")
+
+
+def _start_telegram_listener(controller: ShutdownController, transport=None,
+                             output: Callable[[str], None] = print) -> TelegramControlListener:
+    listener = TelegramControlListener(
+        Config.TELEGRAM_BOT_TOKEN,
+        Config.TELEGRAM_ALLOWED_CHAT_IDS,
+        controller,
+        transport=transport,
+        on_error=lambda message: _log(f"ERROR {message}"),
+        on_event=lambda message: _log(message),
+    )
+    if Config.EXECUTION_MODE not in TELEGRAM_EXECUTION_MODES:
+        message = f"Telegram: disabled in {Config.EXECUTION_MODE} mode"
+        output(message); _log(message)
+        return listener
+    if not Config.TELEGRAM_ENABLED:
+        message = "Telegram: disabled — TELEGRAM_ENABLED is false"
+        output(message); _log(message)
+        return listener
+    if not Config.TELEGRAM_BOT_TOKEN:
+        message = "Telegram: unavailable — TELEGRAM_BOT_TOKEN is missing"
+        output(message); _log(message)
+        return listener
+    try:
+        listener.start()
+    except Exception as exc:
+        output(f"Telegram startup failed: {exc}")
+        _log(f"ERROR Telegram startup failed: {exc}")
+        return listener
+    output("Telegram: enabled")
+    output("Telegram listener started.")
+    output(f"Authorized Telegram chat IDs: {len(Config.TELEGRAM_ALLOWED_CHAT_IDS)}")
+    _log("Telegram: enabled")
+    _log("Telegram listener started")
+    _log(f"Authorized Telegram chat IDs: {len(Config.TELEGRAM_ALLOWED_CHAT_IDS)}")
+    listener.send_startup_message()
+    return listener
 
 
 def _run_guarded(name: str, task: Callable[[], Any]) -> Any | None:
@@ -268,7 +311,9 @@ def _format_paper_summary(summary: PaperCycleSummary) -> str:
     )
 
 
-def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: OrderManager) -> None:
+def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: OrderManager,
+                       controller: ShutdownController, telegram: TelegramControlListener | None = None) -> None:
+    positions_before = orders.position_snapshots()
     symbols = _hourly_refresh_symbols(timeframe)
     if not symbols:
         _log("Hourly paper cycle skipped: today's qualified GO list is empty")
@@ -298,8 +343,21 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         return
     signals_path = Path(signal_result["signals_path"])
     signals = pd.read_csv(signals_path) if signals_path.exists() else pd.DataFrame()
+    orders.set_new_entries(controller.entries_allowed())
+    if Config.EXECUTION_MODE != "PAPER":
+        _log(f"hourly.paper_execution skipped in {Config.EXECUTION_MODE} mode")
+        return
     summary = _run_guarded("hourly.paper_execution", lambda: orders.process_signals(signals))
     if summary is not None:
+        positions_after = orders.position_snapshots()
+        controller.update_runtime_snapshot(
+            open_positions=summary.open_positions, equity=summary.equity,
+            realized_pnl=summary.realized_pnl, unrealized_pnl=summary.unrealized_pnl,
+            fees=summary.fees, positions=positions_after,
+            entries_allowed=controller.entries_allowed(),
+        )
+        if telegram and telegram.is_running:
+            telegram.notify_position_cycle(positions_before, positions_after)
         _log(_format_paper_summary(summary))
         print(_format_paper_summary(summary))
 
@@ -322,8 +380,21 @@ def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerMod
 
 def run_auto_scheduler(args: Any) -> None:
     """Run the paper-only V4 scheduler until interrupted."""
+    allowed_modes = {"RESEARCH", "PAPER", "WEB3_READ_ONLY", "LIVE_SMALL", "LIVE"}
+    if Config.EXECUTION_MODE not in allowed_modes:
+        raise ValueError(f"Invalid EXECUTION_MODE: {Config.EXECUTION_MODE}")
+    if Config.EXECUTION_MODE in {"LIVE_SMALL", "LIVE"}:
+        raise RuntimeError("Live signing is disabled: no confirmed GMX live execution adapter is configured")
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     top_validated = int(getattr(args, "top_validated", 10) or 10)
+    controller = ShutdownController()
+    instance_lock = InstanceLock(); instance_lock.acquire()
+    control_server = ControlServer(controller); control_server.start()
+    telegram = _start_telegram_listener(controller)
+    request_graceful = graceful_signal_handler(controller, _log)
+    previous_sigint = signal.signal(signal.SIGINT, request_graceful)
+    previous_sigterm = signal.signal(signal.SIGTERM, request_graceful)
+
     now = datetime.now()
     state = SchedulerState(
         next_hourly_update=now,
@@ -333,6 +404,14 @@ def run_auto_scheduler(args: Any) -> None:
     models = _load_scheduler_models("scheduler startup")
     orders = OrderManager()
     hourly_symbols = _hourly_refresh_symbols(timeframe)
+    _log("Restoring persistent state...")
+    restored = orders.restore_and_reconcile(Config.EXECUTION_MODE, hourly_symbols)
+    _log(f"Previous shutdown clean: {restored['previous_shutdown_clean']}")
+    _log(f"Paper balance restored: ${restored['balance']:.2f}")
+    _log(f"Open positions restored: {restored['open_positions']}")
+    _log(f"Pending orders restored: {restored['pending_orders']}")
+    controller.configure_entry_guard(True, Config.EXECUTION_MODE in {"PAPER", "LIVE_SMALL", "LIVE"})
+    controller.enable_new_entries(); orders.set_new_entries(controller.entries_allowed())
 
     print("V5 Scheduler started.")
     print(f"Execution mode: {Config.EXECUTION_MODE}")
@@ -356,27 +435,56 @@ def run_auto_scheduler(args: Any) -> None:
 
     next_hourly = state.next_hourly_update
     next_daily = state.next_daily_research
+    initial_summary = orders.sync()
+    controller.update_runtime_snapshot(
+        previous_shutdown_clean=restored["previous_shutdown_clean"],
+        pending_orders=restored["pending_orders"], execution_mode=Config.EXECUTION_MODE, scheduler_running=True,
+        entries_allowed=controller.entries_allowed(), qualified_assets=hourly_symbols,
+        open_positions=initial_summary.open_positions, equity=initial_summary.equity,
+        realized_pnl=initial_summary.realized_pnl, unrealized_pnl=initial_summary.unrealized_pnl,
+        fees=initial_summary.fees, positions=orders.position_snapshots(),
+        next_hourly_update=next_hourly.isoformat(timespec="seconds"),
+        next_daily_research=next_daily.isoformat(timespec="seconds"),
+        web3_read_only_status="connected" if web3_status.connected else web3_status.error,
+        live_signing_status="disabled",
+    )
     try:
-        while True:
+        while not controller.is_shutdown_requested():
             now = datetime.now()
             if now >= next_hourly:
-                models = _maybe_reload_models(models)
-                _run_hourly_update(timeframe, models, orders)
+                with controller.active_cycle() as admitted:
+                    if admitted:
+                        models = _maybe_reload_models(models)
+                        _run_hourly_update(timeframe, models, orders, controller, telegram)
                 next_hourly = _next_hour_boundary(datetime.now())
+                controller.update_runtime_snapshot(next_hourly_update=next_hourly.isoformat(timespec="seconds"))
                 _log(f"Next hourly update: {next_hourly.isoformat(timespec='seconds')}")
 
             now = datetime.now()
             if now >= next_daily:
-                models = _maybe_reload_models(models)
-                _run_daily_research(timeframe, top_validated, models)
+                with controller.active_cycle() as admitted:
+                    if admitted:
+                        models = _maybe_reload_models(models)
+                        _run_daily_research(timeframe, top_validated, models)
                 next_daily = _next_daily_time(datetime.now())
+                controller.update_runtime_snapshot(next_daily_research=next_daily.isoformat(timespec="seconds"))
                 _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")
 
-            time.sleep(30)
-    except KeyboardInterrupt:
-        _log(f"Scheduler shutdown requested: {Config.SHUTDOWN_MODE}")
-        report = ShutdownCoordinator(orders, alert=lambda message: _log(f"ALERT {message}")).execute(Config.SHUTDOWN_MODE)
-        _log(f"Scheduler shutdown complete: {report}")
-        print(f"Scheduler stopped using {report.mode.value}; account flat: {report.account_flat}")
+            time.sleep(1)
     finally:
-        orders.close()
+        controller.update_runtime_snapshot(scheduler_running=False, entries_allowed=False)
+        controller.block_new_entries(); orders.set_new_entries(False)
+        controller.wait_for_active_cycles()
+        mode = controller.get_requested_mode()
+        if mode is ShutdownMode.NONE:
+            mode = ShutdownMode.GRACEFUL
+            controller.request_shutdown(mode, "scheduler-finally")
+        report = ShutdownCoordinator(orders, alert=lambda message: _log(f"ALERT {message}"),
+                                     controller=controller, log=_log).execute(mode)
+        print(f"Scheduler stopped using {report.mode.name}; account flat: {report.account_flat}")
+        _log("Committing database..."); orders.save_state()
+        _log("Stopping Telegram listener..."); telegram.stop()
+        _log("Stopping scheduler and local control server..."); control_server.stop()
+        orders.close(); instance_lock.release()
+        _log(f"{report.mode.name} shutdown complete.")
+        signal.signal(signal.SIGINT, previous_sigint); signal.signal(signal.SIGTERM, previous_sigterm)

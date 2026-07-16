@@ -247,8 +247,15 @@ class Config:
     # ==================== API KEYS ====================
     KRAKEN_API_KEY = os.getenv('KRAKEN_API_KEY', 'xxxxxxxxxxxxx')
     KRAKEN_PRIVATE_KEY = os.getenv('KRAKEN_PRIVATE_KEY', 'xxxxxxxxxxxxxxxxxxxxx')
-    TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', 'xxxxxxxxxxxxxxxxxxx')
-    TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', 'xxxxxxxxxxxxxxxxxx')
+    # TELEGRAM_BOT_TOKEN is the preferred name; TELEGRAM_TOKEN remains
+    # backwards-compatible with the original bot.
+    TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN') or os.getenv('TELEGRAM_TOKEN', '')
+    TELEGRAM_BOT_TOKEN = TELEGRAM_TOKEN
+    TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
+    TELEGRAM_ALLOWED_CHAT_IDS = {
+        value.strip() for value in os.getenv('TELEGRAM_ALLOWED_CHAT_IDS', TELEGRAM_CHAT_ID).split(',')
+        if value.strip()
+    }
     
     # Feature list; must match train_model.py
 

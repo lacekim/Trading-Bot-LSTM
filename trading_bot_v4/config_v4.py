@@ -45,10 +45,17 @@ class V4Config(LegacyConfig):
     PAPER_MAX_PORTFOLIO_EXPOSURE_PCT = float(os.getenv("PAPER_MAX_PORTFOLIO_EXPOSURE_PCT", "80"))
     PAPER_MIN_ORDER_USD = float(os.getenv("PAPER_MIN_ORDER_USD", "30"))
     PAPER_CASH_BUFFER_PCT = float(os.getenv("PAPER_CASH_BUFFER_PCT", "10"))
+    PAPER_PRICE_IMPACT_BPS = float(os.getenv("PAPER_PRICE_IMPACT_BPS", "2"))
+    PAPER_FUNDING_BPS_PER_DAY = float(os.getenv("PAPER_FUNDING_BPS_PER_DAY", "0"))
+    PAPER_BORROWING_BPS_PER_DAY = float(os.getenv("PAPER_BORROWING_BPS_PER_DAY", "0"))
     ARBITRUM_RPC_URL = os.getenv("ARBITRUM_RPC_URL", "")
     ARBITRUM_BACKUP_RPC_URL = os.getenv("ARBITRUM_BACKUP_RPC_URL", "")
     WEB3_WALLET_ADDRESS = os.getenv("WEB3_WALLET_ADDRESS", "")
     ARBITRUM_CHAIN_ID = 42161
+    TELEGRAM_BOT_TOKEN = LegacyConfig.TELEGRAM_BOT_TOKEN
+    TELEGRAM_ALLOWED_CHAT_IDS = set(LegacyConfig.TELEGRAM_ALLOWED_CHAT_IDS)
+    # Older V5 name remains an alias so existing deployments keep working.
+    TELEGRAM_AUTHORIZED_CHAT_IDS = TELEGRAM_ALLOWED_CHAT_IDS
 
 
 Config = V4Config
