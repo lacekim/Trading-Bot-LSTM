@@ -1,4 +1,4 @@
-"""Daily paper-only research pipeline for V4."""
+"""V5 daily paper-only research and decision dashboard pipeline."""
 
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ from trading_bot_v4.utils.logger import build_logger
 from trading_bot_v4.research.market_scanner import scan_market_momentum
 
 
-logger = build_logger("v4_daily_research")
+logger = build_logger("v5_daily_research")
 
-DAILY_DASHBOARD_PATH = Path("reports/v4_daily_dashboard.html")
+DAILY_DASHBOARD_PATH = Path("reports/v5_daily_decision_dashboard.html")
 DAILY_GO_STATUS_PATH = Path("reports/v4_daily_go_status.csv")
 DAILY_SMC_FEATURE_DIR = Path("reports/smc_features")
 

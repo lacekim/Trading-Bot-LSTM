@@ -31,5 +31,23 @@ class V4Config(LegacyConfig):
     # Daily discovery scans the whole market; hourly work follows only that day's GO list.
     MARKET_MOMENTUM_VALIDATION_CANDIDATES = 10
 
+    # Explicit execution modes.  LIVE is intentionally unavailable until a
+    # separate live adapter is configured and armed.
+    EXECUTION_MODE = os.getenv("EXECUTION_MODE", "PAPER").upper()
+    PAPER_DB_PATH = Path(os.getenv("PAPER_DB_PATH", "data/v5_paper_trading.sqlite3"))
+    PAPER_STARTING_BALANCE = float(os.getenv("PAPER_STARTING_BALANCE", "10000"))
+    PAPER_LEVERAGE = float(os.getenv("PAPER_LEVERAGE", "1"))
+    PAPER_STOP_LOSS_PCT = float(os.getenv("PAPER_STOP_LOSS_PCT", "2"))
+    PAPER_TAKE_PROFIT_PCT = float(os.getenv("PAPER_TAKE_PROFIT_PCT", "4"))
+    PAPER_MAX_OPEN_POSITIONS = int(os.getenv("PAPER_MAX_OPEN_POSITIONS", "5"))
+    PAPER_MAX_POSITION_PCT = float(os.getenv("PAPER_MAX_POSITION_PCT", "20"))
+    PAPER_MAX_PORTFOLIO_EXPOSURE_PCT = float(os.getenv("PAPER_MAX_PORTFOLIO_EXPOSURE_PCT", "80"))
+    PAPER_MIN_ORDER_USD = float(os.getenv("PAPER_MIN_ORDER_USD", "30"))
+    PAPER_CASH_BUFFER_PCT = float(os.getenv("PAPER_CASH_BUFFER_PCT", "10"))
+    ARBITRUM_RPC_URL = os.getenv("ARBITRUM_RPC_URL", "")
+    ARBITRUM_BACKUP_RPC_URL = os.getenv("ARBITRUM_BACKUP_RPC_URL", "")
+    WEB3_WALLET_ADDRESS = os.getenv("WEB3_WALLET_ADDRESS", "")
+    ARBITRUM_CHAIN_ID = 42161
+
 
 Config = V4Config

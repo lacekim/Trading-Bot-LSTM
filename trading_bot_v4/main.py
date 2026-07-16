@@ -20,6 +20,7 @@ from trading_bot_v4.execution.paper_model_comparison import run_paper_model_comp
 from trading_bot_v4.execution.paper_model_performance import run_paper_model_performance
 from trading_bot_v4.execution.paper_smc_filter import run_paper_trade_smc_filter
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
+from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.execution.validated_whitelist_performance import (
     run_go_assets_performance,
     run_paper_readiness,
@@ -59,6 +60,7 @@ def parse_args():
     parser.add_argument("--go-assets-performance", action="store_true", help="Run constrained paper performance for assets marked GO by readiness")
     parser.add_argument("--daily-research", action="store_true", help="Run the daily paper-only V4 research pipeline")
     parser.add_argument("--auto", action="store_true", help="Run the paper-only automatic research scheduler")
+    parser.add_argument("--web3-read-only", action="store_true", help="Check Arbitrum RPC and public wallet state without signing")
     parser.add_argument("--reload-model", action="store_true", help="Request a running scheduler to reload model artifacts")
     parser.add_argument("--validated-whitelist-performance", action="store_true", help="Run constrained paper performance for validated whitelist SMC signals")
     parser.add_argument("--compare-paper-models", action="store_true", help="Compare original and SMC model paper signals")
@@ -98,6 +100,11 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.web3_read_only:
+        status = check_web3_readiness()
+        for key, value in status.to_dict().items():
+            print(f"{key}: {value}")
+        return 0 if status.connected else 1
     if args.reload_model and not args.auto:
         path = request_model_reload()
         print(f"Model reload requested: {path}")

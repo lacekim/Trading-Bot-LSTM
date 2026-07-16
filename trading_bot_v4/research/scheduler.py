@@ -17,6 +17,8 @@ import pandas as pd
 from trading_bot import load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
+from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
+from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
 from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH, _update_smc_features, run_daily_research
 from trading_bot_v4.utils.model_cache import ModelScalerCache
@@ -254,10 +256,22 @@ def _refresh_active_market_data(symbols: list[str], timeframe: str) -> int:
     return refreshed
 
 
-def _run_hourly_update(timeframe: str, models: SchedulerModelBundle) -> None:
+def _format_paper_summary(summary: PaperCycleSummary) -> str:
+    return (
+        "Hourly Summary | "
+        f"Assets scanned: {summary.assets_scanned} | Signals generated: {summary.signals_generated} | "
+        f"Signals rejected: {summary.signals_rejected} | Paper orders opened: {summary.orders_opened} | "
+        f"Paper orders closed: {summary.orders_closed} | Open positions: {summary.open_positions} | "
+        f"Equity: ${summary.equity:,.2f} | Realized P&L: ${summary.realized_pnl:,.2f} | "
+        f"Unrealized P&L: ${summary.unrealized_pnl:,.2f} | Fees: ${summary.fees:,.2f}"
+    )
+
+
+def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: OrderManager) -> None:
     symbols = _hourly_refresh_symbols(timeframe)
     if not symbols:
         _log("Hourly paper cycle skipped: today's qualified GO list is empty")
+        _log(_format_paper_summary(orders.sync()))
         return
     _log(f"Hourly qualified assets: {', '.join(symbols)}")
 
@@ -277,7 +291,16 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle) -> None:
             _scheduler_args(timeframe=timeframe, symbols=symbols, model=models.smc_model, scaler=models.smc_scaler)
         )
 
-    _run_guarded("hourly.update_active_smc_model_paper_signals", update_active_paper_signals)
+    signal_result = _run_guarded("hourly.update_active_smc_model_paper_signals", update_active_paper_signals)
+    if signal_result is None:
+        _log(_format_paper_summary(orders.sync()))
+        return
+    signals_path = Path(signal_result["signals_path"])
+    signals = pd.read_csv(signals_path) if signals_path.exists() else pd.DataFrame()
+    summary = _run_guarded("hourly.paper_execution", lambda: orders.process_signals(signals))
+    if summary is not None:
+        _log(_format_paper_summary(summary))
+        print(_format_paper_summary(summary))
 
 
 def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerModelBundle) -> None:
@@ -307,22 +330,27 @@ def run_auto_scheduler(args: Any) -> None:
     )
     displayed_next_hourly = _next_hour_boundary(now)
     models = _load_scheduler_models("scheduler startup")
+    orders = OrderManager()
     hourly_symbols = _hourly_refresh_symbols(timeframe)
 
-    print("Scheduler started.")
+    print("V5 Scheduler started.")
+    print(f"Execution mode: {Config.EXECUTION_MODE}")
     print("Model loaded.")
     print("Scaler loaded.")
     print(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     print("Daily research refresh: all assets")
     print(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     print(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
-    print("No live trading.")
+    print("Live signing: disabled.")
+    web3_status = check_web3_readiness()
+    print(f"Web3 read-only: {'connected' if web3_status.connected else web3_status.error}")
     _log("Scheduler started")
     _log(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     _log("Daily research refresh: all assets")
     _log(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     _log(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
-    _log("No live trading")
+    _log("Live signing disabled")
+    _log(f"Web3 read-only status: {web3_status.to_dict()}")
 
     next_hourly = state.next_hourly_update
     next_daily = state.next_daily_research
@@ -331,7 +359,7 @@ def run_auto_scheduler(args: Any) -> None:
             now = datetime.now()
             if now >= next_hourly:
                 models = _maybe_reload_models(models)
-                _run_hourly_update(timeframe, models)
+                _run_hourly_update(timeframe, models, orders)
                 next_hourly = _next_hour_boundary(datetime.now())
                 _log(f"Next hourly update: {next_hourly.isoformat(timespec='seconds')}")
 
@@ -346,3 +374,5 @@ def run_auto_scheduler(args: Any) -> None:
     except KeyboardInterrupt:
         _log("Scheduler stopped by user.")
         print("Scheduler stopped.")
+    finally:
+        orders.close()
