@@ -12,6 +12,7 @@ import hashlib
 import sqlite3
 from pathlib import Path
 from typing import Any
+from collections import Counter
 
 import pandas as pd
 
@@ -34,6 +35,9 @@ class PaperCycleSummary:
     realized_pnl: float
     unrealized_pnl: float
     fees: float
+    deduplicated_signals: int = 0
+    rejection_reasons: str = "none"
+    risk_status: str = "normal"
 
 
 class OrderManager:
@@ -42,7 +46,7 @@ class OrderManager:
     def __init__(self, db_path: str | Path | None = None):
         self.db_path = Path(db_path or Config.PAPER_DB_PATH)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.connection = sqlite3.connect(self.db_path)
+        self.connection = sqlite3.connect(self.db_path, timeout=30.0)
         self.connection.row_factory = sqlite3.Row
         self._create_schema()
 
@@ -90,6 +94,22 @@ class OrderManager:
         );
         CREATE TABLE IF NOT EXISTS runtime_state (
           key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS daily_risk (
+          trading_date TEXT PRIMARY KEY, start_equity REAL NOT NULL,
+          realized_pnl REAL NOT NULL DEFAULT 0, trades_opened INTEGER NOT NULL DEFAULT 0,
+          failed_orders INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS monitor_heartbeats (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
+          status TEXT NOT NULL, open_positions INTEGER NOT NULL,
+          symbols_checked INTEGER NOT NULL, error TEXT
+        );
+        CREATE TABLE IF NOT EXISTS position_exit_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
+          position_id TEXT NOT NULL, symbol TEXT NOT NULL, reason TEXT NOT NULL,
+          observed_price REAL NOT NULL, accounting_price REAL NOT NULL,
+          observed_at TEXT NOT NULL, source TEXT NOT NULL
         );
         """)
         order_columns = {row[1] for row in self.connection.execute("PRAGMA table_info(orders)")}
@@ -171,6 +191,153 @@ class OrderManager:
                   "stop_price", "target_price", "quantity", "notional", "leverage")
         return [{field: row[field] for field in fields} for row in self._positions()]
 
+    def record_monitor_heartbeat(self, status: str, symbols_checked: int = 0, error: str = "") -> None:
+        self.connection.execute(
+            "INSERT INTO monitor_heartbeats(timestamp,status,open_positions,symbols_checked,error) VALUES(?,?,?,?,?)",
+            (_now(), status, self.open_position_count(), int(symbols_checked), error[:1000]),
+        )
+        self._set_state("position_monitor_status", status)
+        self._set_state("position_monitor_last_heartbeat", _now())
+        self._set_state("position_monitor_last_error", error[:1000])
+        self.connection.commit()
+
+    def monitor_market_price(self, symbol: str, observed_price: float, observed_at: str,
+                             source: str = "GMX_1M") -> dict[str, Any] | None:
+        """Update one paper position and execute an immediate protective exit."""
+        if observed_price <= 0:
+            raise ValueError(f"invalid observed price for {symbol}: {observed_price}")
+        self.connection.execute("BEGIN IMMEDIATE")
+        try:
+            position = self.connection.execute("SELECT * FROM positions WHERE symbol=?", (symbol,)).fetchone()
+            if position is None:
+                self.connection.commit()
+                return None
+            pnl = (observed_price - float(position["entry_price"])) * float(position["quantity"])
+            if position["direction"] == "SHORT":
+                pnl *= -1
+            self.connection.execute(
+                "UPDATE positions SET current_price=?,unrealized_pnl=? WHERE position_id=?",
+                (observed_price, pnl, position["position_id"]),
+            )
+            hit_stop = observed_price <= position["stop_price"] if position["direction"] == "LONG" else observed_price >= position["stop_price"]
+            hit_target = observed_price >= position["target_price"] if position["direction"] == "LONG" else observed_price <= position["target_price"]
+            if not hit_stop and not hit_target:
+                self.connection.commit()
+                return None
+            reason = "stop_loss" if hit_stop else "take_profit"
+            accounting_price = float(position["stop_price"] if hit_stop else position["target_price"])
+            monitor_id = f"monitor_{hashlib.sha256(f'{position['position_id']}|{observed_at}|{reason}'.encode()).hexdigest()[:16]}"
+            self._close_position(position, accounting_price, reason, monitor_id)
+            self.connection.execute(
+                """INSERT INTO position_exit_events(
+                    timestamp,position_id,symbol,reason,observed_price,accounting_price,observed_at,source
+                ) VALUES(?,?,?,?,?,?,?,?)""",
+                (_now(), position["position_id"], symbol, reason, observed_price, accounting_price, observed_at, source),
+            )
+            self.save_state()
+            self.connection.commit()
+            return {
+                "position_id": position["position_id"], "symbol": symbol,
+                "direction": position["direction"], "reason": reason,
+                "observed_price": observed_price, "accounting_price": accounting_price,
+                "observed_at": observed_at, "source": source,
+            }
+        except Exception:
+            self.connection.rollback()
+            raise
+
+    def update_whitelist(self, whitelist: list[str]) -> None:
+        self._set_state("current_whitelist", ",".join(whitelist))
+        self.connection.commit()
+
+    def _daily_risk(self) -> sqlite3.Row:
+        trading_date = datetime.now(timezone.utc).date().isoformat()
+        equity, _ = self._equity()
+        self.connection.execute(
+            "INSERT OR IGNORE INTO daily_risk(trading_date,start_equity,updated_at) VALUES(?,?,?)",
+            (trading_date, equity, _now()),
+        )
+        return self.connection.execute("SELECT * FROM daily_risk WHERE trading_date=?", (trading_date,)).fetchone()
+
+    def _consecutive_losses(self) -> int:
+        rows = self.connection.execute("SELECT net_pnl FROM closed_trades ORDER BY exit_time DESC").fetchall()
+        losses = 0
+        for row in rows:
+            if float(row["net_pnl"]) >= 0:
+                break
+            losses += 1
+        return losses
+
+    def _drawdown_pct(self, equity: float) -> float:
+        row = self.connection.execute("SELECT MAX(equity) AS peak FROM equity_history").fetchone()
+        peak = max(float(row["peak"] or equity), equity)
+        return ((peak - equity) / peak) * 100.0 if peak else 0.0
+
+    def _risk_block_reason(self) -> str | None:
+        daily = self._daily_risk()
+        equity, _ = self._equity()
+        if int(daily["trades_opened"]) >= Config.PAPER_MAX_TRADES_PER_DAY:
+            return "maximum trades per day reached"
+        if float(daily["realized_pnl"]) <= -(float(daily["start_equity"]) * Config.PAPER_MAX_DAILY_LOSS_PCT / 100.0):
+            return "daily realized-loss limit reached"
+        equity_loss = ((float(daily["start_equity"]) - equity) / float(daily["start_equity"])) * 100.0
+        if equity_loss >= Config.PAPER_MAX_EQUITY_LOSS_PCT:
+            return "daily equity-loss limit reached"
+        if self._drawdown_pct(equity) >= Config.PAPER_MAX_DRAWDOWN_PCT:
+            return "maximum account drawdown reached"
+        if self._consecutive_losses() >= Config.PAPER_MAX_CONSECUTIVE_LOSSES:
+            return "maximum consecutive losses reached"
+        if int(daily["failed_orders"]) >= Config.PAPER_MAX_FAILED_ORDERS:
+            return "maximum failed orders reached"
+        return None
+
+    def risk_status(self) -> str:
+        return self._get_state("risk_shutdown", "normal") or "normal"
+
+    @staticmethod
+    def _timeframe_seconds(timeframe: str) -> int:
+        units = {"m": 60, "h": 3600, "d": 86400}
+        text = str(timeframe).lower()
+        if len(text) < 2 or text[-1] not in units:
+            raise ValueError(f"unsupported timeframe: {timeframe}")
+        return int(text[:-1]) * units[text[-1]]
+
+    def _validate_signal_candle(self, row: Any) -> str | None:
+        required = ("open", "high", "low", "close")
+        if not all(column in row.index for column in required):
+            return None  # Compatibility with older persisted/test signal frames.
+        values = {column: float(row[column]) for column in required}
+        if any(not pd.notna(value) or value <= 0 for value in values.values()):
+            return "invalid OHLC value"
+        if values["high"] < max(values["open"], values["close"]) or values["low"] > min(values["open"], values["close"]):
+            return "inconsistent OHLC range"
+        if abs(float(row["price"]) - values["close"]) > max(values["close"] * 1e-9, 1e-12):
+            return "signal price does not match candle close"
+        timestamp = pd.Timestamp(row["timestamp"])
+        timestamp = timestamp.tz_localize("UTC") if timestamp.tzinfo is None else timestamp.tz_convert("UTC")
+        seconds = self._timeframe_seconds(str(row["timeframe"]))
+        if "candle_gap_seconds" in row.index and float(row["candle_gap_seconds"]) > seconds * 1.5:
+            return "market-data gap before signal candle"
+        age = (pd.Timestamp.now(tz="UTC") - timestamp).total_seconds()
+        if age < seconds:
+            return "candle is not closed"
+        if age > seconds * Config.PAPER_MAX_CANDLE_AGE_MULTIPLIER:
+            return "stale candle"
+        return None
+
+    def _cooldown_reason(self, row: Any) -> str | None:
+        previous = self.connection.execute(
+            "SELECT candle_timestamp FROM signals WHERE symbol=? AND status='ACCEPTED' ORDER BY candle_timestamp DESC LIMIT 1",
+            (str(row["symbol"]),),
+        ).fetchone()
+        if not previous:
+            return None
+        current = pd.Timestamp(row["timestamp"])
+        prior = pd.Timestamp(previous["candle_timestamp"])
+        elapsed = (current - prior).total_seconds()
+        minimum = self._timeframe_seconds(str(row["timeframe"])) * Config.PAPER_MIN_BARS_BETWEEN_TRADES
+        return "symbol entry cooldown active" if elapsed < minimum else None
+
     def cancel_pending_entries(self) -> int:
         cursor = self.connection.execute(
             "UPDATE orders SET status='CANCELLED' WHERE status='PENDING' AND order_kind='ENTRY'"
@@ -215,6 +382,7 @@ class OrderManager:
         )
 
     def _close_position(self, position: sqlite3.Row, price: float, reason: str, signal_id: str) -> None:
+        self._daily_risk()
         slip = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
         exit_price = price * (1 - slip if position["direction"] == "LONG" else 1 + slip)
         signed_move = exit_price - position["entry_price"]
@@ -238,11 +406,27 @@ class OrderManager:
             "UPDATE account SET cash=cash+?+?, realized_pnl=realized_pnl+?, fees=fees+?, updated_at=? WHERE id=1",
             (position["collateral"], gross - exit_fee, net, exit_fee, _now()),
         )
+        trading_date = datetime.now(timezone.utc).date().isoformat()
+        self.connection.execute(
+            "UPDATE daily_risk SET realized_pnl=realized_pnl+?, updated_at=? WHERE trading_date=?",
+            (net, _now(), trading_date),
+        )
 
     def _open_position(self, row: Any, signal_id: str) -> bool:
         if not self.new_entries_allowed():
             self._reject(row, signal_id, "new entries are blocked")
             return False
+        cooldown_reason = self._cooldown_reason(row)
+        if cooldown_reason:
+            self._reject(row, signal_id, cooldown_reason)
+            return False
+        risk_reason = self._risk_block_reason()
+        if risk_reason:
+            self._set_state("risk_shutdown", risk_reason)
+            self.set_new_entries(False)
+            self._reject(row, signal_id, risk_reason)
+            return False
+        self._set_state("risk_shutdown", "normal")
         equity, _ = self._equity()
         account = self._account()
         positions = self._positions()
@@ -280,46 +464,77 @@ class OrderManager:
              leverage, stop, target, fee, signal_id, fill, 0.0))
         self.connection.execute("UPDATE account SET cash=cash-?-?, fees=fees+?, updated_at=? WHERE id=1",
                                 (collateral, fee, fee, _now()))
+        trading_date = datetime.now(timezone.utc).date().isoformat()
+        self.connection.execute(
+            "UPDATE daily_risk SET trades_opened=trades_opened+1, updated_at=? WHERE trading_date=?",
+            (_now(), trading_date),
+        )
         return True
 
     def process_signals(self, signals: pd.DataFrame) -> PaperCycleSummary:
         """Process only each symbol's newest closed-candle prediction."""
         latest = signals.sort_values("timestamp").groupby("symbol", as_index=False).tail(1) if not signals.empty else signals
         opened = closed = rejected = generated = 0
+        deduplicated = 0
+        rejection_reasons: Counter[str] = Counter()
         for _, row in latest.iterrows():
             self._set_state(f"last_processed_candle:{row['symbol']}", str(row["timestamp"]))
             symbol, price = str(row["symbol"]), float(row["price"])
+            candle_error = self._validate_signal_candle(row)
+            sid = self.signal_id(row)
+            if candle_error:
+                if row["model_direction"] in {"LONG", "SHORT"} and not self.connection.execute(
+                    "SELECT 1 FROM signals WHERE signal_id=?", (sid,)
+                ).fetchone():
+                    self._reject(row, sid, candle_error); rejected += 1
+                    rejection_reasons[candle_error] += 1
+                continue
             position = self.connection.execute("SELECT * FROM positions WHERE symbol=?", (symbol,)).fetchone()
             if position:
                 pnl = (price - position["entry_price"]) * position["quantity"]
                 if position["direction"] == "SHORT": pnl *= -1
                 self.connection.execute("UPDATE positions SET current_price=?, unrealized_pnl=? WHERE symbol=?", (price, pnl, symbol))
-                hit_stop = price <= position["stop_price"] if position["direction"] == "LONG" else price >= position["stop_price"]
-                hit_target = price >= position["target_price"] if position["direction"] == "LONG" else price <= position["target_price"]
+                candle_high = float(row["high"]) if "high" in row.index else price
+                candle_low = float(row["low"]) if "low" in row.index else price
+                candle_open = float(row["open"]) if "open" in row.index else price
+                hit_stop = candle_low <= position["stop_price"] if position["direction"] == "LONG" else candle_high >= position["stop_price"]
+                hit_target = candle_high >= position["target_price"] if position["direction"] == "LONG" else candle_low <= position["target_price"]
                 reverse = row["model_direction"] in {"LONG", "SHORT"} and row["model_direction"] != position["direction"]
                 if hit_stop or hit_target or reverse:
-                    reason = "stop_loss" if hit_stop else "take_profit" if hit_target else "signal_reversal"
-                    self._close_position(position, price, reason, self.signal_id(row)); closed += 1
+                    stop_first = Config.PAPER_STOP_TARGET_PRIORITY == "STOP_FIRST"
+                    use_stop = hit_stop and (not hit_target or stop_first)
+                    reason = "stop_loss" if use_stop else "take_profit" if hit_target else "signal_reversal"
+                    if reason == "stop_loss":
+                        exit_reference = min(candle_open, position["stop_price"]) if position["direction"] == "LONG" else max(candle_open, position["stop_price"])
+                    elif reason == "take_profit":
+                        exit_reference = max(candle_open, position["target_price"]) if position["direction"] == "LONG" else min(candle_open, position["target_price"])
+                    else:
+                        exit_reference = price
+                    self._close_position(position, exit_reference, reason, self.signal_id(row)); closed += 1
                     position = None
             if row["model_direction"] not in {"LONG", "SHORT"}:
                 continue
             generated += 1
-            sid = self.signal_id(row)
             if self.connection.execute("SELECT 1 FROM signals WHERE signal_id=?", (sid,)).fetchone():
+                deduplicated += 1
                 continue
             if position:
-                self._reject(row, sid, "position already open"); rejected += 1
+                self._reject(row, sid, "position already open"); rejected += 1; rejection_reasons["position already open"] += 1
             elif self._open_position(row, sid):
                 opened += 1
             else:
                 rejected += 1
+                reason_row = self.connection.execute("SELECT reason FROM signals WHERE signal_id=?", (sid,)).fetchone()
+                rejection_reasons[str(reason_row["reason"] if reason_row else "unknown")] += 1
         equity, unrealized = self._equity()
         account = self._account()
         self.connection.execute("INSERT OR REPLACE INTO equity_history VALUES(?,?,?,?,?)",
                                 (_now(), equity, account["cash"], account["realized_pnl"], unrealized))
         self.connection.commit()
+        reasons = ", ".join(f"{reason}={count}" for reason, count in sorted(rejection_reasons.items())) or "none"
         return PaperCycleSummary(len(latest), generated, rejected, opened, closed, len(self._positions()),
-                                 equity, float(account["realized_pnl"]), unrealized, float(account["fees"]))
+                                 equity, float(account["realized_pnl"]), unrealized, float(account["fees"]),
+                                 deduplicated, reasons, self.risk_status())
 
     def sync(self) -> PaperCycleSummary:
         equity, unrealized = self._equity(); account = self._account()

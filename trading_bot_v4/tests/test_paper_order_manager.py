@@ -8,9 +8,11 @@ import pandas as pd
 from trading_bot_v4.execution.order_manager import OrderManager
 
 
-def signal(timestamp="2026-01-01T01:00:00Z", direction="LONG", price=100.0):
-    return pd.DataFrame([{"timestamp": timestamp, "symbol": "BTC", "timeframe": "1h",
-                          "model_direction": direction, "model_probability": 0.8, "price": price}])
+def signal(timestamp="2026-01-01T01:00:00Z", direction="LONG", price=100.0, symbol="BTC", **ohlc):
+    row = {"timestamp": timestamp, "symbol": symbol, "timeframe": "1h",
+           "model_direction": direction, "model_probability": 0.8, "price": price}
+    row.update(ohlc)
+    return pd.DataFrame([row])
 
 
 class PaperOrderManagerTests(unittest.TestCase):
@@ -31,14 +33,13 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertEqual(again.orders_opened, 0)
         self.assertEqual(restored.open_positions, 1)
 
-    def test_reversal_closes_then_opens_new_direction(self):
+    def test_reversal_closes_and_respects_symbol_cooldown(self):
         manager = OrderManager(self.db)
         manager.process_signals(signal())
         result = manager.process_signals(signal("2026-01-01T02:00:00Z", "SHORT", 101.0))
-        row = manager.connection.execute("SELECT direction FROM positions WHERE symbol='BTC'").fetchone()
         self.assertEqual(result.orders_closed, 1)
-        self.assertEqual(result.orders_opened, 1)
-        self.assertEqual(row["direction"], "SHORT")
+        self.assertEqual(result.orders_opened, 0)
+        self.assertIn("cooldown", result.rejection_reasons)
         manager.close()
 
     def test_risk_limit_rejects_new_order(self):
@@ -48,6 +49,50 @@ class PaperOrderManagerTests(unittest.TestCase):
             self.assertEqual(result.signals_rejected, 1)
             self.assertEqual(result.open_positions, 0)
             manager.close()
+
+    def test_intrabar_low_triggers_long_stop_even_when_close_is_above_stop(self):
+        manager = OrderManager(self.db)
+        manager.process_signals(signal())
+        timestamp = (pd.Timestamp.now(tz="UTC").floor("h") - pd.Timedelta(hours=1)).isoformat()
+        result = manager.process_signals(signal(timestamp, "HOLD", 100.0, open=100.0, high=101.0, low=97.0, close=100.0))
+        trade = manager.connection.execute("SELECT exit_reason FROM closed_trades").fetchone()
+        self.assertEqual(result.orders_closed, 1)
+        self.assertEqual(trade["exit_reason"], "stop_loss")
+        manager.close()
+
+    def test_stale_closed_candle_blocks_entry(self):
+        manager = OrderManager(self.db)
+        stale = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=5)).isoformat()
+        result = manager.process_signals(signal(stale, "LONG", 100.0, open=100.0, high=101.0, low=99.0, close=100.0))
+        reason = manager.connection.execute("SELECT reason FROM signals").fetchone()["reason"]
+        self.assertEqual(result.orders_opened, 0)
+        self.assertEqual(reason, "stale candle")
+        manager.close()
+
+    def test_market_data_gap_blocks_entry(self):
+        manager = OrderManager(self.db)
+        timestamp = (pd.Timestamp.now(tz="UTC").floor("h") - pd.Timedelta(hours=1)).isoformat()
+        result = manager.process_signals(signal(timestamp, "LONG", 100.0, open=100.0, high=101.0,
+                                                low=99.0, close=100.0, candle_gap_seconds=7200.0))
+        self.assertEqual(result.orders_opened, 0)
+        self.assertIn("market-data gap", result.rejection_reasons)
+        manager.close()
+
+    def test_maximum_trades_per_day_blocks_additional_entry(self):
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_TRADES_PER_DAY", 1):
+            manager = OrderManager(self.db)
+            manager.process_signals(signal(symbol="BTC"))
+            result = manager.process_signals(signal("2026-01-01T02:00:00Z", symbol="ETH"))
+            self.assertEqual(result.orders_opened, 0)
+            self.assertIn("maximum trades per day", result.rejection_reasons)
+            manager.close()
+
+    def test_whitelist_update_is_persistent(self):
+        manager = OrderManager(self.db)
+        manager.update_whitelist(["LDO", "SYRUP"])
+        value = manager.connection.execute("SELECT value FROM runtime_state WHERE key='current_whitelist'").fetchone()["value"]
+        self.assertEqual(value, "LDO,SYRUP")
+        manager.close()
 
 
 if __name__ == "__main__":

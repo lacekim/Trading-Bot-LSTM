@@ -232,7 +232,7 @@ At startup, the bot sends:
 📱 Available Commands:
 /status - View Status
 /balance - View Balance
-/position - View Current Position
+/positions - View Open Positions
 /help - Help
 ```
 
@@ -242,7 +242,6 @@ Supported commands:
 |---|---|
 | `/status` | Execution mode, scheduler state, entries, qualified assets, portfolio metrics, schedule, Web3 status, and signing status |
 | `/balance` | Paper equity, realized P&L, unrealized P&L, and fees |
-| `/position` | Current open position information |
 | `/positions` | All open positions |
 | `/pause_entries` | Blocks new entries without stopping position management |
 | `/resume_entries` | Re-enables entries only after successful reconciliation and when no shutdown is active |
@@ -378,6 +377,13 @@ TELEGRAM_TOKEN=your_existing_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
 
 PAPER_STARTING_BALANCE=10000
+PAPER_MAX_RISK_PER_TRADE=0.25
+PAPER_MAX_TRADES_PER_DAY=3
+PAPER_MAX_DAILY_LOSS_PCT=3
+PAPER_MAX_EQUITY_LOSS_PCT=3
+PAPER_MAX_DRAWDOWN_PCT=15
+PAPER_MAX_CONSECUTIVE_LOSSES=5
+PAPER_MAX_CANDLE_AGE_MULTIPLIER=2.5
 ```
 
 The preferred token name is also supported:

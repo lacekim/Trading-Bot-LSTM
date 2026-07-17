@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from datetime import timedelta
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,15 @@ SMC_MODEL_PAPER_SIGNALS_PATH = Path("logs/v4_smc_model_paper_signals.csv")
 VALIDATED_RANKINGS_PATH = Path("models/asset_rankings_validated.csv")
 VALIDATED_WHITELIST_PAPER_SUMMARY_PATH = Path("logs/v4_validated_whitelist_paper_summary.csv")
 VALIDATED_WHITELIST_PAPER_SIGNALS_PATH = Path("logs/v4_validated_whitelist_paper_signals.csv")
+
+
+def _timeframe_delta(timeframe: str) -> pd.Timedelta:
+    unit = timeframe[-1].lower()
+    value = int(timeframe[:-1])
+    units = {"m": "minutes", "h": "hours", "d": "days"}
+    if unit not in units or value <= 0:
+        raise ValueError(f"Unsupported timeframe: {timeframe}")
+    return pd.Timedelta(**{units[unit]: value})
 
 
 def _direction_from_probability(probability: float) -> str:
@@ -63,7 +73,11 @@ def _build_smc_model_feature_frame(symbol: str, timeframe: str) -> pd.DataFrame:
 
     prices = pd.to_numeric(raw["Close"], errors="coerce").reindex(combined.index)
     combined["price"] = prices
-    combined = combined.dropna(subset=["price"])
+    for source, target in [("Open", "open"), ("High", "high"), ("Low", "low"), ("Close", "close")]:
+        combined[target] = pd.to_numeric(raw[source], errors="coerce").reindex(combined.index)
+    timestamp_series = pd.Series(pd.to_datetime(combined.index), index=combined.index)
+    combined["candle_gap_seconds"] = timestamp_series.diff().dt.total_seconds().fillna(0.0)
+    combined = combined.dropna(subset=["price", "open", "high", "low", "close"])
     return combined
 
 
@@ -79,6 +93,10 @@ def _predict_smc_model_signals(model: Any, scaler: Any, symbol: str, timeframe: 
     sequences = np.array([scaled[start : start + seq_len] for start in range(0, len(scaled) - seq_len)], dtype=np.float32)
     probabilities = model.predict(sequences, verbose=0).reshape(-1)
     signal_frame = features.iloc[seq_len:].copy()
+    timestamps = pd.to_datetime(signal_frame.index, utc=True)
+    closed_mask = timestamps + _timeframe_delta(timeframe) <= pd.Timestamp.now(tz="UTC")
+    signal_frame = signal_frame.loc[closed_mask].copy()
+    probabilities = probabilities[closed_mask]
 
     signals = pd.DataFrame(
         {
@@ -88,6 +106,11 @@ def _predict_smc_model_signals(model: Any, scaler: Any, symbol: str, timeframe: 
             "model_probability": probabilities,
             "model_direction": [_direction_from_probability(float(probability)) for probability in probabilities],
             "price": signal_frame["price"].to_numpy(dtype=float),
+            "open": signal_frame["open"].to_numpy(dtype=float),
+            "high": signal_frame["high"].to_numpy(dtype=float),
+            "low": signal_frame["low"].to_numpy(dtype=float),
+            "close": signal_frame["close"].to_numpy(dtype=float),
+            "candle_gap_seconds": signal_frame["candle_gap_seconds"].to_numpy(dtype=float),
         }
     )
     signals["is_trade_candidate"] = signals["model_direction"].isin(["LONG", "SHORT"])

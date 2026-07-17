@@ -20,6 +20,7 @@ from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
+from trading_bot_v4.execution.position_monitor import PositionMonitor
 from trading_bot_v4.execution.shutdown import ShutdownCoordinator
 from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode, graceful_signal_handler
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock
@@ -308,11 +309,14 @@ def _format_paper_summary(summary: PaperCycleSummary) -> str:
         f"Paper orders closed: {summary.orders_closed} | Open positions: {summary.open_positions} | "
         f"Equity: ${summary.equity:,.2f} | Realized P&L: ${summary.realized_pnl:,.2f} | "
         f"Unrealized P&L: ${summary.unrealized_pnl:,.2f} | Fees: ${summary.fees:,.2f}"
+        f" | Deduplicated: {summary.deduplicated_signals} | Rejections: {summary.rejection_reasons}"
+        f" | Risk: {summary.risk_status}"
     )
 
 
 def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: OrderManager,
                        controller: ShutdownController, telegram: TelegramControlListener | None = None) -> None:
+    cycle_started = time.monotonic()
     positions_before = orders.position_snapshots()
     symbols = _hourly_refresh_symbols(timeframe)
     if not symbols:
@@ -321,7 +325,7 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         return
     _log(f"Hourly qualified assets: {', '.join(symbols)}")
 
-    _run_guarded(
+    refresh_result = _run_guarded(
         "hourly.refresh_active_market_data",
         lambda: _refresh_active_market_data(symbols, timeframe),
     )
@@ -359,11 +363,21 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         if telegram and telegram.is_running:
             telegram.notify_position_cycle(positions_before, positions_after)
         _log(_format_paper_summary(summary))
+        latest_signals = signals.sort_values("timestamp").groupby("symbol").tail(1) if not signals.empty else signals
+        latest_timestamp = str(latest_signals["timestamp"].max()) if not latest_signals.empty else "none"
+        directions = latest_signals["model_direction"].value_counts().to_dict() if not latest_signals.empty else {}
+        telegram_status = controller.runtime_snapshot().get("telegram_status", "unknown")
+        _log(
+            "Hourly Cycle Health | "
+            f"Qualified: {','.join(symbols)} | Refreshed: {int(refresh_result or 0)}/{len(symbols)} | "
+            f"Latest candle: {latest_timestamp} | Predictions generated: {len(latest_signals)} | Directions: {directions} | "
+            f"Telegram: {telegram_status} | Duration: {time.monotonic() - cycle_started:.2f}s"
+        )
         print(_format_paper_summary(summary))
 
 
-def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerModelBundle) -> None:
-    _run_guarded(
+def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerModelBundle) -> Any | None:
+    return _run_guarded(
         "daily.run_daily_research",
         lambda: run_daily_research(
             _scheduler_args(
@@ -401,17 +415,37 @@ def run_auto_scheduler(args: Any) -> None:
         next_daily_research=_next_daily_time(now),
     )
     displayed_next_hourly = _next_hour_boundary(now)
-    models = _load_scheduler_models("scheduler startup")
-    orders = OrderManager()
-    hourly_symbols = _hourly_refresh_symbols(timeframe)
-    _log("Restoring persistent state...")
-    restored = orders.restore_and_reconcile(Config.EXECUTION_MODE, hourly_symbols)
-    _log(f"Previous shutdown clean: {restored['previous_shutdown_clean']}")
-    _log(f"Paper balance restored: ${restored['balance']:.2f}")
-    _log(f"Open positions restored: {restored['open_positions']}")
-    _log(f"Pending orders restored: {restored['pending_orders']}")
-    controller.configure_entry_guard(True, Config.EXECUTION_MODE in {"PAPER", "LIVE_SMALL", "LIVE"})
-    controller.enable_new_entries(); orders.set_new_entries(controller.entries_allowed())
+    orders = None
+    position_monitor = None
+    try:
+        models = _load_scheduler_models("scheduler startup")
+        orders = OrderManager()
+        hourly_symbols = _hourly_refresh_symbols(timeframe)
+        _log("Restoring persistent state...")
+        restored = orders.restore_and_reconcile(Config.EXECUTION_MODE, hourly_symbols)
+        _log(f"Previous shutdown clean: {restored['previous_shutdown_clean']}")
+        _log(f"Paper balance restored: ${restored['balance']:.2f}")
+        _log(f"Open positions restored: {restored['open_positions']}")
+        _log(f"Pending orders restored: {restored['pending_orders']}")
+        if Config.EXECUTION_MODE == "PAPER":
+            position_monitor = PositionMonitor(controller, telegram, log=_log)
+            position_monitor.start()
+            _log(
+                f"Position monitor started: interval={Config.POSITION_MONITOR_INTERVAL_SECONDS}s "
+                f"open_positions={restored['open_positions']}"
+            )
+        controller.configure_entry_guard(True, Config.EXECUTION_MODE in {"PAPER", "LIVE_SMALL", "LIVE"})
+        controller.enable_new_entries(); orders.set_new_entries(controller.entries_allowed())
+    except Exception:
+        _log("ERROR scheduler startup failed; releasing runtime resources")
+        if position_monitor is not None:
+            position_monitor.stop()
+        telegram.stop(); control_server.stop()
+        if orders is not None:
+            orders.close()
+        instance_lock.release()
+        signal.signal(signal.SIGINT, previous_sigint); signal.signal(signal.SIGTERM, previous_sigterm)
+        raise
 
     print("V5 Scheduler started.")
     print(f"Execution mode: {Config.EXECUTION_MODE}")
@@ -435,6 +469,8 @@ def run_auto_scheduler(args: Any) -> None:
 
     next_hourly = state.next_hourly_update
     next_daily = state.next_daily_research
+    monitor_watchdog_alerted = False
+    monitor_started_at = time.monotonic()
     initial_summary = orders.sync()
     controller.update_runtime_snapshot(
         previous_shutdown_clean=restored["previous_shutdown_clean"],
@@ -450,6 +486,20 @@ def run_auto_scheduler(args: Any) -> None:
     )
     try:
         while not controller.is_shutdown_requested():
+            if position_monitor is not None and time.monotonic() - monitor_started_at > max(
+                10, Config.POSITION_MONITOR_INTERVAL_SECONDS * 2
+            ):
+                if not position_monitor.is_healthy() and not monitor_watchdog_alerted:
+                    monitor_watchdog_alerted = True
+                    _log("ERROR position monitor heartbeat stopped")
+                    controller.update_runtime_snapshot(position_monitor_status="stopped_updating")
+                    if telegram.is_running:
+                        telegram.broadcast(
+                            "🚨 <b>POSITION MONITOR HEARTBEAT LOST</b>\n"
+                            "The scheduler is running but minute-level protection stopped updating."
+                        )
+                elif position_monitor.is_healthy():
+                    monitor_watchdog_alerted = False
             now = datetime.now()
             if now >= next_hourly:
                 with controller.active_cycle() as admitted:
@@ -465,7 +515,12 @@ def run_auto_scheduler(args: Any) -> None:
                 with controller.active_cycle() as admitted:
                     if admitted:
                         models = _maybe_reload_models(models)
-                        _run_daily_research(timeframe, top_validated, models)
+                        daily_result = _run_daily_research(timeframe, top_validated, models)
+                        if daily_result is not None:
+                            updated_symbols = _hourly_refresh_symbols(timeframe)
+                            orders.update_whitelist(updated_symbols)
+                            controller.update_runtime_snapshot(qualified_assets=updated_symbols)
+                            _log(f"Persisted updated daily whitelist: {', '.join(updated_symbols) if updated_symbols else 'none'}")
                 next_daily = _next_daily_time(datetime.now())
                 controller.update_runtime_snapshot(next_daily_research=next_daily.isoformat(timespec="seconds"))
                 _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")
@@ -475,6 +530,9 @@ def run_auto_scheduler(args: Any) -> None:
         controller.update_runtime_snapshot(scheduler_running=False, entries_allowed=False)
         controller.block_new_entries(); orders.set_new_entries(False)
         controller.wait_for_active_cycles()
+        if position_monitor is not None:
+            _log("Stopping position monitor...")
+            position_monitor.stop()
         mode = controller.get_requested_mode()
         if mode is ShutdownMode.NONE:
             mode = ShutdownMode.GRACEFUL

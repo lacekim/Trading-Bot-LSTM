@@ -61,7 +61,7 @@ class TelegramListenerTests(unittest.TestCase):
             listener = _start_telegram_listener(self.configured_controller(), transport, output.append)
         self.assertTrue(listener.is_running)
         self.assertIn("Telegram listener started.", output)
-        self.assertTrue(any("Bot Operating Automatically" in text for _chat, text in transport.sent))
+        self.assertTrue(any("Operating Automatically" in text for _chat, text in transport.sent))
         transport.release.set(); listener.stop()
 
     def test_missing_token_and_disabled_have_clear_status(self):
@@ -82,7 +82,7 @@ class TelegramListenerTests(unittest.TestCase):
         controller, sent = self.configured_controller(), []
         listener = TelegramControlListener("token", {"123"}, controller, send=lambda c, t: sent.append((c, t)))
         self.assertTrue(listener.handle_message("123", "/status"))
-        self.assertIn("Execution mode: PAPER", sent[-1][1])
+        self.assertIn("Mode: <code>PAPER</code>", sent[-1][1])
         self.assertFalse(listener.handle_message("999", "/status"))
         listener.handle_message("123", "/pause_entries")
         self.assertFalse(controller.entries_allowed())
@@ -94,8 +94,8 @@ class TelegramListenerTests(unittest.TestCase):
     def test_legacy_balance_position_help_commands_are_restored(self):
         controller, sent = self.configured_controller(), []
         listener = TelegramControlListener("token", {"123"}, controller, send=lambda c, t: sent.append(t))
-        for command, expected in [("/balance", "Paper Balance"), ("/position", "Open positions"),
-                                  ("/help", "/balance - View Balance")]:
+        for command, expected in [("/balance", "PAPER ACCOUNT"), ("/positions", "NO OPEN POSITIONS"),
+                                  ("/help", "/balance — Paper account balance")]:
             self.assertTrue(listener.handle_message("123", command))
             self.assertIn(expected, sent[-1])
 
@@ -107,10 +107,10 @@ class TelegramListenerTests(unittest.TestCase):
                     "current_price": 0.26, "unrealized_pnl": 4.0, "stop_price": 0.24,
                     "target_price": 0.28, "notional": 500.0}
         listener.notify_position_cycle([], [position])
-        self.assertTrue(any("position opened" in text for text in sent))
-        self.assertTrue(any("Open positions:" in text for text in sent))
+        self.assertTrue(any("NEW PAPER POSITION" in text for text in sent))
+        self.assertTrue(any("OPEN POSITIONS" in text for text in sent))
         sent.clear(); listener.notify_position_cycle([position], [])
-        self.assertTrue(any("position closed" in text for text in sent))
+        self.assertTrue(any("PAPER POSITION CLOSED" in text for text in sent))
 
     def test_both_destructive_modes_require_confirmation(self):
         for command, wrong, confirmation, expected in [
@@ -124,6 +124,13 @@ class TelegramListenerTests(unittest.TestCase):
             self.assertFalse(controller.is_shutdown_requested())
             listener.handle_message("123", confirmation)
             self.assertEqual(controller.get_requested_mode(), expected)
+
+    def test_telegram_errors_redact_bot_token_and_api_url(self):
+        token = "123456:super-secret-token"
+        listener = TelegramControlListener(token, {"123"}, self.configured_controller(), send=lambda _c, _t: None)
+        safe = listener._safe_error(Exception(f"failure at https://api.telegram.org/bot{token}/getUpdates"))
+        self.assertNotIn(token, safe)
+        self.assertIn("bot<redacted>", safe)
 
 
 if __name__ == "__main__": unittest.main()

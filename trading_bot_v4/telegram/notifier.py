@@ -32,7 +32,7 @@ class V4TelegramNotifier(LegacyTelegramNotifier):
     def send_to(self, chat_id: str, text: str) -> None:
         response = requests.post(
             f"{self.base_url}/sendMessage",
-            json={"chat_id": chat_id, "text": text},
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
             timeout=10,
         )
         response.raise_for_status()

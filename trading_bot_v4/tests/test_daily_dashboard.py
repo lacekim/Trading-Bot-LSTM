@@ -1,9 +1,13 @@
 import unittest
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 
 from trading_bot_v4.backtesting.asset_selection_engine import _add_validated_ranking_scores
-from trading_bot_v4.research.daily_research import _dashboard_decision_views
+from trading_bot_v4.research.daily_research import _dashboard_decision_views, _forward_paper_metrics
+from trading_bot_v4.execution.order_manager import OrderManager
 
 
 class DailyDashboardTests(unittest.TestCase):
@@ -38,6 +42,19 @@ class DailyDashboardTests(unittest.TestCase):
         status, _, allocation, _ = _dashboard_decision_views(readiness, rankings, momentum)
         self.assertEqual(status.iloc[0]["status"], "WATCHLIST")
         self.assertEqual(allocation.to_dict("records"), [{"asset": "Cash", "allocation_pct": 100.0}])
+
+    def test_forward_dashboard_metrics_read_persistent_paper_account(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "paper.sqlite3"
+            manager = OrderManager(path)
+            manager.save_state()
+            with patch("trading_bot_v4.research.daily_research.Config.PAPER_DB_PATH", path):
+                metrics, by_asset = _forward_paper_metrics()
+            manager.close()
+            self.assertEqual(metrics["status"], "active")
+            self.assertEqual(metrics["starting_equity"], 10000.0)
+            self.assertEqual(metrics["open_positions"], 0)
+            self.assertEqual(metrics["win_rate"], "insufficient data")
 
 
 if __name__ == "__main__":

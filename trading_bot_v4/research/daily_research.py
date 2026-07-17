@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+import sqlite3
+from datetime import datetime, timezone
 
 import numpy as np
 import pandas as pd
@@ -58,6 +60,77 @@ def _format_metric(value: Any, suffix: str = "") -> str:
     if not np.isfinite(numeric):
         return "none"
     return f"{numeric:.6f}{suffix}"
+
+
+def _forward_paper_metrics() -> tuple[dict[str, Any], pd.DataFrame]:
+    defaults = {
+        "status": "unavailable", "starting_equity": float("nan"), "current_equity": float("nan"),
+        "return_pct": float("nan"), "realized_pnl": float("nan"), "unrealized_pnl": float("nan"),
+        "fees": float("nan"), "open_positions": 0, "closed_trades": 0, "win_rate": "insufficient data",
+        "profit_factor": "insufficient data", "max_drawdown_pct": "insufficient data",
+        "current_streak": "insufficient data", "days_running": "insufficient data",
+    }
+    path = Path(Config.PAPER_DB_PATH)
+    if not path.exists():
+        return defaults, pd.DataFrame(columns=["symbol", "trades", "net_pnl", "wins", "losses"])
+    connection = sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True)
+    connection.row_factory = sqlite3.Row
+    try:
+        account = connection.execute("SELECT * FROM account WHERE id=1").fetchone()
+        positions = connection.execute("SELECT COALESCE(SUM(unrealized_pnl),0), COUNT(*) FROM positions").fetchone()
+        trades = connection.execute("SELECT symbol,net_pnl,exit_time FROM closed_trades ORDER BY exit_time").fetchall()
+        history = [float(row[0]) for row in connection.execute("SELECT equity FROM equity_history ORDER BY timestamp")]
+        unrealized, open_count = float(positions[0]), int(positions[1])
+        current_equity = float(account["cash"]) + sum(
+            float(row[0]) + float(row[1]) for row in connection.execute("SELECT collateral,unrealized_pnl FROM positions")
+        )
+        wins = [float(row["net_pnl"]) for row in trades if float(row["net_pnl"]) > 0]
+        losses = [float(row["net_pnl"]) for row in trades if float(row["net_pnl"]) < 0]
+        if wins and losses:
+            profit_factor: Any = f"{sum(wins) / abs(sum(losses)):.3f}"
+        else:
+            profit_factor = "insufficient data"
+        peak = max_drawdown = 0.0
+        for equity in history:
+            peak = max(peak, equity)
+            if peak:
+                max_drawdown = max(max_drawdown, (peak - equity) / peak * 100.0)
+        streak = 0
+        streak_label = "insufficient data"
+        if trades:
+            last_won = float(trades[-1]["net_pnl"]) > 0
+            for trade in reversed(trades):
+                if (float(trade["net_pnl"]) > 0) != last_won:
+                    break
+                streak += 1
+            streak_label = f"{streak} {'wins' if last_won else 'losses'}"
+        first_timestamp = connection.execute("SELECT MIN(timestamp) FROM equity_history").fetchone()[0]
+        days_running: Any = "insufficient data"
+        if first_timestamp:
+            started = datetime.fromisoformat(str(first_timestamp))
+            if started.tzinfo is None:
+                started = started.replace(tzinfo=timezone.utc)
+            days_running = f"{(datetime.now(timezone.utc) - started).total_seconds() / 86400.0:.2f}"
+        metrics = {
+            "status": "active", "starting_equity": float(account["starting_balance"]),
+            "current_equity": current_equity,
+            "return_pct": (current_equity / float(account["starting_balance"]) - 1.0) * 100.0,
+            "realized_pnl": float(account["realized_pnl"]), "unrealized_pnl": unrealized,
+            "fees": float(account["fees"]), "open_positions": open_count,
+            "closed_trades": len(trades),
+            "win_rate": f"{len(wins) / len(trades) * 100.0:.2f}%" if len(trades) >= 2 else "insufficient data",
+            "profit_factor": profit_factor,
+            "max_drawdown_pct": f"{max_drawdown:.3f}%" if len(history) >= 2 else "insufficient data",
+            "current_streak": streak_label, "days_running": days_running,
+        }
+        by_asset: dict[str, dict[str, Any]] = {}
+        for trade in trades:
+            row = by_asset.setdefault(str(trade["symbol"]), {"symbol": trade["symbol"], "trades": 0, "net_pnl": 0.0, "wins": 0, "losses": 0})
+            pnl = float(trade["net_pnl"]); row["trades"] += 1; row["net_pnl"] += pnl
+            row["wins" if pnl > 0 else "losses"] += 1
+        return metrics, pd.DataFrame(by_asset.values())
+    finally:
+        connection.close()
 
 
 def _daily_args(**kwargs: Any) -> Any:
@@ -267,6 +340,7 @@ def _write_dashboard(
         readiness, rankings, result.momentum_df
     )
     performance_display = performance.copy()
+    forward_metrics, forward_by_asset = _forward_paper_metrics()
 
     for frame in [top_rankings, readiness_display, performance_display, opportunity, allocation]:
         numeric_columns = frame.select_dtypes(include=[np.number]).columns
@@ -318,6 +392,25 @@ def _write_dashboard(
 
   <h2>Market Regime</h2>
   <div class="regime"><b>{regime['label']}</b><span>Risk: {regime['risk']}</span><span>Positive breadth: {regime['breadth_pct']:.1f}%</span><span>Trend strength: {regime['trend_strength']:.0f}</span></div>
+
+  <h2>Forward Paper Trading</h2>
+  <div class="summary">
+    <div class="metric"><div class="label">Days running</div><div class="value">{forward_metrics['days_running']}</div></div>
+    <div class="metric"><div class="label">Starting equity</div><div class="value">${_format_metric(forward_metrics['starting_equity'])}</div></div>
+    <div class="metric"><div class="label">Current equity</div><div class="value">${_format_metric(forward_metrics['current_equity'])}</div></div>
+    <div class="metric"><div class="label">Return</div><div class="value">{_format_metric(forward_metrics['return_pct'], '%')}</div></div>
+    <div class="metric"><div class="label">Realized P&amp;L</div><div class="value">${_format_metric(forward_metrics['realized_pnl'])}</div></div>
+    <div class="metric"><div class="label">Unrealized P&amp;L</div><div class="value">${_format_metric(forward_metrics['unrealized_pnl'])}</div></div>
+    <div class="metric"><div class="label">Fees / carrying costs</div><div class="value">${_format_metric(forward_metrics['fees'])}</div></div>
+    <div class="metric"><div class="label">Open positions</div><div class="value">{forward_metrics['open_positions']}</div></div>
+    <div class="metric"><div class="label">Closed trades</div><div class="value">{forward_metrics['closed_trades']}</div></div>
+    <div class="metric"><div class="label">Win rate</div><div class="value">{forward_metrics['win_rate']}</div></div>
+    <div class="metric"><div class="label">Profit factor</div><div class="value">{forward_metrics['profit_factor']}</div></div>
+    <div class="metric"><div class="label">Maximum drawdown</div><div class="value">{forward_metrics['max_drawdown_pct']}</div></div>
+    <div class="metric"><div class="label">Current streak</div><div class="value">{forward_metrics['current_streak']}</div></div>
+  </div>
+  <h2>Forward Performance by Asset</h2>
+  {forward_by_asset.to_html(index=False, border=0) if not forward_by_asset.empty else '<p>Insufficient closed-trade data.</p>'}
 
   <h2>Today's Opportunity</h2>
   {opportunity.to_html(index=False, border=0)}

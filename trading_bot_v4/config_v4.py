@@ -20,13 +20,13 @@ class V4Config(LegacyConfig):
     USE_SMC_FILTER = False
 
     # Paper-only execution constraints for analysis reports. These do not affect live trading.
-    PAPER_MAX_RISK_PER_TRADE = 0.25
-    PAPER_MIN_BARS_BETWEEN_TRADES = 4
-    PAPER_FEE_BPS = 5
-    PAPER_SLIPPAGE_BPS = 5
-    PAPER_MAX_TRADES_PER_DAY = 3
-    PAPER_MAX_DAILY_LOSS_PCT = 3
-    PAPER_USE_COMPOUNDING = False
+    PAPER_MAX_RISK_PER_TRADE = float(os.getenv("PAPER_MAX_RISK_PER_TRADE", "0.25"))
+    PAPER_MIN_BARS_BETWEEN_TRADES = int(os.getenv("PAPER_MIN_BARS_BETWEEN_TRADES", "4"))
+    PAPER_FEE_BPS = float(os.getenv("PAPER_FEE_BPS", "5"))
+    PAPER_SLIPPAGE_BPS = float(os.getenv("PAPER_SLIPPAGE_BPS", "5"))
+    PAPER_MAX_TRADES_PER_DAY = int(os.getenv("PAPER_MAX_TRADES_PER_DAY", "3"))
+    PAPER_MAX_DAILY_LOSS_PCT = float(os.getenv("PAPER_MAX_DAILY_LOSS_PCT", "3"))
+    PAPER_USE_COMPOUNDING = os.getenv("PAPER_USE_COMPOUNDING", "false").lower() in {"1", "true", "yes", "on"}
 
     # Daily discovery scans the whole market; hourly work follows only that day's GO list.
     MARKET_MOMENTUM_VALIDATION_CANDIDATES = 10
@@ -48,6 +48,17 @@ class V4Config(LegacyConfig):
     PAPER_PRICE_IMPACT_BPS = float(os.getenv("PAPER_PRICE_IMPACT_BPS", "2"))
     PAPER_FUNDING_BPS_PER_DAY = float(os.getenv("PAPER_FUNDING_BPS_PER_DAY", "0"))
     PAPER_BORROWING_BPS_PER_DAY = float(os.getenv("PAPER_BORROWING_BPS_PER_DAY", "0"))
+    PAPER_MAX_EQUITY_LOSS_PCT = float(os.getenv("PAPER_MAX_EQUITY_LOSS_PCT", "3"))
+    PAPER_MAX_DRAWDOWN_PCT = float(os.getenv("PAPER_MAX_DRAWDOWN_PCT", "15"))
+    PAPER_MAX_CONSECUTIVE_LOSSES = int(os.getenv("PAPER_MAX_CONSECUTIVE_LOSSES", "5"))
+    PAPER_MAX_FAILED_ORDERS = int(os.getenv("PAPER_MAX_FAILED_ORDERS", "3"))
+    PAPER_MAX_CANDLE_AGE_MULTIPLIER = float(os.getenv("PAPER_MAX_CANDLE_AGE_MULTIPLIER", "2.5"))
+    PAPER_STOP_TARGET_PRIORITY = os.getenv("PAPER_STOP_TARGET_PRIORITY", "STOP_FIRST").upper()
+    POSITION_MONITOR_INTERVAL_SECONDS = int(os.getenv("POSITION_MONITOR_INTERVAL_SECONDS", "60"))
+    POSITION_MONITOR_FAILURE_THRESHOLD = int(os.getenv("POSITION_MONITOR_FAILURE_THRESHOLD", "3"))
+    POSITION_MONITOR_MAX_PRICE_AGE_SECONDS = int(os.getenv("POSITION_MONITOR_MAX_PRICE_AGE_SECONDS", "180"))
+    POSITION_MONITOR_REQUEST_TIMEOUT_SECONDS = int(os.getenv("POSITION_MONITOR_REQUEST_TIMEOUT_SECONDS", "10"))
+    GMX_PRICE_API_BASE = os.getenv("GMX_PRICE_API_BASE", "https://arbitrum-api.gmxinfra.io").rstrip("/")
     ARBITRUM_RPC_URL = os.getenv("ARBITRUM_RPC_URL", "")
     ARBITRUM_BACKUP_RPC_URL = os.getenv("ARBITRUM_BACKUP_RPC_URL", "")
     WEB3_WALLET_ADDRESS = os.getenv("WEB3_WALLET_ADDRESS", "")
