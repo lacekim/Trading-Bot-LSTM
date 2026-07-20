@@ -175,6 +175,10 @@ The paper engine provides:
 - Position restoration after restart
 - Pending entry cancellation during destructive shutdowns
 - Protective exit preservation until the position is closed
+- Direction-aware GMX oracle monitoring every 10 seconds while positions are open
+- LONG protection evaluated with GMX `minPrice`; SHORT protection with `maxPrice`
+- Automatic one-minute GMX candle fallback if the live ticker is unavailable
+- Persistent monitor heartbeats, fallback diagnostics, and immediate exit events
 - Hourly portfolio summaries
 
 Paper results are forward state. The account is not reset to its starting balance when the scheduler restarts.
@@ -264,6 +268,8 @@ Automatic Telegram notifications include:
 - Scheduler startup and command list
 - Position opened with direction, entry, size, stop, and target
 - Position closed
+- Immediate stop-loss and take-profit exits
+- Repeated live-ticker failures, fallback operation, and lost monitor heartbeats
 - Hourly updates for every open position with current price and unrealized P&L
 
 ### Shutdown control

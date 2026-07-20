@@ -7,7 +7,9 @@ from unittest.mock import patch
 import pandas as pd
 
 from trading_bot_v4.execution.order_manager import OrderManager
-from trading_bot_v4.execution.position_monitor import GMXMinutePriceProvider, MarketPrice, PositionMonitor
+from trading_bot_v4.execution.position_monitor import (
+    GMXMinutePriceProvider, GMXTickerPriceProvider, MarketPrice, PositionMonitor,
+)
 from trading_bot_v4.shutdown_controller import ShutdownController
 
 
@@ -99,6 +101,41 @@ class PriceProviderTests(unittest.TestCase):
              patch("trading_bot_v4.execution.position_monitor.Config.POSITION_MONITOR_MAX_PRICE_AGE_SECONDS", 10**12):
             quote = GMXMinutePriceProvider().fetch("BTC")
         self.assertEqual(quote.price, 2.5)
+
+    def test_ticker_uses_min_for_long_and_max_for_short_with_token_scaling(self):
+        class Response:
+            def __init__(self, payload): self.payload = payload
+            def raise_for_status(self): return None
+            def json(self): return self.payload
+
+        now_ms = int(pd.Timestamp.now(tz="UTC").timestamp() * 1000)
+        responses = {
+            "tokens": Response({"tokens": [{"symbol": "PUMP", "decimals": 18}]}),
+            "tickers": Response([{
+                "tokenSymbol": "PUMP", "minPrice": "2000000000",
+                "maxPrice": "2100000000", "updatedAt": now_ms,
+            }]),
+        }
+
+        def fake_get(url, **_kwargs):
+            return responses["tokens" if url.endswith("/tokens") else "tickers"]
+
+        with patch("trading_bot_v4.execution.position_monitor.requests.get", side_effect=fake_get):
+            provider = GMXTickerPriceProvider()
+            long_quote = provider.fetch("PUMP", "LONG")
+            short_quote = provider.fetch("PUMP", "SHORT")
+        self.assertAlmostEqual(long_quote.price, 0.002)
+        self.assertAlmostEqual(short_quote.price, 0.0021)
+        self.assertEqual(long_quote.source, "GMX_TICKER_MIN")
+        self.assertEqual(short_quote.source, "GMX_TICKER_MAX")
+
+    def test_ticker_failure_falls_back_to_one_minute_provider(self):
+        fallback = StaticProvider(0.002)
+        provider = GMXTickerPriceProvider(fallback=fallback)
+        with patch.object(provider, "_fetch_ticker", side_effect=ConnectionError("ticker down")):
+            quote = provider.fetch("PUMP", "LONG")
+        self.assertEqual(quote.source, "GMX_1M_FALLBACK")
+        self.assertIn("ticker down", quote.fallback_reason)
 
 
 if __name__ == "__main__": unittest.main()
