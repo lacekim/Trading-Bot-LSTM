@@ -94,6 +94,35 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertEqual(value, "LDO,SYRUP")
         manager.close()
 
+    def test_shadow_challenger_requires_confirmation_and_persists_trade(self):
+        manager = OrderManager(self.db)
+        end = pd.Timestamp.now(tz="UTC").floor("h") - pd.Timedelta(hours=2)
+        rows = []
+        for offset in range(25):
+            price = 100.0 + offset
+            rows.append({
+                "timestamp": end - pd.Timedelta(hours=24 - offset), "symbol": "BTC", "timeframe": "1h",
+                "model_direction": "LONG", "model_probability": 0.8, "price": price,
+                "open": price - 1.0, "high": price + 0.2, "low": price - 1.2, "close": price,
+            })
+        history = pd.DataFrame(rows)
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_CANDLE_AGE_MULTIPLIER", 10.0):
+            manager.process_challenger_signals(history)
+        self.assertEqual(manager.connection.execute("SELECT COUNT(*) FROM challenger_positions").fetchone()[0], 1)
+
+        newest = history.copy()
+        newest.loc[len(newest)] = {
+            "timestamp": end + pd.Timedelta(hours=1), "symbol": "BTC", "timeframe": "1h",
+            "model_direction": "HOLD", "model_probability": 0.2, "price": 120.0,
+            "open": 121.0, "high": 121.0, "low": 118.0, "close": 120.0,
+        }
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_CANDLE_AGE_MULTIPLIER", 10.0):
+            manager.process_challenger_signals(newest)
+        trade = manager.connection.execute("SELECT exit_reason,return_pct FROM challenger_trades").fetchone()
+        self.assertEqual(trade["exit_reason"], "stop_loss")
+        self.assertLess(trade["return_pct"], 0.0)
+        manager.close()
+
 
 if __name__ == "__main__":
     unittest.main()

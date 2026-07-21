@@ -91,6 +91,10 @@ class PositionMonitorTests(unittest.TestCase):
         monitor.stop()
         self.assertFalse(monitor.is_running)
 
+    def test_health_issue_distinguishes_stopped_thread(self):
+        monitor = PositionMonitor(ShutdownController(), FakeNotifier(), StaticProvider(100.0), self.db)
+        self.assertEqual(monitor.health_issue(), "thread_stopped")
+
 
 class PriceProviderTests(unittest.TestCase):
     def test_newest_one_minute_close_is_selected(self):

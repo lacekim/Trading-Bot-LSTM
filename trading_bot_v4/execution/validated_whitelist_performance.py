@@ -26,7 +26,7 @@ VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH = Path("logs/v4_validated_whitelist_pe
 STRICT_VALIDATED_WHITELIST_PERFORMANCE_CSV_PATH = Path("logs/v4_strict_validated_whitelist_performance.csv")
 STRICT_VALIDATED_WHITELIST_PERFORMANCE_HTML_PATH = Path("logs/v4_strict_validated_whitelist_performance.html")
 GO_ASSET_SELECTION_AUDIT_PATH = Path("logs/v4_go_asset_selection_audit.csv")
-GO_MIN_PROFIT_FACTOR = 1.10
+GO_MIN_PROFIT_FACTOR = Config.GO_MIN_RECENT_PROFIT_FACTOR
 GO_MIN_RETURN_PCT = 0.0
 GO_MAX_DRAWDOWN_PCT = -5.0
 GO_MAX_DAILY_LOSS_EVENTS = 0
@@ -400,8 +400,10 @@ def _evaluate_readiness(symbol: str, timeframe: str, sweep: pd.DataFrame) -> tup
         failed.append(f"14d return > 0 failed: {return_14:.6f}%")
     if not return_30 > 0:
         failed.append(f"30d return > 0 failed: {return_30:.6f}%")
-    if not profit_factor_30 > 1.05:
-        failed.append(f"30d profit factor > 1.05 failed: {profit_factor_30:.6f}")
+    if not profit_factor_30 >= Config.GO_MIN_RECENT_PROFIT_FACTOR:
+        failed.append(
+            f"30d profit factor >= {Config.GO_MIN_RECENT_PROFIT_FACTOR:.2f} failed: {profit_factor_30:.6f}"
+        )
     if not drawdown_30 > -5.0:
         failed.append(f"30d max drawdown better than -5% failed: {drawdown_30:.6f}%")
     if not trade_count_30 >= 50:

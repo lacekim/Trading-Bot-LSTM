@@ -145,6 +145,7 @@ The dashboard includes:
 - Validated asset rankings
 
 The qualification CSV is stored at `reports/v4_daily_go_status.csv`; its legacy filename is retained for compatibility.
+The full recent, validated, walk-forward, and forward-demotion evidence is stored at `reports/v5_daily_qualification_audit.csv`.
 
 ### Persistent paper trading
 
@@ -179,7 +180,25 @@ The paper engine provides:
 - LONG protection evaluated with GMX `minPrice`; SHORT protection with `maxPrice`
 - Automatic one-minute GMX candle fallback if the live ticker is unavailable
 - Persistent monitor heartbeats, fallback diagnostics, and immediate exit events
+- Five-second feed request timeouts and a 45-second watchdog that distinguishes a stopped thread from a slow cycle
 - Hourly portfolio summaries
+
+### Promotion, demotion, and shadow validation
+
+GO status requires both recent performance and separate validated evidence. Defaults require:
+
+- Positive 7-, 14-, and 30-day constrained returns
+- 30-day profit factor of at least 1.30
+- Positive validated constrained return and profit factor of at least 1.30
+- Validated drawdown better than -5%
+- At least 100 validated trades
+- Walk-forward stability of at least 70
+
+An asset that passes recent readiness but fails the promotion layer becomes `WATCH`. WATCH assets cannot open baseline paper positions, but they continue through hourly data refresh, inference, and the persistent shadow challenger.
+
+Forward demotion uses the persistent paper database. It does not react until a symbol has at least 20 closed forward trades. It then evaluates the latest 30 trades using profit factor, expectancy, and account-relative drawdown; a failing GO asset becomes WATCH.
+
+The shadow challenger is research-only and cannot place baseline or live orders. It requires stronger probability, a green confirmation candle, a close near the top of the candle range, and price above its trailing trend. Shadow signals, positions, and completed trades are stored in SQLite and compared on the daily dashboard.
 
 Paper results are forward state. The account is not reset to its starting balance when the scheduler restarts.
 

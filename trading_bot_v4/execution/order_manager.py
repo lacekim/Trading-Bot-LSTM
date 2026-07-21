@@ -111,6 +111,23 @@ class OrderManager:
           observed_price REAL NOT NULL, accounting_price REAL NOT NULL,
           observed_at TEXT NOT NULL, source TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS challenger_signals (
+          signal_id TEXT PRIMARY KEY, candle_timestamp TEXT NOT NULL,
+          symbol TEXT NOT NULL, direction TEXT NOT NULL, probability REAL NOT NULL,
+          price REAL NOT NULL, passed INTEGER NOT NULL, reasons TEXT NOT NULL,
+          trend_reference REAL, close_location REAL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS challenger_positions (
+          symbol TEXT PRIMARY KEY, signal_id TEXT NOT NULL, direction TEXT NOT NULL,
+          entry_time TEXT NOT NULL, entry_price REAL NOT NULL,
+          stop_price REAL NOT NULL, target_price REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS challenger_trades (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT NOT NULL,
+          direction TEXT NOT NULL, entry_time TEXT NOT NULL, exit_time TEXT NOT NULL,
+          entry_price REAL NOT NULL, exit_price REAL NOT NULL,
+          return_pct REAL NOT NULL, exit_reason TEXT NOT NULL, signal_id TEXT NOT NULL
+        );
         """)
         order_columns = {row[1] for row in self.connection.execute("PRAGMA table_info(orders)")}
         if "order_kind" not in order_columns:
@@ -535,6 +552,102 @@ class OrderManager:
         return PaperCycleSummary(len(latest), generated, rejected, opened, closed, len(self._positions()),
                                  equity, float(account["realized_pnl"]), unrealized, float(account["fees"]),
                                  deduplicated, reasons, self.risk_status())
+
+    @staticmethod
+    def _challenger_gate(row: Any, trend_reference: float) -> tuple[bool, str, float]:
+        probability = float(row["model_probability"])
+        price = float(row["price"])
+        candle_open = float(row["open"]) if "open" in row.index else price
+        candle_high = float(row["high"]) if "high" in row.index else price
+        candle_low = float(row["low"]) if "low" in row.index else price
+        candle_range = max(candle_high - candle_low, 1e-12)
+        close_location = (price - candle_low) / candle_range
+        reasons: list[str] = []
+        if str(row["model_direction"]).upper() != "LONG":
+            reasons.append("baseline is not LONG")
+        if probability < Config.CHALLENGER_MIN_PROBABILITY:
+            reasons.append(f"probability < {Config.CHALLENGER_MIN_PROBABILITY:.2f}")
+        if price <= candle_open:
+            reasons.append("confirmation candle is not green")
+        if close_location < Config.CHALLENGER_MIN_CLOSE_LOCATION:
+            reasons.append(f"close location < {Config.CHALLENGER_MIN_CLOSE_LOCATION:.2f}")
+        if not pd.notna(trend_reference) or price <= float(trend_reference):
+            reasons.append("price is not above trailing trend")
+        return not reasons, "; ".join(reasons), float(close_location)
+
+    def process_challenger_signals(self, signals: pd.DataFrame) -> None:
+        """Run a stronger-confirmation strategy in persistent shadow mode only."""
+        if signals.empty:
+            return
+        working = signals.sort_values(["symbol", "timestamp"]).copy()
+        lookback = max(2, int(Config.CHALLENGER_TREND_LOOKBACK))
+        working["challenger_trend"] = working.groupby("symbol")["price"].transform(
+            lambda values: pd.to_numeric(values, errors="coerce").shift(1).rolling(lookback, min_periods=lookback).mean()
+        )
+        latest = working.groupby("symbol", as_index=False).tail(1)
+        for _, row in latest.iterrows():
+            if self._validate_signal_candle(row):
+                continue
+            symbol = str(row["symbol"])
+            price = float(row["price"])
+            sid = f"challenger_{self.signal_id(row)}"
+            position = self.connection.execute(
+                "SELECT * FROM challenger_positions WHERE symbol=?", (symbol,)
+            ).fetchone()
+            closed_this_candle = False
+            if position:
+                high = float(row["high"]) if "high" in row.index else price
+                low = float(row["low"]) if "low" in row.index else price
+                candle_open = float(row["open"]) if "open" in row.index else price
+                hit_stop = low <= float(position["stop_price"])
+                hit_target = high >= float(position["target_price"])
+                if hit_stop or hit_target:
+                    use_stop = hit_stop and (not hit_target or Config.PAPER_STOP_TARGET_PRIORITY == "STOP_FIRST")
+                    reason = "stop_loss" if use_stop else "take_profit"
+                    reference = (
+                        min(candle_open, float(position["stop_price"])) if use_stop
+                        else max(candle_open, float(position["target_price"]))
+                    )
+                    round_trip_cost = 2.0 * (
+                        Config.PAPER_FEE_BPS + Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS
+                    ) / 100.0
+                    return_pct = (reference / float(position["entry_price"]) - 1.0) * 100.0 - round_trip_cost
+                    self.connection.execute(
+                        """INSERT INTO challenger_trades(
+                            symbol,direction,entry_time,exit_time,entry_price,exit_price,return_pct,exit_reason,signal_id
+                        ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                        (symbol, position["direction"], position["entry_time"], _now(), position["entry_price"],
+                         reference, return_pct, reason, position["signal_id"]),
+                    )
+                    self.connection.execute("DELETE FROM challenger_positions WHERE symbol=?", (symbol,))
+                    position = None
+                    closed_this_candle = True
+
+            if self.connection.execute(
+                "SELECT 1 FROM challenger_signals WHERE signal_id=?", (sid,)
+            ).fetchone():
+                continue
+            trend = float(row["challenger_trend"]) if pd.notna(row["challenger_trend"]) else float("nan")
+            passed, reasons, close_location = self._challenger_gate(row, trend)
+            self.connection.execute(
+                """INSERT INTO challenger_signals(
+                    signal_id,candle_timestamp,symbol,direction,probability,price,passed,reasons,
+                    trend_reference,close_location,created_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                (sid, str(row["timestamp"]), symbol, str(row["model_direction"]),
+                 float(row["model_probability"]), price, int(passed), reasons,
+                 trend if pd.notna(trend) else None, close_location, _now()),
+            )
+            if passed and position is None and not closed_this_candle:
+                entry_cost = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
+                entry = price * (1.0 + entry_cost)
+                self.connection.execute(
+                    "INSERT INTO challenger_positions VALUES(?,?,?,?,?,?,?)",
+                    (symbol, sid, "LONG", _now(), entry,
+                     entry * (1.0 - Config.PAPER_STOP_LOSS_PCT / 100.0),
+                     entry * (1.0 + Config.PAPER_TAKE_PROFIT_PCT / 100.0)),
+                )
+        self.connection.commit()
 
     def sync(self) -> PaperCycleSummary:
         equity, unrealized = self._equity(); account = self._account()

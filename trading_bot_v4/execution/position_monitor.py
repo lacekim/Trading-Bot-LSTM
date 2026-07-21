@@ -190,8 +190,17 @@ class PositionMonitor:
         return bool(self._thread and self._thread.is_alive())
 
     def is_healthy(self) -> bool:
-        maximum_age = max(10.0, self.interval * 2.5)
+        maximum_age = max(10.0, float(Config.POSITION_MONITOR_WATCHDOG_SECONDS))
         return self.is_running and (time.monotonic() - self._last_heartbeat_monotonic) <= maximum_age
+
+    def health_issue(self) -> str:
+        if not self.is_running:
+            return "thread_stopped"
+        if not self._last_heartbeat_monotonic:
+            return "no_heartbeat"
+        if time.monotonic() - self._last_heartbeat_monotonic > Config.POSITION_MONITOR_WATCHDOG_SECONDS:
+            return "heartbeat_stale"
+        return ""
 
     def start(self) -> None:
         if self.is_running:

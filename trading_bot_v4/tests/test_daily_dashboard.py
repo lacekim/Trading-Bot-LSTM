@@ -6,7 +6,10 @@ from unittest.mock import patch
 import pandas as pd
 
 from trading_bot_v4.backtesting.asset_selection_engine import _add_validated_ranking_scores
-from trading_bot_v4.research.daily_research import _dashboard_decision_views, _forward_paper_metrics
+from trading_bot_v4.research.daily_research import (
+    _apply_validated_oos_gate, _dashboard_decision_views,
+    _forward_demotion_statistics, _forward_paper_metrics,
+)
 from trading_bot_v4.execution.order_manager import OrderManager
 
 
@@ -55,6 +58,28 @@ class DailyDashboardTests(unittest.TestCase):
             self.assertEqual(metrics["starting_equity"], 10000.0)
             self.assertEqual(metrics["open_positions"], 0)
             self.assertEqual(metrics["win_rate"], "insufficient data")
+
+    def test_validated_oos_gate_demotes_weak_recent_winner_to_watch(self):
+        readiness = pd.DataFrame([{
+            "symbol": "PUMP", "decision": "GO", "failed_conditions": "",
+            "profit_factor_30d": 1.5,
+        }])
+        rankings = pd.DataFrame([{
+            "symbol": "PUMP", "constrained_smc_return_pct": -2.0,
+            "constrained_smc_profit_factor": 0.9,
+            "constrained_smc_max_drawdown_pct": -6.0,
+            "constrained_smc_trade_count": 200,
+            "walk_forward_stability": 80.0,
+        }])
+        gated = _apply_validated_oos_gate(readiness, rankings)
+        self.assertEqual(gated.iloc[0]["decision"], "WATCH")
+        self.assertIn("validated profit factor", gated.iloc[0]["failed_conditions"])
+
+    def test_forward_demotion_statistics_are_sample_based(self):
+        stats = _forward_demotion_statistics([10.0, -20.0, 5.0])
+        self.assertEqual(stats["trades"], 3.0)
+        self.assertAlmostEqual(stats["profit_factor"], 0.75)
+        self.assertLess(stats["expectancy"], 0.0)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,7 @@ logger = build_logger("v5_daily_research")
 
 DAILY_DASHBOARD_PATH = Path("reports/v5_daily_decision_dashboard.html")
 DAILY_GO_STATUS_PATH = Path("reports/v4_daily_go_status.csv")
+DAILY_QUALIFICATION_AUDIT_PATH = Path("reports/v5_daily_qualification_audit.csv")
 DAILY_SMC_FEATURE_DIR = Path("reports/smc_features")
 
 
@@ -211,6 +212,13 @@ def _readiness_recent_metrics(readiness: pd.DataFrame) -> pd.DataFrame:
         "profit_factor_30d",
         "max_drawdown_30d_pct",
         "trade_count_30d",
+        "constrained_smc_return_pct",
+        "constrained_smc_profit_factor",
+        "constrained_smc_max_drawdown_pct",
+        "walk_forward_stability",
+        "forward_trades",
+        "forward_profit_factor",
+        "forward_expectancy",
         "failed_conditions",
     ]
     return readiness[[column for column in columns if column in readiness.columns]].copy()
@@ -230,10 +238,11 @@ def _dashboard_decision_views(
 
     view["failed_conditions"] = view["failed_conditions"].fillna("").astype(str)
     view["failed_count"] = view["failed_conditions"].apply(lambda value: 0 if not value.strip() else len(value.split(";")))
+    decision = view["decision"].astype(str).str.upper()
     view["status"] = np.where(
-        view["decision"].astype(str).str.upper().eq("GO"),
+        decision.eq("GO"),
         "GO",
-        np.where(view["failed_count"].le(1), "WATCHLIST", "NO-GO"),
+        np.where(decision.eq("WATCH") | view["failed_count"].le(1), "WATCHLIST", "NO-GO"),
     )
     view["criteria"] = view.apply(
         lambda row: (
@@ -301,8 +310,116 @@ def _dashboard_decision_views(
     display_columns = [
         "symbol", "status", "confidence_pct", "return_7d_pct", "return_14d_pct", "return_30d_pct",
         "profit_factor_30d", "max_drawdown_30d_pct", "trade_count_30d", "criteria",
+        "constrained_smc_return_pct", "constrained_smc_profit_factor",
+        "constrained_smc_max_drawdown_pct", "walk_forward_stability",
+        "forward_trades", "forward_profit_factor", "forward_expectancy",
     ]
     return joined[[column for column in display_columns if column in joined.columns]], opportunity, allocation, regime
+
+
+def _apply_validated_oos_gate(readiness: pd.DataFrame, rankings: pd.DataFrame) -> pd.DataFrame:
+    """Require separately validated economics and walk-forward stability for GO."""
+    gated = readiness.copy()
+    if gated.empty or rankings.empty:
+        return gated
+    columns = [
+        "symbol", "constrained_smc_return_pct", "constrained_smc_profit_factor",
+        "constrained_smc_max_drawdown_pct", "constrained_smc_trade_count",
+        "walk_forward_stability",
+    ]
+    available = [column for column in columns if column in rankings.columns]
+    evidence = rankings[available].copy()
+    evidence["symbol"] = evidence["symbol"].astype(str).str.upper()
+    gated["symbol"] = gated["symbol"].astype(str).str.upper()
+    gated = gated.merge(evidence, on="symbol", how="left")
+    if "failed_conditions" not in gated.columns:
+        gated["failed_conditions"] = ""
+
+    rules = [
+        ("constrained_smc_return_pct", lambda value: value > 0.0, "validated return > 0"),
+        ("constrained_smc_profit_factor", lambda value: value >= Config.GO_MIN_VALIDATED_PROFIT_FACTOR,
+         f"validated profit factor >= {Config.GO_MIN_VALIDATED_PROFIT_FACTOR:.2f}"),
+        ("constrained_smc_max_drawdown_pct", lambda value: value > Config.GO_MAX_VALIDATED_DRAWDOWN_PCT,
+         f"validated drawdown > {Config.GO_MAX_VALIDATED_DRAWDOWN_PCT:.2f}%"),
+        ("constrained_smc_trade_count", lambda value: value >= Config.GO_MIN_VALIDATED_TRADES,
+         f"validated trades >= {Config.GO_MIN_VALIDATED_TRADES}"),
+        ("walk_forward_stability", lambda value: value >= Config.GO_MIN_WALK_FORWARD_STABILITY,
+         f"walk-forward stability >= {Config.GO_MIN_WALK_FORWARD_STABILITY:.0f}"),
+    ]
+    for index, row in gated.iterrows():
+        if str(row.get("decision", "")).upper() != "GO":
+            continue
+        failures: list[str] = []
+        for column, predicate, label in rules:
+            value = pd.to_numeric(pd.Series([row.get(column)]), errors="coerce").iloc[0]
+            if pd.isna(value) or not predicate(float(value)):
+                rendered = "unavailable" if pd.isna(value) else f"{float(value):.6f}"
+                failures.append(f"{label} failed: {rendered}")
+        if failures:
+            gated.at[index, "decision"] = "WATCH"
+            prior = str(gated.at[index, "failed_conditions"] or "").strip()
+            gated.at[index, "failed_conditions"] = "; ".join([part for part in [prior, *failures] if part])
+    return gated
+
+
+def _forward_demotion_statistics(net_pnl: list[float]) -> dict[str, float]:
+    values = [float(value) for value in net_pnl]
+    wins = sum(value for value in values if value > 0)
+    losses = abs(sum(value for value in values if value < 0))
+    profit_factor = wins / losses if losses else (float("inf") if wins else 0.0)
+    curve = np.cumsum([0.0, *values])
+    peaks = np.maximum.accumulate(curve)
+    drawdown = float(np.max(peaks - curve)) if len(curve) else 0.0
+    return {
+        "trades": float(len(values)), "profit_factor": float(profit_factor),
+        "expectancy": float(np.mean(values)) if values else 0.0,
+        "drawdown_usd": drawdown,
+    }
+
+
+def _apply_forward_demotion(readiness: pd.DataFrame) -> pd.DataFrame:
+    """Demote GO assets only after a meaningful persistent forward sample."""
+    result = readiness.copy()
+    result["forward_trades"] = 0
+    result["forward_profit_factor"] = np.nan
+    result["forward_expectancy"] = np.nan
+    path = Path(Config.PAPER_DB_PATH)
+    if result.empty or not path.exists():
+        return result
+    connection = sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True)
+    try:
+        rows = connection.execute(
+            "SELECT symbol,net_pnl FROM closed_trades ORDER BY exit_time"
+        ).fetchall()
+    finally:
+        connection.close()
+    grouped: dict[str, list[float]] = {}
+    for symbol, pnl in rows:
+        grouped.setdefault(str(symbol).upper(), []).append(float(pnl))
+    for index, row in result.iterrows():
+        symbol = str(row["symbol"]).upper()
+        sample = grouped.get(symbol, [])[-Config.FORWARD_DEMOTION_WINDOW_TRADES:]
+        stats = _forward_demotion_statistics(sample)
+        result.at[index, "forward_trades"] = int(stats["trades"])
+        result.at[index, "forward_profit_factor"] = stats["profit_factor"]
+        result.at[index, "forward_expectancy"] = stats["expectancy"]
+        if str(row.get("decision", "")).upper() != "GO" or len(sample) < Config.FORWARD_DEMOTION_MIN_TRADES:
+            continue
+        account_drawdown_pct = stats["drawdown_usd"] / max(float(Config.PAPER_STARTING_BALANCE), 1.0) * 100.0
+        failures = []
+        if stats["profit_factor"] < Config.FORWARD_DEMOTION_MIN_PROFIT_FACTOR:
+            failures.append(f"forward profit factor {stats['profit_factor']:.3f}")
+        if stats["expectancy"] <= 0:
+            failures.append(f"forward expectancy ${stats['expectancy']:.2f}")
+        if account_drawdown_pct > Config.FORWARD_DEMOTION_MAX_DRAWDOWN_PCT:
+            failures.append(f"forward drawdown {account_drawdown_pct:.2f}%")
+        if failures:
+            result.at[index, "decision"] = "WATCH"
+            prior = str(result.at[index, "failed_conditions"] or "").strip()
+            result.at[index, "failed_conditions"] = "; ".join(
+                [part for part in [prior, f"forward demotion: {', '.join(failures)}"] if part]
+            )
+    return result
 
 
 def _apply_strict_go_status(readiness: pd.DataFrame, selected_assets: list[str]) -> pd.DataFrame:
@@ -315,7 +432,7 @@ def _apply_strict_go_status(readiness: pd.DataFrame, selected_assets: list[str])
     strict["decision"] = strict["decision"].astype(str).str.upper()
     readiness_go = strict["decision"].eq("GO")
     strict_fail = readiness_go & ~strict["symbol"].isin(selected)
-    strict.loc[strict_fail, "decision"] = "NO-GO"
+    strict.loc[strict_fail, "decision"] = "WATCH"
     if "failed_conditions" not in strict.columns:
         strict["failed_conditions"] = ""
     strict.loc[strict_fail, "failed_conditions"] = strict.loc[strict_fail, "failed_conditions"].apply(
@@ -341,6 +458,23 @@ def _write_dashboard(
     )
     performance_display = performance.copy()
     forward_metrics, forward_by_asset = _forward_paper_metrics()
+    challenger = pd.DataFrame()
+    path = Path(Config.PAPER_DB_PATH)
+    if path.exists():
+        connection = sqlite3.connect(f"file:{path.resolve()}?mode=ro", uri=True)
+        try:
+            challenger = pd.read_sql_query(
+                """SELECT symbol,COUNT(*) trades,
+                    ROUND(SUM(return_pct),4) net_return_pct,
+                    ROUND(AVG(return_pct),4) expectancy_pct,
+                    ROUND(SUM(CASE WHEN return_pct>0 THEN 1 ELSE 0 END)*100.0/COUNT(*),2) win_rate_pct
+                    FROM challenger_trades GROUP BY symbol ORDER BY net_return_pct DESC""",
+                connection,
+            )
+        except Exception:
+            challenger = pd.DataFrame()
+        finally:
+            connection.close()
 
     for frame in [top_rankings, readiness_display, performance_display, opportunity, allocation]:
         numeric_columns = frame.select_dtypes(include=[np.number]).columns
@@ -411,6 +545,10 @@ def _write_dashboard(
   </div>
   <h2>Forward Performance by Asset</h2>
   {forward_by_asset.to_html(index=False, border=0) if not forward_by_asset.empty else '<p>Insufficient closed-trade data.</p>'}
+
+  <h2>Shadow Challenger Performance</h2>
+  <p>Research-only stronger confirmation and trend alignment. It cannot place active paper orders.</p>
+  {challenger.to_html(index=False, border=0) if not challenger.empty else '<p>Collecting future shadow trades.</p>'}
 
   <h2>Today's Opportunity</h2>
   {opportunity.to_html(index=False, border=0)}
@@ -493,6 +631,10 @@ def run_daily_research(args: Any) -> DailyResearchResult:
     performance = performance_result.report_df
 
     strict_readiness = _apply_strict_go_status(readiness, performance_result.selected_assets)
+    strict_readiness = _apply_validated_oos_gate(strict_readiness, rankings)
+    strict_readiness = _apply_forward_demotion(strict_readiness)
+    DAILY_QUALIFICATION_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    strict_readiness.to_csv(DAILY_QUALIFICATION_AUDIT_PATH, index=False)
     go_assets = strict_readiness.loc[
         strict_readiness["decision"].astype(str).str.upper().eq("GO"),
         "symbol",

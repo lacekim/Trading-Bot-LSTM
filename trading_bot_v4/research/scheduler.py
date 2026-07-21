@@ -223,6 +223,24 @@ def _hourly_refresh_symbols(timeframe: str) -> list[str]:
     return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
 
 
+def _hourly_analysis_symbols(timeframe: str) -> list[str]:
+    """Return GO plus WATCH assets; WATCH is shadow-only and cannot open baseline positions."""
+    del timeframe
+    if not DAILY_GO_STATUS_PATH.exists():
+        return []
+    try:
+        status = pd.read_csv(DAILY_GO_STATUS_PATH)
+    except Exception as exc:
+        _log(f"WARNING failed to load daily analysis list: {exc}")
+        return []
+    if not {"symbol", "decision"}.issubset(status.columns):
+        return []
+    selected = status.loc[
+        status["decision"].astype(str).str.upper().isin({"GO", "WATCH"}), "symbol"
+    ]
+    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
+
+
 def _refresh_live_market_data(symbols: list[str], timeframe: str) -> bool:
     """Refresh active GMX symbols from source using a temporary symbol-scoped config."""
     if getattr(Config, "DATA_SOURCE", "").upper() != "GMX":
@@ -319,26 +337,28 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     cycle_started = time.monotonic()
     positions_before = orders.position_snapshots()
     symbols = _hourly_refresh_symbols(timeframe)
-    if not symbols:
-        _log("Hourly paper cycle skipped: today's qualified GO list is empty")
+    analysis_symbols = _hourly_analysis_symbols(timeframe)
+    if not analysis_symbols:
+        _log("Hourly paper cycle skipped: today's GO/WATCH analysis list is empty")
         _log(_format_paper_summary(orders.sync()))
         return
-    _log(f"Hourly qualified assets: {', '.join(symbols)}")
+    _log(f"Hourly qualified GO assets: {', '.join(symbols) if symbols else 'none'}")
+    _log(f"Hourly GO/WATCH analysis assets: {', '.join(analysis_symbols)}")
 
     refresh_result = _run_guarded(
         "hourly.refresh_active_market_data",
-        lambda: _refresh_active_market_data(symbols, timeframe),
+        lambda: _refresh_active_market_data(analysis_symbols, timeframe),
     )
 
     def update_smc_features() -> int:
-        outputs = _update_smc_features(symbols, timeframe)
+        outputs = _update_smc_features(analysis_symbols, timeframe)
         return len(outputs)
 
     _run_guarded("hourly.update_smc_features", update_smc_features)
 
     def update_active_paper_signals() -> dict[str, Any]:
         return run_smc_model_paper_trading(
-            _scheduler_args(timeframe=timeframe, symbols=symbols, model=models.smc_model, scaler=models.smc_scaler)
+            _scheduler_args(timeframe=timeframe, symbols=analysis_symbols, model=models.smc_model, scaler=models.smc_scaler)
         )
 
     signal_result = _run_guarded("hourly.update_active_smc_model_paper_signals", update_active_paper_signals)
@@ -347,11 +367,13 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         return
     signals_path = Path(signal_result["signals_path"])
     signals = pd.read_csv(signals_path) if signals_path.exists() else pd.DataFrame()
+    _run_guarded("hourly.shadow_challenger", lambda: orders.process_challenger_signals(signals))
     orders.set_new_entries(controller.entries_allowed())
     if Config.EXECUTION_MODE != "PAPER":
         _log(f"hourly.paper_execution skipped in {Config.EXECUTION_MODE} mode")
         return
-    summary = _run_guarded("hourly.paper_execution", lambda: orders.process_signals(signals))
+    active_signals = signals.loc[signals["symbol"].astype(str).str.upper().isin(symbols)].copy() if not signals.empty else signals
+    summary = _run_guarded("hourly.paper_execution", lambda: orders.process_signals(active_signals))
     if summary is not None:
         positions_after = orders.position_snapshots()
         controller.update_runtime_snapshot(
@@ -369,7 +391,8 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         telegram_status = controller.runtime_snapshot().get("telegram_status", "unknown")
         _log(
             "Hourly Cycle Health | "
-            f"Qualified: {','.join(symbols)} | Refreshed: {int(refresh_result or 0)}/{len(symbols)} | "
+            f"Qualified: {','.join(symbols) if symbols else 'none'} | "
+            f"Analyzed: {','.join(analysis_symbols)} | Refreshed: {int(refresh_result or 0)}/{len(analysis_symbols)} | "
             f"Latest candle: {latest_timestamp} | Predictions generated: {len(latest_signals)} | Directions: {directions} | "
             f"Telegram: {telegram_status} | Duration: {time.monotonic() - cycle_started:.2f}s"
         )
@@ -486,17 +509,17 @@ def run_auto_scheduler(args: Any) -> None:
     )
     try:
         while not controller.is_shutdown_requested():
-            if position_monitor is not None and time.monotonic() - monitor_started_at > max(
-                10, Config.POSITION_MONITOR_INTERVAL_SECONDS * 2
-            ):
+            if position_monitor is not None and time.monotonic() - monitor_started_at > Config.POSITION_MONITOR_WATCHDOG_SECONDS:
                 if not position_monitor.is_healthy() and not monitor_watchdog_alerted:
                     monitor_watchdog_alerted = True
-                    _log("ERROR position monitor heartbeat stopped")
-                    controller.update_runtime_snapshot(position_monitor_status="stopped_updating")
+                    issue = position_monitor.health_issue()
+                    _log(f"ERROR position monitor unhealthy: {issue}")
+                    controller.update_runtime_snapshot(position_monitor_status=issue)
                     if telegram.is_running:
                         telegram.broadcast(
-                            "🚨 <b>POSITION MONITOR HEARTBEAT LOST</b>\n"
-                            "The scheduler is running but minute-level protection stopped updating."
+                            "🚨 <b>POSITION MONITOR UNHEALTHY</b>\n"
+                            f"Reason: <code>{issue}</code>\n"
+                            "The scheduler is running but protective monitoring needs attention."
                         )
                 elif position_monitor.is_healthy():
                     monitor_watchdog_alerted = False
