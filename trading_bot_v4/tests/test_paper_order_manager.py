@@ -123,6 +123,37 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertLess(trade["return_pct"], 0.0)
         manager.close()
 
+    def test_shadow_challenger_can_open_and_profit_from_short(self):
+        manager = OrderManager(self.db)
+        end = pd.Timestamp.now(tz="UTC").floor("h") - pd.Timedelta(hours=2)
+        rows = []
+        for offset in range(25):
+            price = 125.0 - offset
+            rows.append({
+                "timestamp": end - pd.Timedelta(hours=24 - offset), "symbol": "ETH", "timeframe": "1h",
+                "model_direction": "SHORT", "model_probability": 0.8, "price": price,
+                "open": price + 1.0, "high": price + 1.2, "low": price - 0.2, "close": price,
+            })
+        history = pd.DataFrame(rows)
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_CANDLE_AGE_MULTIPLIER", 10.0):
+            manager.process_challenger_signals(history)
+        position = manager.connection.execute("SELECT direction FROM challenger_positions").fetchone()
+        self.assertEqual(position["direction"], "SHORT")
+
+        newest = history.copy()
+        newest.loc[len(newest)] = {
+            "timestamp": end + pd.Timedelta(hours=1), "symbol": "ETH", "timeframe": "1h",
+            "model_direction": "HOLD", "model_probability": 0.2, "price": 96.0,
+            "open": 97.0, "high": 97.0, "low": 95.0, "close": 96.0,
+        }
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_CANDLE_AGE_MULTIPLIER", 10.0):
+            manager.process_challenger_signals(newest)
+        trade = manager.connection.execute("SELECT direction,exit_reason,return_pct FROM challenger_trades").fetchone()
+        self.assertEqual(trade["direction"], "SHORT")
+        self.assertEqual(trade["exit_reason"], "take_profit")
+        self.assertGreater(trade["return_pct"], 0.0)
+        manager.close()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -198,7 +198,15 @@ An asset that passes recent readiness but fails the promotion layer becomes `WAT
 
 Forward demotion uses the persistent paper database. It does not react until a symbol has at least 20 closed forward trades. It then evaluates the latest 30 trades using profit factor, expectancy, and account-relative drawdown; a failing GO asset becomes WATCH.
 
-The shadow challenger is research-only and cannot place baseline or live orders. It requires stronger probability, a green confirmation candle, a close near the top of the candle range, and price above its trailing trend. Shadow signals, positions, and completed trades are stored in SQLite and compared on the daily dashboard.
+The shadow challenger is research-only and cannot place baseline or live orders. LONG confirmation requires a green candle, a close near the top of the range, and price above its trailing trend. SHORT confirmation mirrors those rules: a red candle, a close near the bottom, and price below trend. Shadow signals, positions, and completed trades are stored in SQLite and compared on the daily dashboard.
+
+V5 also has an independent bearish CNN/LSTM path. Its positive class is an actual future decline greater than 1%; it does not misuse the upside model's negative class as a SHORT prediction. Train and calibrate it with:
+
+```bash
+python -m trading_bot_v4.main --train-bearish-model --timeframe 1h
+```
+
+The scheduler loads this model only when `models/smc_bearish_calibration.json` records `promoted: true`. Training uses a chronological 70% training block and a separate 15% model-selection block. Promotion then uses only the final untouched 15%. Promotion is per asset: final-holdout precision must be at least 0.55 and all three non-overlapping final-holdout windows must have positive net return and profit factor of at least 1.30. The current artifact promotes `CHZ` at a `0.77` SHORT threshold; no other symbol can execute a model-based SHORT. Calibrated thresholds are stored with the model, while detailed results are written to `reports/v5_bearish_validation.csv` and `reports/v5_bearish_walk_forward.csv`.
 
 Paper results are forward state. The account is not reset to its starting balance when the scheduler restarts.
 

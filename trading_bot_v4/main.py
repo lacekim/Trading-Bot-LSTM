@@ -44,6 +44,7 @@ from trading_bot_v4.execution.validated_whitelist_performance import (
 )
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
+from trading_bot_v4.ml.bearish_trainer import train_bearish_model
 from trading_bot_v4.research.daily_research import run_daily_research
 from trading_bot_v4.research.scheduler import request_model_reload, run_auto_scheduler
 from trading_bot_v4.utils.logger import build_logger
@@ -85,6 +86,7 @@ def parse_args():
     parser.add_argument("--compare-paper-model-performance", action="store_true", help="Compare paper signal performance for original and SMC models")
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
+    parser.add_argument("--train-bearish-model", action="store_true", help="Train and calibrate the independent downside SMC model")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
     parser.add_argument("--rank-assets", action="store_true", help="Rank GMX assets for analysis-only V4 asset selection")
     parser.add_argument("--validate-asset-rankings", action="store_true", help="Validate asset rankings against constrained paper performance")
@@ -151,6 +153,16 @@ def main():
 
     if args.train:
         train_v4_model(send_telegram=False)
+        return 0
+    if args.train_bearish_model:
+        result = train_bearish_model(str(args.timeframe))
+        print(f"bearish model: {result.model_path}")
+        print(f"bearish scaler: {result.scaler_path}")
+        print(f"validation AUC: {result.validation_auc:.6f}")
+        print(f"validation precision: {result.validation_precision:.6f}")
+        print(f"validation recall: {result.validation_recall:.6f}")
+        print(f"validation F1: {result.validation_f1:.6f}")
+        print(f"calibrated threshold: {result.threshold:.2f}")
         return 0
     if args.predict:
         predict_with_v4_model()

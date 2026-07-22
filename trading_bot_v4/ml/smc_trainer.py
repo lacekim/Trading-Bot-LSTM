@@ -153,6 +153,7 @@ def _make_sequence_dataset(
     target_key: str,
     feature_count: int,
     sample_weights: dict[int, float] | None = None,
+    batch_size: int | None = None,
 ) -> tf.data.Dataset:
     if sample_weights is None:
         output_signature = (
@@ -169,7 +170,7 @@ def _make_sequence_dataset(
         lambda: _sequence_generator(arrays, feature_key, target_key, sample_weights=sample_weights),
         output_signature=output_signature,
     )
-    return dataset.batch(Config.BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+    return dataset.batch(batch_size or Config.BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 
 def train_smc_model(timeframe: str) -> SmcModelTrainingResult:

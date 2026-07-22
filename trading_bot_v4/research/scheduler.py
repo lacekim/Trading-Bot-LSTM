@@ -18,6 +18,9 @@ import pandas as pd
 from trading_bot import load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
+from trading_bot_v4.execution.bearish_model_paper import (
+    combine_directional_signals, load_bearish_calibration, predict_bearish_signals,
+)
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.execution.position_monitor import PositionMonitor
@@ -26,6 +29,7 @@ from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode,
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock
 from trading_bot_v4.telegram.control_listener import TelegramControlListener
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
+from trading_bot_v4.ml.bearish_trainer import BEARISH_MODEL_PATH, BEARISH_SCALER_PATH
 from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH, _update_smc_features, run_daily_research
 from trading_bot_v4.utils.model_cache import ModelScalerCache
 
@@ -53,6 +57,10 @@ class SchedulerModelBundle:
     original_scaler_mtime: float
     smc_model_mtime: float
     smc_scaler_mtime: float
+    bearish_model: Any | None = None
+    bearish_scaler: Any | None = None
+    bearish_model_mtime: float = 0.0
+    bearish_scaler_mtime: float = 0.0
 
 
 def _scheduler_args(**kwargs: Any) -> Any:
@@ -142,6 +150,19 @@ def _load_scheduler_models(reason: str) -> SchedulerModelBundle:
     original_model, original_scaler = original_cache.load()
     smc_cache = ModelScalerCache(model_path=SMC_MODEL_PATH, scaler_path=SMC_SCALER_PATH)
     smc_model, smc_scaler = smc_cache.load()
+    bearish_model = bearish_scaler = None
+    if BEARISH_MODEL_PATH.exists() and BEARISH_SCALER_PATH.exists():
+        try:
+            calibration = load_bearish_calibration()
+            if calibration.get("promoted", False):
+                bearish_model, bearish_scaler = ModelScalerCache(
+                    model_path=BEARISH_MODEL_PATH, scaler_path=BEARISH_SCALER_PATH
+                ).load()
+                _log("Validated bearish model loaded")
+            else:
+                _log("Bearish model artifacts exist but validation promotion is false")
+        except Exception as exc:
+            _log(f"WARNING bearish model unavailable: {exc}")
     _log("Scheduler models loaded")
     return SchedulerModelBundle(
         original_model=original_model,
@@ -152,6 +173,10 @@ def _load_scheduler_models(reason: str) -> SchedulerModelBundle:
         original_scaler_mtime=_mtime(Path(original_cache.scaler_path)),
         smc_model_mtime=_mtime(Path(SMC_MODEL_PATH)),
         smc_scaler_mtime=_mtime(Path(SMC_SCALER_PATH)),
+        bearish_model=bearish_model,
+        bearish_scaler=bearish_scaler,
+        bearish_model_mtime=_mtime(BEARISH_MODEL_PATH),
+        bearish_scaler_mtime=_mtime(BEARISH_SCALER_PATH),
     )
 
 
@@ -164,10 +189,12 @@ def _reload_reasons(bundle: SchedulerModelBundle) -> list[str]:
         ("original scaler timestamp changed", original_scaler_path, bundle.original_scaler_mtime),
         ("SMC model timestamp changed", Path(SMC_MODEL_PATH), bundle.smc_model_mtime),
         ("SMC scaler timestamp changed", Path(SMC_SCALER_PATH), bundle.smc_scaler_mtime),
+        ("bearish model timestamp changed", BEARISH_MODEL_PATH, bundle.bearish_model_mtime),
+        ("bearish scaler timestamp changed", BEARISH_SCALER_PATH, bundle.bearish_scaler_mtime),
     ]
     for reason, path, previous_mtime in checks:
         current_mtime = _mtime(path)
-        if current_mtime and previous_mtime and current_mtime != previous_mtime:
+        if current_mtime and current_mtime != previous_mtime:
             reasons.append(reason)
     if RELOAD_MODEL_REQUEST_PATH.exists():
         reasons.append(f"reload requested via {RELOAD_MODEL_REQUEST_PATH}")
@@ -239,6 +266,18 @@ def _hourly_analysis_symbols(timeframe: str) -> list[str]:
         status["decision"].astype(str).str.upper().isin({"GO", "WATCH"}), "symbol"
     ]
     return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
+
+
+def _active_directional_signals(signals: pd.DataFrame, long_symbols: list[str],
+                                short_symbols: set[str]) -> pd.DataFrame:
+    if signals.empty:
+        return signals
+    symbol = signals["symbol"].astype(str).str.upper()
+    direction = signals["model_direction"].astype(str).str.upper()
+    allowed = (direction.eq("LONG") & symbol.isin(long_symbols)) | (
+        direction.eq("SHORT") & symbol.isin(short_symbols)
+    ) | direction.eq("HOLD")
+    return signals.loc[allowed].copy()
 
 
 def _refresh_live_market_data(symbols: list[str], timeframe: str) -> bool:
@@ -338,6 +377,14 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     positions_before = orders.position_snapshots()
     symbols = _hourly_refresh_symbols(timeframe)
     analysis_symbols = _hourly_analysis_symbols(timeframe)
+    try:
+        bearish_calibration = load_bearish_calibration()
+        short_symbols = {
+            str(symbol).upper() for symbol in bearish_calibration.get("promoted_symbols", {})
+        } if bearish_calibration.get("promoted", False) else set()
+    except (FileNotFoundError, ValueError, json.JSONDecodeError):
+        short_symbols = set()
+    analysis_symbols = list(dict.fromkeys([*analysis_symbols, *sorted(short_symbols)]))
     if not analysis_symbols:
         _log("Hourly paper cycle skipped: today's GO/WATCH analysis list is empty")
         _log(_format_paper_summary(orders.sync()))
@@ -366,13 +413,28 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         _log(_format_paper_summary(orders.sync()))
         return
     signals_path = Path(signal_result["signals_path"])
-    signals = pd.read_csv(signals_path) if signals_path.exists() else pd.DataFrame()
+    long_signals = pd.read_csv(signals_path) if signals_path.exists() else pd.DataFrame()
+    short_signals = pd.DataFrame()
+    if models.bearish_model is not None and models.bearish_scaler is not None:
+        def update_bearish_signals() -> pd.DataFrame:
+            thresholds = {
+                str(key).upper(): float(value)
+                for key, value in load_bearish_calibration().get("promoted_symbols", {}).items()
+            }
+            return pd.concat([
+                predict_bearish_signals(models.bearish_model, models.bearish_scaler, symbol, timeframe, thresholds[symbol])
+                for symbol in analysis_symbols if symbol in thresholds
+            ], ignore_index=True) if any(symbol in thresholds for symbol in analysis_symbols) else pd.DataFrame()
+        bearish_result = _run_guarded("hourly.update_bearish_model_signals", update_bearish_signals)
+        if bearish_result is not None:
+            short_signals = bearish_result
+    signals = combine_directional_signals(long_signals, short_signals)
     _run_guarded("hourly.shadow_challenger", lambda: orders.process_challenger_signals(signals))
     orders.set_new_entries(controller.entries_allowed())
     if Config.EXECUTION_MODE != "PAPER":
         _log(f"hourly.paper_execution skipped in {Config.EXECUTION_MODE} mode")
         return
-    active_signals = signals.loc[signals["symbol"].astype(str).str.upper().isin(symbols)].copy() if not signals.empty else signals
+    active_signals = _active_directional_signals(signals, symbols, short_symbols)
     summary = _run_guarded("hourly.paper_execution", lambda: orders.process_signals(active_signals))
     if summary is not None:
         positions_after = orders.position_snapshots()

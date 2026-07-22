@@ -563,16 +563,25 @@ class OrderManager:
         candle_range = max(candle_high - candle_low, 1e-12)
         close_location = (price - candle_low) / candle_range
         reasons: list[str] = []
-        if str(row["model_direction"]).upper() != "LONG":
-            reasons.append("baseline is not LONG")
+        direction = str(row["model_direction"]).upper()
+        if direction not in {"LONG", "SHORT"}:
+            reasons.append("model direction is HOLD")
         if probability < Config.CHALLENGER_MIN_PROBABILITY:
             reasons.append(f"probability < {Config.CHALLENGER_MIN_PROBABILITY:.2f}")
-        if price <= candle_open:
-            reasons.append("confirmation candle is not green")
-        if close_location < Config.CHALLENGER_MIN_CLOSE_LOCATION:
-            reasons.append(f"close location < {Config.CHALLENGER_MIN_CLOSE_LOCATION:.2f}")
-        if not pd.notna(trend_reference) or price <= float(trend_reference):
-            reasons.append("price is not above trailing trend")
+        if direction == "LONG":
+            if price <= candle_open:
+                reasons.append("confirmation candle is not green")
+            if close_location < Config.CHALLENGER_MIN_CLOSE_LOCATION:
+                reasons.append(f"close location < {Config.CHALLENGER_MIN_CLOSE_LOCATION:.2f}")
+            if not pd.notna(trend_reference) or price <= float(trend_reference):
+                reasons.append("price is not above trailing trend")
+        elif direction == "SHORT":
+            if price >= candle_open:
+                reasons.append("confirmation candle is not red")
+            if close_location > 1.0 - Config.CHALLENGER_MIN_CLOSE_LOCATION:
+                reasons.append(f"close location > {1.0 - Config.CHALLENGER_MIN_CLOSE_LOCATION:.2f}")
+            if not pd.notna(trend_reference) or price >= float(trend_reference):
+                reasons.append("price is not below trailing trend")
         return not reasons, "; ".join(reasons), float(close_location)
 
     def process_challenger_signals(self, signals: pd.DataFrame) -> None:
@@ -599,19 +608,25 @@ class OrderManager:
                 high = float(row["high"]) if "high" in row.index else price
                 low = float(row["low"]) if "low" in row.index else price
                 candle_open = float(row["open"]) if "open" in row.index else price
-                hit_stop = low <= float(position["stop_price"])
-                hit_target = high >= float(position["target_price"])
+                if position["direction"] == "LONG":
+                    hit_stop = low <= float(position["stop_price"])
+                    hit_target = high >= float(position["target_price"])
+                else:
+                    hit_stop = high >= float(position["stop_price"])
+                    hit_target = low <= float(position["target_price"])
                 if hit_stop or hit_target:
                     use_stop = hit_stop and (not hit_target or Config.PAPER_STOP_TARGET_PRIORITY == "STOP_FIRST")
                     reason = "stop_loss" if use_stop else "take_profit"
-                    reference = (
-                        min(candle_open, float(position["stop_price"])) if use_stop
-                        else max(candle_open, float(position["target_price"]))
-                    )
+                    if position["direction"] == "LONG":
+                        reference = min(candle_open, float(position["stop_price"])) if use_stop else max(candle_open, float(position["target_price"]))
+                        raw_return = reference / float(position["entry_price"]) - 1.0
+                    else:
+                        reference = max(candle_open, float(position["stop_price"])) if use_stop else min(candle_open, float(position["target_price"]))
+                        raw_return = 1.0 - reference / float(position["entry_price"])
                     round_trip_cost = 2.0 * (
                         Config.PAPER_FEE_BPS + Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS
                     ) / 100.0
-                    return_pct = (reference / float(position["entry_price"]) - 1.0) * 100.0 - round_trip_cost
+                    return_pct = raw_return * 100.0 - round_trip_cost
                     self.connection.execute(
                         """INSERT INTO challenger_trades(
                             symbol,direction,entry_time,exit_time,entry_price,exit_price,return_pct,exit_reason,signal_id
@@ -640,12 +655,13 @@ class OrderManager:
             )
             if passed and position is None and not closed_this_candle:
                 entry_cost = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
-                entry = price * (1.0 + entry_cost)
+                direction = str(row["model_direction"]).upper()
+                entry = price * (1.0 + entry_cost if direction == "LONG" else 1.0 - entry_cost)
+                stop = entry * (1.0 - Config.PAPER_STOP_LOSS_PCT / 100.0) if direction == "LONG" else entry * (1.0 + Config.PAPER_STOP_LOSS_PCT / 100.0)
+                target = entry * (1.0 + Config.PAPER_TAKE_PROFIT_PCT / 100.0) if direction == "LONG" else entry * (1.0 - Config.PAPER_TAKE_PROFIT_PCT / 100.0)
                 self.connection.execute(
                     "INSERT INTO challenger_positions VALUES(?,?,?,?,?,?,?)",
-                    (symbol, sid, "LONG", _now(), entry,
-                     entry * (1.0 - Config.PAPER_STOP_LOSS_PCT / 100.0),
-                     entry * (1.0 + Config.PAPER_TAKE_PROFIT_PCT / 100.0)),
+                    (symbol, sid, direction, _now(), entry, stop, target),
                 )
         self.connection.commit()
 
