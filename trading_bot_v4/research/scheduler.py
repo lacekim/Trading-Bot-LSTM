@@ -268,6 +268,17 @@ def _hourly_analysis_symbols(timeframe: str) -> list[str]:
     return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
 
 
+def _qualified_short_symbols() -> list[str]:
+    """Return only assets that passed bearish final-holdout promotion."""
+    try:
+        calibration = load_bearish_calibration()
+    except (FileNotFoundError, ValueError, json.JSONDecodeError):
+        return []
+    if not calibration.get("promoted", False):
+        return []
+    return sorted({str(symbol).upper() for symbol in calibration.get("promoted_symbols", {})})
+
+
 def _active_directional_signals(signals: pd.DataFrame, long_symbols: list[str],
                                 short_symbols: set[str]) -> pd.DataFrame:
     if signals.empty:
@@ -377,19 +388,14 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     positions_before = orders.position_snapshots()
     symbols = _hourly_refresh_symbols(timeframe)
     analysis_symbols = _hourly_analysis_symbols(timeframe)
-    try:
-        bearish_calibration = load_bearish_calibration()
-        short_symbols = {
-            str(symbol).upper() for symbol in bearish_calibration.get("promoted_symbols", {})
-        } if bearish_calibration.get("promoted", False) else set()
-    except (FileNotFoundError, ValueError, json.JSONDecodeError):
-        short_symbols = set()
+    short_symbols = set(_qualified_short_symbols())
     analysis_symbols = list(dict.fromkeys([*analysis_symbols, *sorted(short_symbols)]))
     if not analysis_symbols:
         _log("Hourly paper cycle skipped: today's GO/WATCH analysis list is empty")
         _log(_format_paper_summary(orders.sync()))
         return
-    _log(f"Hourly qualified GO assets: {', '.join(symbols) if symbols else 'none'}")
+    _log(f"Hourly qualified LONG assets: {', '.join(symbols) if symbols else 'none'}")
+    _log(f"Hourly qualified SHORT assets: {', '.join(sorted(short_symbols)) if short_symbols else 'none'}")
     _log(f"Hourly GO/WATCH analysis assets: {', '.join(analysis_symbols)}")
 
     refresh_result = _run_guarded(
@@ -453,7 +459,8 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
         telegram_status = controller.runtime_snapshot().get("telegram_status", "unknown")
         _log(
             "Hourly Cycle Health | "
-            f"Qualified: {','.join(symbols) if symbols else 'none'} | "
+            f"LONG: {','.join(symbols) if symbols else 'none'} | "
+            f"SHORT: {','.join(sorted(short_symbols)) if short_symbols else 'none'} | "
             f"Analyzed: {','.join(analysis_symbols)} | Refreshed: {int(refresh_result or 0)}/{len(analysis_symbols)} | "
             f"Latest candle: {latest_timestamp} | Predictions generated: {len(latest_signals)} | Directions: {directions} | "
             f"Telegram: {telegram_status} | Duration: {time.monotonic() - cycle_started:.2f}s"
@@ -506,6 +513,7 @@ def run_auto_scheduler(args: Any) -> None:
         models = _load_scheduler_models("scheduler startup")
         orders = OrderManager()
         hourly_symbols = _hourly_refresh_symbols(timeframe)
+        hourly_short_symbols = _qualified_short_symbols()
         _log("Restoring persistent state...")
         restored = orders.restore_and_reconcile(Config.EXECUTION_MODE, hourly_symbols)
         _log(f"Previous shutdown clean: {restored['previous_shutdown_clean']}")
@@ -537,7 +545,8 @@ def run_auto_scheduler(args: Any) -> None:
     print(f"New entries: {'enabled' if orders.new_entries_allowed() else 'BLOCKED (run --resume-paper to recover)'}")
     print("Model loaded.")
     print("Scaler loaded.")
-    print(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
+    print(f"Qualified LONG: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
+    print(f"Qualified SHORT: {', '.join(hourly_short_symbols) if hourly_short_symbols else 'none'}")
     print("Daily research refresh: all assets")
     print(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     print(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
@@ -545,7 +554,8 @@ def run_auto_scheduler(args: Any) -> None:
     web3_status = check_web3_readiness()
     print(f"Web3 read-only: {'connected' if web3_status.connected else web3_status.error}")
     _log("Scheduler started")
-    _log(f"Today's qualified assets: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
+    _log(f"Qualified LONG: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
+    _log(f"Qualified SHORT: {', '.join(hourly_short_symbols) if hourly_short_symbols else 'none'}")
     _log("Daily research refresh: all assets")
     _log(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     _log(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
@@ -561,6 +571,7 @@ def run_auto_scheduler(args: Any) -> None:
         previous_shutdown_clean=restored["previous_shutdown_clean"],
         pending_orders=restored["pending_orders"], execution_mode=Config.EXECUTION_MODE, scheduler_running=True,
         entries_allowed=controller.entries_allowed(), qualified_assets=hourly_symbols,
+        qualified_long_assets=hourly_symbols, qualified_short_assets=hourly_short_symbols,
         open_positions=initial_summary.open_positions, equity=initial_summary.equity,
         realized_pnl=initial_summary.realized_pnl, unrealized_pnl=initial_summary.unrealized_pnl,
         fees=initial_summary.fees, positions=orders.position_snapshots(),
@@ -603,9 +614,15 @@ def run_auto_scheduler(args: Any) -> None:
                         daily_result = _run_daily_research(timeframe, top_validated, models)
                         if daily_result is not None:
                             updated_symbols = _hourly_refresh_symbols(timeframe)
+                            updated_short_symbols = _qualified_short_symbols()
                             orders.update_whitelist(updated_symbols)
-                            controller.update_runtime_snapshot(qualified_assets=updated_symbols)
-                            _log(f"Persisted updated daily whitelist: {', '.join(updated_symbols) if updated_symbols else 'none'}")
+                            controller.update_runtime_snapshot(
+                                qualified_assets=updated_symbols,
+                                qualified_long_assets=updated_symbols,
+                                qualified_short_assets=updated_short_symbols,
+                            )
+                            _log(f"Persisted qualified LONG list: {', '.join(updated_symbols) if updated_symbols else 'none'}")
+                            _log(f"Persisted qualified SHORT list: {', '.join(updated_short_symbols) if updated_short_symbols else 'none'}")
                 next_daily = _next_daily_time(datetime.now())
                 controller.update_runtime_snapshot(next_daily_research=next_daily.isoformat(timespec="seconds"))
                 _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")

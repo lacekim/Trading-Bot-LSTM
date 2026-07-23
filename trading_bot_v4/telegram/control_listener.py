@@ -144,14 +144,16 @@ class TelegramControlListener:
         running = bool(value("scheduler_running", False))
         entries = bool(value("entries_allowed", False))
         telegram = str(value("telegram_status", "unknown"))
-        qualified = ", ".join(value("qualified_assets", [])) or "none"
+        qualified_long = ", ".join(value("qualified_long_assets", value("qualified_assets", []))) or "none"
+        qualified_short = ", ".join(value("qualified_short_assets", [])) or "none"
         return "\n".join([
             "📊 <b>V5 STATUS REPORT</b>",
             "━━━━━━━━━━━━━━━━━━",
             f"⚙️ Mode: <code>{escape(str(value('execution_mode')))}</code>",
             f"{'🟢' if running else '🔴'} Scheduler: <b>{'RUNNING' if running else 'STOPPED'}</b>",
             f"{'✅' if entries else '⏸️'} New entries: <b>{'ENABLED' if entries else 'PAUSED'}</b>",
-            f"⭐ Qualified: <code>{escape(qualified)}</code>",
+            f"📈 LONG: <code>{escape(qualified_long)}</code>",
+            f"📉 SHORT: <code>{escape(qualified_short)}</code>",
             f"📍 Open positions: <b>{value('open_positions', 0)}</b>",
             "",
             "💰 <b>Paper Portfolio</b>",

@@ -35,7 +35,8 @@ class TelegramListenerTests(unittest.TestCase):
         controller.enable_new_entries()
         controller.update_runtime_snapshot(
             execution_mode="PAPER", scheduler_running=True, entries_allowed=True,
-            qualified_assets=["ENA", "LDO"], open_positions=0, equity=10000,
+            qualified_assets=["ENA", "LDO"], qualified_long_assets=["ENA", "LDO"],
+            qualified_short_assets=["CHZ"], open_positions=0, equity=10000,
             realized_pnl=0, unrealized_pnl=0, fees=0,
             next_hourly_update="next-hour", next_daily_research="next-day",
             web3_read_only_status="not configured", live_signing_status="disabled", positions=[],
