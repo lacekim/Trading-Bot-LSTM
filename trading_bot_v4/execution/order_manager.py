@@ -490,6 +490,10 @@ class OrderManager:
 
     def process_signals(self, signals: pd.DataFrame) -> PaperCycleSummary:
         """Process only each symbol's newest closed-candle prediction."""
+        signals = signals.copy()
+        if not signals.empty:
+            signals["timestamp"] = pd.to_datetime(signals["timestamp"], utc=True, errors="coerce")
+            signals = signals.dropna(subset=["timestamp"])
         latest = signals.sort_values("timestamp").groupby("symbol", as_index=False).tail(1) if not signals.empty else signals
         opened = closed = rejected = generated = 0
         deduplicated = 0

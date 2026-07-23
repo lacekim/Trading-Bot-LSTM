@@ -19,6 +19,19 @@ class BearishModelTests(unittest.TestCase):
         result = combine_directional_signals(long, short)
         self.assertEqual(result.iloc[0]["model_direction"], "SHORT")
 
+    def test_combiner_normalizes_mixed_timestamp_types(self):
+        long = pd.DataFrame([{
+            "timestamp": "2026-01-01 00:00:00", "symbol": "BTC", "timeframe": "1h",
+            "model_direction": "HOLD", "model_probability": .2, "threshold": .7,
+        }])
+        short = pd.DataFrame([{
+            "timestamp": pd.Timestamp("2026-01-01T01:00:00Z"), "symbol": "BTC", "timeframe": "1h",
+            "model_direction": "SHORT", "model_probability": .8, "threshold": .7,
+        }])
+        result = combine_directional_signals(long, short)
+        self.assertTrue(pd.api.types.is_datetime64_any_dtype(result["timestamp"]))
+        self.assertEqual(result.sort_values("timestamp").iloc[-1]["model_direction"], "SHORT")
+
     def test_forward_return_does_not_cross_symbol_boundary(self):
         frame = pd.DataFrame({"symbol": ["A", "A", "B", "B"], "returns": [0.0, -0.1, 0.5, -0.2]})
         result = _forward_compounded_return(frame, 1)

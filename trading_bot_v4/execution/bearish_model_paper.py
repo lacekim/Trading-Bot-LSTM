@@ -93,6 +93,8 @@ def combine_directional_signals(long_signals: pd.DataFrame, short_signals: pd.Da
         if frame is None or frame.empty:
             continue
         candidate = frame.copy()
+        candidate["timestamp"] = pd.to_datetime(candidate["timestamp"], utc=True, errors="coerce")
+        candidate = candidate.dropna(subset=["timestamp"])
         candidate["model_side"] = source
         candidate["confidence_margin"] = (
             pd.to_numeric(candidate["model_probability"], errors="coerce")
