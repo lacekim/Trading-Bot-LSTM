@@ -178,6 +178,11 @@ The paper engine provides:
 - Protective exit preservation until the position is closed
 - Direction-aware GMX oracle monitoring every 10 seconds while positions are open
 - LONG protection evaluated with GMX `minPrice`; SHORT protection with `maxPrice`
+- Continuous 10-second GMX min/max collection for every qualified LONG or SHORT asset without intrahour model entries
+- Seven-day persistence of qualified-asset price, spread, request latency, feed age, health, and failure records
+- Fresh GMX snapshot pricing for hourly paper entries with the hourly candle price retained separately for audit
+- Persistent model-to-observed price difference and estimated paper fill slippage on each entry order
+- Stale-feed, repeated-failure, and wide-spread diagnostics with Telegram alerts
 - Automatic one-minute GMX candle fallback if the live ticker is unavailable
 - Persistent monitor heartbeats, fallback diagnostics, and immediate exit events
 - Five-second feed request timeouts and a 45-second watchdog that distinguishes a stopped thread from a slow cycle
@@ -475,6 +480,7 @@ Model loaded.
 Scaler loaded.
 Qualified LONG: ...
 Qualified SHORT: ...
+Qualified market monitoring: every 10 seconds
 Live signing: disabled.
 Web3 read-only: ...
 ```

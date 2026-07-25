@@ -24,6 +24,7 @@ from trading_bot_v4.execution.bearish_model_paper import (
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.execution.position_monitor import PositionMonitor
+from trading_bot_v4.execution.qualified_market_monitor import QualifiedMarketMonitor
 from trading_bot_v4.execution.shutdown import ShutdownCoordinator
 from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode, graceful_signal_handler
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock
@@ -509,6 +510,7 @@ def run_auto_scheduler(args: Any) -> None:
     displayed_next_hourly = _next_hour_boundary(now)
     orders = None
     position_monitor = None
+    qualified_market_monitor = None
     try:
         models = _load_scheduler_models("scheduler startup")
         orders = OrderManager()
@@ -527,12 +529,26 @@ def run_auto_scheduler(args: Any) -> None:
                 f"Position monitor started: interval={Config.POSITION_MONITOR_INTERVAL_SECONDS}s "
                 f"open_positions={restored['open_positions']}"
             )
+            qualified_market_monitor = QualifiedMarketMonitor(
+                controller,
+                lambda: (_hourly_refresh_symbols(timeframe), _qualified_short_symbols()),
+                telegram,
+                log=_log,
+            )
+            qualified_market_monitor.start()
+            _log(
+                f"Qualified market monitor started: interval={Config.QUALIFIED_MARKET_INTERVAL_SECONDS}s "
+                f"LONG={','.join(hourly_symbols) if hourly_symbols else 'none'} "
+                f"SHORT={','.join(hourly_short_symbols) if hourly_short_symbols else 'none'}"
+            )
         controller.configure_entry_guard(True, Config.EXECUTION_MODE in {"PAPER", "LIVE_SMALL", "LIVE"})
         controller.enable_new_entries(); orders.set_new_entries(controller.entries_allowed())
     except Exception:
         _log("ERROR scheduler startup failed; releasing runtime resources")
         if position_monitor is not None:
             position_monitor.stop()
+        if qualified_market_monitor is not None:
+            qualified_market_monitor.stop()
         telegram.stop(); control_server.stop()
         if orders is not None:
             orders.close()
@@ -547,6 +563,7 @@ def run_auto_scheduler(args: Any) -> None:
     print("Scaler loaded.")
     print(f"Qualified LONG: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     print(f"Qualified SHORT: {', '.join(hourly_short_symbols) if hourly_short_symbols else 'none'}")
+    print(f"Qualified market monitoring: every {Config.QUALIFIED_MARKET_INTERVAL_SECONDS} seconds")
     print("Daily research refresh: all assets")
     print(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     print(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
@@ -635,6 +652,9 @@ def run_auto_scheduler(args: Any) -> None:
         if position_monitor is not None:
             _log("Stopping position monitor...")
             position_monitor.stop()
+        if qualified_market_monitor is not None:
+            _log("Stopping qualified market monitor...")
+            qualified_market_monitor.stop()
         mode = controller.get_requested_mode()
         if mode is ShutdownMode.NONE:
             mode = ShutdownMode.GRACEFUL

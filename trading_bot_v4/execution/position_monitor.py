@@ -34,6 +34,16 @@ class MarketPrice:
     fallback_reason: str = ""
 
 
+@dataclass(frozen=True)
+class MarketPricePair:
+    symbol: str
+    min_price: float
+    max_price: float
+    observed_at: str
+    age_seconds: float
+    source: str = "GMX_TICKER"
+
+
 class GMXMinutePriceProvider:
     SYMBOL_ALIASES = {"APE_DEPRECATED": "APE", "XAUT.V2": "XAUT", "WBTC.B": "BTC"}
 
@@ -150,6 +160,32 @@ class GMXTickerPriceProvider:
             raise TimeoutError(f"GMX current oracle price for {requested} is stale by {age:.0f}s")
         return MarketPrice(requested, price, observed.isoformat(timespec="seconds"), age,
                            f"GMX_TICKER_{'MIN' if side == 'minPrice' else 'MAX'}")
+
+    def fetch_pair(self, symbol: str) -> MarketPricePair:
+        requested = str(symbol).upper()
+        api_symbol = self.SYMBOL_ALIASES.get(requested, requested).upper()
+        self._load_token_decimals()
+        ticker = next(
+            (item for item in self._load_tickers()
+             if isinstance(item, dict) and str(item.get("tokenSymbol", "")).upper() == api_symbol), None,
+        )
+        if ticker is None:
+            raise ValueError(f"GMX returned no current oracle ticker for {requested}")
+        decimals = self._token_decimals.get(api_symbol)
+        if decimals is None:
+            raise ValueError(f"GMX returned no token decimals for {requested}")
+        divisor = 10 ** (30 - decimals)
+        min_price, max_price = int(ticker["minPrice"]) / divisor, int(ticker["maxPrice"]) / divisor
+        raw_timestamp = float(ticker.get("updatedAt", ticker.get("timestamp")))
+        if raw_timestamp > 10_000_000_000:
+            raw_timestamp /= 1000.0
+        observed = datetime.fromtimestamp(raw_timestamp, tz=timezone.utc)
+        age = max(0.0, (datetime.now(timezone.utc) - observed).total_seconds())
+        if min_price <= 0 or max_price <= 0 or max_price < min_price:
+            raise ValueError(f"GMX returned an invalid price pair for {requested}")
+        if age > Config.POSITION_MONITOR_MAX_PRICE_AGE_SECONDS:
+            raise TimeoutError(f"GMX current oracle price for {requested} is stale by {age:.0f}s")
+        return MarketPricePair(requested, min_price, max_price, observed.isoformat(timespec="seconds"), age)
 
     def fetch(self, symbol: str, direction: str | None = None) -> MarketPrice:
         direction = str(direction or "LONG").upper()

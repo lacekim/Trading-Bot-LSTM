@@ -7,7 +7,7 @@ restarts cannot erase orders, positions, fills, or account history.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import sqlite3
 from pathlib import Path
@@ -111,6 +111,16 @@ class OrderManager:
           observed_price REAL NOT NULL, accounting_price REAL NOT NULL,
           observed_at TEXT NOT NULL, source TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS qualified_market_snapshots (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, observed_at TEXT NOT NULL,
+          recorded_at TEXT NOT NULL, symbol TEXT NOT NULL, min_price REAL NOT NULL,
+          max_price REAL NOT NULL, spread_bps REAL NOT NULL, latency_ms REAL NOT NULL,
+          age_seconds REAL NOT NULL, status TEXT NOT NULL, error TEXT NOT NULL DEFAULT ''
+        );
+        CREATE INDEX IF NOT EXISTS idx_qualified_market_symbol_id
+          ON qualified_market_snapshots(symbol,id);
+        CREATE INDEX IF NOT EXISTS idx_qualified_market_recorded_at
+          ON qualified_market_snapshots(recorded_at);
         CREATE TABLE IF NOT EXISTS challenger_signals (
           signal_id TEXT PRIMARY KEY, candle_timestamp TEXT NOT NULL,
           symbol TEXT NOT NULL, direction TEXT NOT NULL, probability REAL NOT NULL,
@@ -134,6 +144,13 @@ class OrderManager:
             self.connection.execute("ALTER TABLE orders ADD COLUMN order_kind TEXT NOT NULL DEFAULT 'ENTRY'")
         if "reduce_only" not in order_columns:
             self.connection.execute("ALTER TABLE orders ADD COLUMN reduce_only INTEGER NOT NULL DEFAULT 0")
+        for column, definition in (
+            ("model_price", "REAL"), ("observed_price", "REAL"),
+            ("observed_at", "TEXT"), ("price_source", "TEXT"),
+            ("model_to_observed_bps", "REAL"),
+        ):
+            if column not in order_columns:
+                self.connection.execute(f"ALTER TABLE orders ADD COLUMN {column} {definition}")
         self.connection.execute(
             "INSERT OR IGNORE INTO account(id,starting_balance,cash,updated_at) VALUES(1,?,?,?)",
             (Config.PAPER_STARTING_BALANCE, Config.PAPER_STARTING_BALANCE, _now()),
@@ -141,6 +158,8 @@ class OrderManager:
         self.connection.execute(
             "INSERT OR IGNORE INTO runtime_state VALUES('allow_new_entries','true',?)", (_now(),)
         )
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=Config.QUALIFIED_MARKET_RETENTION_HOURS)).isoformat()
+        self.connection.execute("DELETE FROM qualified_market_snapshots WHERE recorded_at < ?", (cutoff,))
         self.connection.commit()
 
     @staticmethod
@@ -217,6 +236,35 @@ class OrderManager:
         self._set_state("position_monitor_last_heartbeat", _now())
         self._set_state("position_monitor_last_error", error[:1000])
         self.connection.commit()
+
+    def record_qualified_market_snapshot(self, symbol: str, min_price: float, max_price: float,
+                                         observed_at: str, spread_bps: float, latency_ms: float,
+                                         age_seconds: float, status: str = "healthy", error: str = "") -> None:
+        self.connection.execute(
+            """INSERT INTO qualified_market_snapshots(
+                observed_at,recorded_at,symbol,min_price,max_price,spread_bps,latency_ms,age_seconds,status,error
+            ) VALUES(?,?,?,?,?,?,?,?,?,?)""",
+            (observed_at, _now(), symbol.upper(), min_price, max_price, spread_bps,
+             latency_ms, age_seconds, status, error[:1000]),
+        )
+        self.connection.commit()
+
+    def latest_qualified_market_price(self, symbol: str, direction: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM qualified_market_snapshots WHERE symbol=? AND status IN ('healthy','wide_spread') ORDER BY id DESC LIMIT 1",
+            (symbol.upper(),),
+        ).fetchone()
+        if row is None:
+            return None
+        observed = pd.Timestamp(row["observed_at"])
+        if observed.tzinfo is None:
+            observed = observed.tz_localize("UTC")
+        age = (pd.Timestamp.now(tz="UTC") - observed.tz_convert("UTC")).total_seconds()
+        if age > Config.QUALIFIED_MARKET_SNAPSHOT_MAX_AGE_SECONDS:
+            return None
+        price = float(row["min_price"] if direction.upper() == "LONG" else row["max_price"])
+        return {"price": price, "observed_at": row["observed_at"], "source": "GMX_TICKER_SNAPSHOT",
+                "spread_bps": float(row["spread_bps"]), "age_seconds": age}
 
     def monitor_market_price(self, symbol: str, observed_price: float, observed_at: str,
                              source: str = "GMX_1M") -> dict[str, Any] | None:
@@ -460,7 +508,13 @@ class OrderManager:
         if notional < Config.PAPER_MIN_ORDER_USD or float(account["cash"]) - collateral < cash_buffer:
             self._reject(row, signal_id, "insufficient exposure capacity or cash buffer")
             return False
-        direction, price = str(row["model_direction"]), float(row["price"])
+        direction, model_price = str(row["model_direction"]), float(row["price"])
+        snapshot = self.latest_qualified_market_price(str(row["symbol"]), direction)
+        price = float(snapshot["price"]) if snapshot else model_price
+        observed_at = str(snapshot["observed_at"]) if snapshot else str(row["timestamp"])
+        price_source = str(snapshot["source"]) if snapshot else "HOURLY_CANDLE_CLOSE"
+        direction_sign = 1.0 if direction == "LONG" else -1.0
+        model_to_observed_bps = direction_sign * (price / model_price - 1.0) * 10000.0
         slip = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
         fill = price * (1 + slip if direction == "LONG" else 1 - slip)
         fee = notional * Config.PAPER_FEE_BPS / 10000.0
@@ -471,11 +525,14 @@ class OrderManager:
         target = fill * (1 + target_factor if direction == "LONG" else 1 - target_factor)
         order_id, position_id = f"po_{signal_id}", f"pp_{signal_id}"
         self.connection.execute("INSERT INTO signals VALUES(?,?,?,?,?,?,?,?,?)",
-            (signal_id, str(row["timestamp"]), str(row["symbol"]), direction, float(row["model_probability"]), price, "ACCEPTED", "", _now()))
+            (signal_id, str(row["timestamp"]), str(row["symbol"]), direction,
+             float(row["model_probability"]), model_price, "ACCEPTED", "", _now()))
         self.connection.execute("""INSERT INTO orders(
-            order_id,signal_id,symbol,side,status,expected_price,fill_price,notional,fee,created_at,order_kind,reduce_only
-        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
-            (order_id, signal_id, str(row["symbol"]), direction, "FILLED", price, fill, notional, fee, _now(), "ENTRY", 0))
+            order_id,signal_id,symbol,side,status,expected_price,fill_price,notional,fee,created_at,order_kind,reduce_only,
+            model_price,observed_price,observed_at,price_source,model_to_observed_bps
+        ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (order_id, signal_id, str(row["symbol"]), direction, "FILLED", price, fill, notional, fee,
+             _now(), "ENTRY", 0, model_price, price, observed_at, price_source, model_to_observed_bps))
         self.connection.execute("INSERT INTO positions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (position_id, str(row["symbol"]), direction, _now(), fill, quantity, notional, collateral,
              leverage, stop, target, fee, signal_id, fill, 0.0))
