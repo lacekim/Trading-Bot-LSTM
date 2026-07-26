@@ -61,10 +61,10 @@ class QualifiedMarketMonitorTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(result.orders_opened, 1)
         self.assertEqual(order["model_price"], 100.0)
-        self.assertEqual(order["observed_price"], 99.0)
-        self.assertEqual(order["expected_price"], 99.0)
+        self.assertEqual(order["observed_price"], 101.0)
+        self.assertEqual(order["expected_price"], 101.0)
         self.assertEqual(order["price_source"], "GMX_TICKER_SNAPSHOT")
-        self.assertAlmostEqual(order["model_to_observed_bps"], -100.0)
+        self.assertAlmostEqual(order["model_to_observed_bps"], 100.0)
         manager.close()
 
 

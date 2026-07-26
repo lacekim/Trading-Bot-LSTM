@@ -69,6 +69,30 @@ class PositionMonitorTests(unittest.TestCase):
         self.assertEqual(manager.open_position_count(), 1)
         manager.close()
 
+    def test_monitor_protects_shadow_position_every_cycle(self):
+        manager = OrderManager(self.db)
+        manager.connection.execute(
+            "INSERT INTO challenger_positions VALUES(?,?,?,?,?,?,?)",
+            ("ETH", "shadow_signal", "LONG", pd.Timestamp.now(tz="UTC").isoformat(), 100.0, 98.0, 104.0),
+        )
+        manager.connection.commit()
+        monitor = PositionMonitor(
+            ShutdownController(), FakeNotifier(), StaticProvider(97.0), self.db
+        )
+        events = monitor.run_once(manager)
+        trade = manager.connection.execute(
+            "SELECT direction,exit_price,return_pct,exit_reason FROM challenger_trades WHERE symbol='ETH'"
+        ).fetchone()
+        self.assertEqual(manager.connection.execute(
+            "SELECT COUNT(*) FROM challenger_positions WHERE symbol='ETH'"
+        ).fetchone()[0], 0)
+        self.assertTrue(any(event.get("shadow") for event in events))
+        self.assertEqual(trade["direction"], "LONG")
+        self.assertEqual(trade["exit_price"], 98.0)
+        self.assertEqual(trade["exit_reason"], "stop_loss")
+        self.assertGreater(trade["return_pct"], -3.0)
+        manager.close()
+
     def test_repeated_feed_failures_alert_at_threshold(self):
         notifier = FakeNotifier()
         monitor = PositionMonitor(ShutdownController(), notifier, FailingProvider(), self.db, failure_threshold=3)

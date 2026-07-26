@@ -227,6 +227,11 @@ class OrderManager:
                   "stop_price", "target_price", "quantity", "notional", "leverage")
         return [{field: row[field] for field in fields} for row in self._positions()]
 
+    def challenger_position_snapshots(self) -> list[dict[str, Any]]:
+        return [dict(row) for row in self.connection.execute(
+            "SELECT * FROM challenger_positions ORDER BY symbol"
+        ).fetchall()]
+
     def record_monitor_heartbeat(self, status: str, symbols_checked: int = 0, error: str = "") -> None:
         self.connection.execute(
             "INSERT INTO monitor_heartbeats(timestamp,status,open_positions,symbols_checked,error) VALUES(?,?,?,?,?)",
@@ -262,7 +267,9 @@ class OrderManager:
         age = (pd.Timestamp.now(tz="UTC") - observed.tz_convert("UTC")).total_seconds()
         if age > Config.QUALIFIED_MARKET_SNAPSHOT_MAX_AGE_SECONDS:
             return None
-        price = float(row["min_price"] if direction.upper() == "LONG" else row["max_price"])
+        # Entry crosses the conservative executable side: buy LONG at max/ask,
+        # sell SHORT at min/bid. Protective valuation intentionally does the reverse.
+        price = float(row["max_price"] if direction.upper() == "LONG" else row["min_price"])
         return {"price": price, "observed_at": row["observed_at"], "source": "GMX_TICKER_SNAPSHOT",
                 "spread_bps": float(row["spread_bps"]), "age_seconds": age}
 
@@ -306,6 +313,55 @@ class OrderManager:
                 "direction": position["direction"], "reason": reason,
                 "observed_price": observed_price, "accounting_price": accounting_price,
                 "observed_at": observed_at, "source": source,
+            }
+        except Exception:
+            self.connection.rollback()
+            raise
+
+    def monitor_challenger_market_price(self, symbol: str, observed_price: float,
+                                          observed_at: str, source: str = "GMX_TICKER") -> dict[str, Any] | None:
+        """Apply the same frequent stop/target protection to a shadow position."""
+        del source
+        if observed_price <= 0:
+            raise ValueError(f"invalid challenger observed price for {symbol}: {observed_price}")
+        self.connection.execute("BEGIN IMMEDIATE")
+        try:
+            position = self.connection.execute(
+                "SELECT * FROM challenger_positions WHERE symbol=?", (symbol,)
+            ).fetchone()
+            if position is None:
+                self.connection.commit()
+                return None
+            direction = str(position["direction"]).upper()
+            hit_stop = observed_price <= position["stop_price"] if direction == "LONG" else observed_price >= position["stop_price"]
+            hit_target = observed_price >= position["target_price"] if direction == "LONG" else observed_price <= position["target_price"]
+            if not hit_stop and not hit_target:
+                self.connection.commit()
+                return None
+            reason = "stop_loss" if hit_stop else "take_profit"
+            accounting_price = float(position["stop_price"] if hit_stop else position["target_price"])
+            raw_return = (
+                accounting_price / float(position["entry_price"]) - 1.0
+                if direction == "LONG"
+                else 1.0 - accounting_price / float(position["entry_price"])
+            )
+            round_trip_cost = 2.0 * (
+                Config.PAPER_FEE_BPS + Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS
+            ) / 100.0
+            return_pct = raw_return * 100.0 - round_trip_cost
+            self.connection.execute(
+                """INSERT INTO challenger_trades(
+                    symbol,direction,entry_time,exit_time,entry_price,exit_price,return_pct,exit_reason,signal_id
+                ) VALUES(?,?,?,?,?,?,?,?,?)""",
+                (symbol, direction, position["entry_time"], observed_at, position["entry_price"],
+                 accounting_price, return_pct, reason, position["signal_id"]),
+            )
+            self.connection.execute("DELETE FROM challenger_positions WHERE symbol=?", (symbol,))
+            self.connection.commit()
+            return {
+                "symbol": symbol, "direction": direction, "reason": reason,
+                "observed_price": observed_price, "accounting_price": accounting_price,
+                "observed_at": observed_at, "return_pct": return_pct, "shadow": True,
             }
         except Exception:
             self.connection.rollback()

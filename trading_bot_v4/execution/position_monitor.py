@@ -256,6 +256,7 @@ class PositionMonitor:
 
     def run_once(self, manager: OrderManager) -> list[dict[str, Any]]:
         positions = manager.position_snapshots()
+        challenger_positions = manager.challenger_position_snapshots()
         exits: list[dict[str, Any]] = []
         errors: list[str] = []
         warnings: list[str] = []
@@ -285,11 +286,30 @@ class PositionMonitor:
             except Exception as exc:
                 errors.append(f"{symbol}: {exc}")
 
+        for position in challenger_positions:
+            symbol = str(position["symbol"])
+            try:
+                try:
+                    quote = self.provider.fetch(symbol, str(position["direction"]))
+                except TypeError:
+                    quote = self.provider.fetch(symbol)
+                event = manager.monitor_challenger_market_price(
+                    symbol, quote.price, quote.observed_at, quote.source
+                )
+                if event:
+                    exits.append(event)
+                    self.log(
+                        f"Shadow {event['reason']} exit: {symbol} {event['direction']} "
+                        f"observed={event['observed_price']:.10g} accounting={event['accounting_price']:.10g}"
+                    )
+            except Exception as exc:
+                errors.append(f"shadow {symbol}: {exc}")
+
         feed_issues = errors + warnings
         if feed_issues:
             self._consecutive_failures += 1
             error_text = "; ".join(feed_issues)
-            manager.record_monitor_heartbeat("degraded", len(positions) - len(errors), error_text)
+            manager.record_monitor_heartbeat("degraded", len(positions) + len(challenger_positions) - len(errors), error_text)
             self.controller.update_runtime_snapshot(
                 position_monitor_status="degraded",
                 position_monitor_failures=self._consecutive_failures,
@@ -308,7 +328,7 @@ class PositionMonitor:
                 self.log("Position monitor price feed recovered")
             self._consecutive_failures = 0
             self._failure_alerted = False
-            manager.record_monitor_heartbeat("healthy", len(positions))
+            manager.record_monitor_heartbeat("healthy", len(positions) + len(challenger_positions))
             self.controller.update_runtime_snapshot(
                 position_monitor_status="healthy",
                 position_monitor_failures=0,

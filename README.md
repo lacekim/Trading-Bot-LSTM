@@ -178,6 +178,8 @@ The paper engine provides:
 - Protective exit preservation until the position is closed
 - Direction-aware GMX oracle monitoring every 10 seconds while positions are open
 - LONG protection evaluated with GMX `minPrice`; SHORT protection with `maxPrice`
+- Conservative entries use GMX `maxPrice` for LONG buys and `minPrice` for SHORT sells
+- Persistent shadow positions receive the same 10-second GMX stop/target checks as baseline paper positions
 - Continuous 10-second GMX min/max collection for every qualified LONG or SHORT asset without intrahour model entries
 - Seven-day persistence of qualified-asset price, spread, request latency, feed age, health, and failure records
 - Fresh GMX snapshot pricing for hourly paper entries with the hourly candle price retained separately for audit
