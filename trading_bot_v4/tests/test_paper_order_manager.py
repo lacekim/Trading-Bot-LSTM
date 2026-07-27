@@ -42,6 +42,17 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertIn("cooldown", result.rejection_reasons)
         manager.close()
 
+    def test_exit_only_reversal_closes_without_opening_unqualified_short(self):
+        manager = OrderManager(self.db)
+        manager.process_signals(signal())
+        reversal = signal("2026-01-01T02:00:00Z", "SHORT", 101.0)
+        reversal["_entry_eligible"] = False
+        result = manager.process_signals(reversal)
+        self.assertEqual(result.orders_closed, 1)
+        self.assertEqual(result.orders_opened, 0)
+        self.assertEqual(result.open_positions, 0)
+        manager.close()
+
     def test_risk_limit_rejects_new_order(self):
         with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_OPEN_POSITIONS", 0):
             manager = OrderManager(self.db)

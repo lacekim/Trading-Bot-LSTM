@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import hashlib
 import sqlite3
+import time
 from pathlib import Path
 from typing import Any
 from collections import Counter
@@ -48,6 +49,7 @@ class OrderManager:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.connection = sqlite3.connect(self.db_path, timeout=30.0)
         self.connection.row_factory = sqlite3.Row
+        self._last_monitor_history_prune = 0.0
         self._create_schema()
 
     def close(self) -> None:
@@ -233,6 +235,7 @@ class OrderManager:
         ).fetchall()]
 
     def record_monitor_heartbeat(self, status: str, symbols_checked: int = 0, error: str = "") -> None:
+        self._prune_monitor_history()
         self.connection.execute(
             "INSERT INTO monitor_heartbeats(timestamp,status,open_positions,symbols_checked,error) VALUES(?,?,?,?,?)",
             (_now(), status, self.open_position_count(), int(symbols_checked), error[:1000]),
@@ -245,6 +248,7 @@ class OrderManager:
     def record_qualified_market_snapshot(self, symbol: str, min_price: float, max_price: float,
                                          observed_at: str, spread_bps: float, latency_ms: float,
                                          age_seconds: float, status: str = "healthy", error: str = "") -> None:
+        self._prune_monitor_history()
         self.connection.execute(
             """INSERT INTO qualified_market_snapshots(
                 observed_at,recorded_at,symbol,min_price,max_price,spread_bps,latency_ms,age_seconds,status,error
@@ -253,6 +257,21 @@ class OrderManager:
              latency_ms, age_seconds, status, error[:1000]),
         )
         self.connection.commit()
+
+    def _prune_monitor_history(self) -> None:
+        """Bound high-frequency monitoring tables without deleting on every cycle."""
+        now = time.monotonic()
+        if now - self._last_monitor_history_prune < 3600.0:
+            return
+        heartbeat_cutoff = (
+            datetime.now(timezone.utc) - timedelta(hours=Config.MONITOR_HEARTBEAT_RETENTION_HOURS)
+        ).isoformat()
+        snapshot_cutoff = (
+            datetime.now(timezone.utc) - timedelta(hours=Config.QUALIFIED_MARKET_RETENTION_HOURS)
+        ).isoformat()
+        self.connection.execute("DELETE FROM monitor_heartbeats WHERE timestamp < ?", (heartbeat_cutoff,))
+        self.connection.execute("DELETE FROM qualified_market_snapshots WHERE recorded_at < ?", (snapshot_cutoff,))
+        self._last_monitor_history_prune = now
 
     def latest_qualified_market_price(self, symbol: str, direction: str) -> dict[str, Any] | None:
         row = self.connection.execute(
@@ -602,6 +621,15 @@ class OrderManager:
         return True
 
     def process_signals(self, signals: pd.DataFrame) -> PaperCycleSummary:
+        """Serialize an hourly cycle against frequent protective monitoring."""
+        self.connection.execute("BEGIN IMMEDIATE")
+        try:
+            return self._process_signals_locked(signals)
+        except Exception:
+            self.connection.rollback()
+            raise
+
+    def _process_signals_locked(self, signals: pd.DataFrame) -> PaperCycleSummary:
         """Process only each symbol's newest closed-candle prediction."""
         signals = signals.copy()
         if not signals.empty:
@@ -647,6 +675,10 @@ class OrderManager:
                     self._close_position(position, exit_reference, reason, self.signal_id(row)); closed += 1
                     position = None
             if row["model_direction"] not in {"LONG", "SHORT"}:
+                continue
+            # A signal can be retained solely to close an existing position.
+            # Do not turn that exit into an unqualified reverse entry.
+            if not bool(row.get("_entry_eligible", True)):
                 continue
             generated += 1
             if self.connection.execute("SELECT 1 FROM signals WHERE signal_id=?", (sid,)).fetchone():
@@ -705,6 +737,15 @@ class OrderManager:
         """Run a stronger-confirmation strategy in persistent shadow mode only."""
         if signals.empty:
             return
+        self.connection.execute("BEGIN IMMEDIATE")
+        try:
+            self._process_challenger_signals_locked(signals)
+        except Exception:
+            self.connection.rollback()
+            raise
+
+    def _process_challenger_signals_locked(self, signals: pd.DataFrame) -> None:
+        """Process shadow signals while holding the database write reservation."""
         working = signals.sort_values(["symbol", "timestamp"]).copy()
         lookback = max(2, int(Config.CHALLENGER_TREND_LOOKBACK))
         working["challenger_trend"] = working.groupby("symbol")["price"].transform(

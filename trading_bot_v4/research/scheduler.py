@@ -280,16 +280,31 @@ def _qualified_short_symbols() -> list[str]:
     return sorted({str(symbol).upper() for symbol in calibration.get("promoted_symbols", {})})
 
 
+def _analysis_symbols_with_positions(analysis_symbols: list[str], short_symbols: set[str],
+                                     positions: list[dict[str, Any]]) -> list[str]:
+    """Ensure open positions remain in hourly analysis after daily demotion."""
+    open_symbols = sorted({
+        str(position["symbol"]).upper() for position in positions if position.get("symbol")
+    })
+    return list(dict.fromkeys([*analysis_symbols, *sorted(short_symbols), *open_symbols]))
+
+
 def _active_directional_signals(signals: pd.DataFrame, long_symbols: list[str],
-                                short_symbols: set[str]) -> pd.DataFrame:
+                                short_symbols: set[str],
+                                open_symbols: set[str] | None = None) -> pd.DataFrame:
+    """Keep qualified entries plus signals needed to manage existing positions."""
     if signals.empty:
         return signals
+    open_symbols = {str(value).upper() for value in (open_symbols or set())}
     symbol = signals["symbol"].astype(str).str.upper()
     direction = signals["model_direction"].astype(str).str.upper()
-    allowed = (direction.eq("LONG") & symbol.isin(long_symbols)) | (
+    entry_eligible = (direction.eq("LONG") & symbol.isin(long_symbols)) | (
         direction.eq("SHORT") & symbol.isin(short_symbols)
-    ) | direction.eq("HOLD")
-    return signals.loc[allowed].copy()
+    )
+    allowed = entry_eligible | direction.eq("HOLD") | symbol.isin(open_symbols)
+    active = signals.loc[allowed].copy()
+    active["_entry_eligible"] = entry_eligible.loc[allowed].to_numpy()
+    return active
 
 
 def _refresh_live_market_data(symbols: list[str], timeframe: str) -> bool:
@@ -387,10 +402,13 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
                        controller: ShutdownController, telegram: TelegramControlListener | None = None) -> None:
     cycle_started = time.monotonic()
     positions_before = orders.position_snapshots()
+    challenger_positions_before = orders.challenger_position_snapshots()
     symbols = _hourly_refresh_symbols(timeframe)
     analysis_symbols = _hourly_analysis_symbols(timeframe)
     short_symbols = set(_qualified_short_symbols())
-    analysis_symbols = list(dict.fromkeys([*analysis_symbols, *sorted(short_symbols)]))
+    analysis_symbols = _analysis_symbols_with_positions(
+        analysis_symbols, short_symbols, [*positions_before, *challenger_positions_before],
+    )
     if not analysis_symbols:
         _log("Hourly paper cycle skipped: today's GO/WATCH analysis list is empty")
         _log(_format_paper_summary(orders.sync()))
@@ -441,7 +459,12 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     if Config.EXECUTION_MODE != "PAPER":
         _log(f"hourly.paper_execution skipped in {Config.EXECUTION_MODE} mode")
         return
-    active_signals = _active_directional_signals(signals, symbols, short_symbols)
+    baseline_open_symbols = {
+        str(position["symbol"]).upper() for position in positions_before if position.get("symbol")
+    }
+    active_signals = _active_directional_signals(
+        signals, symbols, short_symbols, baseline_open_symbols,
+    )
     summary = _run_guarded("hourly.paper_execution", lambda: orders.process_signals(active_signals))
     if summary is not None:
         positions_after = orders.position_snapshots()
@@ -582,6 +605,7 @@ def run_auto_scheduler(args: Any) -> None:
     next_hourly = state.next_hourly_update
     next_daily = state.next_daily_research
     monitor_watchdog_alerted = False
+    qualified_monitor_watchdog_alerted = False
     monitor_started_at = time.monotonic()
     initial_summary = orders.sync()
     controller.update_runtime_snapshot(
@@ -613,6 +637,21 @@ def run_auto_scheduler(args: Any) -> None:
                         )
                 elif position_monitor.is_healthy():
                     monitor_watchdog_alerted = False
+            if (qualified_market_monitor is not None
+                    and time.monotonic() - monitor_started_at > Config.QUALIFIED_MARKET_WATCHDOG_SECONDS):
+                if not qualified_market_monitor.is_healthy() and not qualified_monitor_watchdog_alerted:
+                    qualified_monitor_watchdog_alerted = True
+                    issue = qualified_market_monitor.health_issue()
+                    _log(f"ERROR qualified market monitor unhealthy: {issue}")
+                    controller.update_runtime_snapshot(qualified_market_status=issue)
+                    if telegram.is_running:
+                        telegram.broadcast(
+                            "🚨 <b>QUALIFIED MARKET MONITOR UNHEALTHY</b>\n"
+                            f"Reason: <code>{issue}</code>\n"
+                            "Live entry-price observation needs attention."
+                        )
+                elif qualified_market_monitor.is_healthy():
+                    qualified_monitor_watchdog_alerted = False
             now = datetime.now()
             if now >= next_hourly:
                 with controller.active_cycle() as admitted:

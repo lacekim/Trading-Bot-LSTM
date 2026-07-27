@@ -30,6 +30,7 @@ class QualifiedMarketMonitor:
         self._failures = 0
         self._alerted = False
         self._spread_alerted = False
+        self._last_heartbeat_monotonic = 0.0
 
     @property
     def is_running(self) -> bool:
@@ -42,6 +43,21 @@ class QualifiedMarketMonitor:
         self._thread = threading.Thread(target=self._run, name="v5-qualified-market-monitor", daemon=True)
         self._thread.start()
 
+    def is_healthy(self) -> bool:
+        return self.is_running and bool(self._last_heartbeat_monotonic) and (
+            time.monotonic() - self._last_heartbeat_monotonic
+            <= Config.QUALIFIED_MARKET_WATCHDOG_SECONDS
+        )
+
+    def health_issue(self) -> str:
+        if not self.is_running:
+            return "thread_stopped"
+        if not self._last_heartbeat_monotonic:
+            return "no_heartbeat"
+        if time.monotonic() - self._last_heartbeat_monotonic > Config.QUALIFIED_MARKET_WATCHDOG_SECONDS:
+            return "heartbeat_stale"
+        return ""
+
     def stop(self) -> None:
         self._stop.set()
         if self._thread:
@@ -52,8 +68,14 @@ class QualifiedMarketMonitor:
             self.notifier.broadcast(message)
 
     def run_once(self, manager: OrderManager) -> dict[str, Any]:
+        begin_cycle = getattr(self.provider, "begin_cycle", None)
+        if callable(begin_cycle):
+            begin_cycle()
         long_symbols, short_symbols = self.qualified_symbols()
         symbols = sorted(set(long_symbols) | set(short_symbols))
+        prepare_cycle = getattr(self.provider, "prepare_cycle", None)
+        if symbols and callable(prepare_cycle):
+            prepare_cycle()
         errors, wide = [], []
         checked = 0
         for symbol in symbols:
@@ -108,6 +130,7 @@ class QualifiedMarketMonitor:
             qualified_market_last_error="; ".join(errors),
             qualified_market_last_update=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         )
+        self._last_heartbeat_monotonic = time.monotonic()
         return {"symbols": symbols, "checked": checked, "errors": errors, "wide_spreads": wide}
 
     def _run(self) -> None:
@@ -118,7 +141,17 @@ class QualifiedMarketMonitor:
                     self.run_once(manager)
                 except Exception as exc:
                     self._failures += 1
+                    self._last_heartbeat_monotonic = time.monotonic()
                     self.log(f"ERROR qualified market monitor cycle failed: {exc}")
+                    self.controller.update_runtime_snapshot(
+                        qualified_market_status="failed",
+                        qualified_market_failures=self._failures,
+                        qualified_market_last_error=str(exc),
+                        qualified_market_last_update=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    )
+                    if self._failures >= Config.POSITION_MONITOR_FAILURE_THRESHOLD and not self._alerted:
+                        self._alerted = True
+                        self._alert("🚨 <b>QUALIFIED MARKET MONITOR FAILED</b>\nManual review is required.")
                 self._stop.wait(self.interval)
         finally:
             manager.close()

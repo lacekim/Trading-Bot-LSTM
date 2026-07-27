@@ -3,8 +3,11 @@ import unittest
 import pandas as pd
 
 from trading_bot_v4.execution.bearish_model_paper import combine_directional_signals
-from trading_bot_v4.ml.bearish_trainer import _forward_compounded_return, build_bearish_target
-from trading_bot_v4.research.scheduler import _active_directional_signals
+from trading_bot_v4.ml.bearish_trainer import (
+    BEARISH_CALIBRATION_SPLIT, BEARISH_VALIDATION_SPLIT,
+    _forward_compounded_return, _partition_endpoints, build_bearish_target,
+)
+from trading_bot_v4.research.scheduler import _active_directional_signals, _analysis_symbols_with_positions
 
 
 class BearishModelTests(unittest.TestCase):
@@ -50,6 +53,34 @@ class BearishModelTests(unittest.TestCase):
         self.assertEqual(active[["symbol", "model_direction"]].values.tolist(), [
             ["LONG_OK", "LONG"], ["SHORT_OK", "SHORT"]
         ])
+
+    def test_open_symbol_signal_is_retained_but_marked_exit_only(self):
+        signals = pd.DataFrame([
+            {"symbol": "OPEN_ONLY", "model_direction": "SHORT"},
+            {"symbol": "DROP", "model_direction": "SHORT"},
+        ])
+        active = _active_directional_signals(signals, [], set(), {"OPEN_ONLY"})
+        self.assertEqual(active["symbol"].tolist(), ["OPEN_ONLY"])
+        self.assertFalse(bool(active.iloc[0]["_entry_eligible"]))
+
+    def test_open_positions_remain_in_hourly_analysis_after_demotion(self):
+        result = _analysis_symbols_with_positions(
+            ["WATCH"], {"SHORT_OK"}, [{"symbol": "demoted"}, {"symbol": "WATCH"}],
+        )
+        self.assertEqual(result, ["WATCH", "SHORT_OK", "DEMOTED"])
+
+    def test_bearish_calibration_and_promotion_holdout_do_not_overlap(self):
+        rows = pd.DataFrame({
+            "timestamp": pd.date_range("2026-01-01", periods=2000, freq="h"),
+            "symbol": ["BTC"] * 2000,
+            "bearish_future_return": [-0.02] * 2000,
+            "target": [1] * 2000,
+        })
+        calibration = _partition_endpoints(
+            rows, BEARISH_VALIDATION_SPLIT, BEARISH_CALIBRATION_SPLIT,
+        )
+        holdout = _partition_endpoints(rows, BEARISH_CALIBRATION_SPLIT)
+        self.assertLess(calibration["timestamp"].max(), holdout["timestamp"].min())
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 import threading
 import time
 from typing import Any, Protocol
@@ -102,6 +103,21 @@ class GMXTickerPriceProvider:
         self._token_decimals: dict[str, int] = {}
         self._ticker_cache: list[dict[str, Any]] = []
         self._ticker_cache_monotonic = 0.0
+        self._cycle_primary_error: Exception | None = None
+
+    def begin_cycle(self) -> None:
+        """Allow one primary GMX attempt per monitoring cycle."""
+        self._ticker_cache = []
+        self._ticker_cache_monotonic = 0.0
+        self._cycle_primary_error = None
+
+    def prepare_cycle(self) -> None:
+        """Prime shared metadata/tickers once before per-symbol fallback work."""
+        try:
+            self._load_token_decimals()
+            self._load_tickers()
+        except Exception as exc:
+            self._cycle_primary_error = exc
 
     def _load_token_decimals(self) -> None:
         if self._token_decimals:
@@ -132,6 +148,8 @@ class GMXTickerPriceProvider:
         return tickers
 
     def _fetch_ticker(self, symbol: str, direction: str) -> MarketPrice:
+        if self._cycle_primary_error is not None:
+            raise RuntimeError(f"GMX primary feed already failed this cycle: {self._cycle_primary_error}")
         requested = str(symbol).upper()
         api_symbol = self.SYMBOL_ALIASES.get(requested, requested).upper()
         self._load_token_decimals()
@@ -162,6 +180,15 @@ class GMXTickerPriceProvider:
                            f"GMX_TICKER_{'MIN' if side == 'minPrice' else 'MAX'}")
 
     def fetch_pair(self, symbol: str) -> MarketPricePair:
+        try:
+            return self._fetch_pair_primary(symbol)
+        except Exception as exc:
+            self._cycle_primary_error = exc
+            raise
+
+    def _fetch_pair_primary(self, symbol: str) -> MarketPricePair:
+        if self._cycle_primary_error is not None:
+            raise RuntimeError(f"GMX primary feed already failed this cycle: {self._cycle_primary_error}")
         requested = str(symbol).upper()
         api_symbol = self.SYMBOL_ALIASES.get(requested, requested).upper()
         self._load_token_decimals()
@@ -194,6 +221,7 @@ class GMXTickerPriceProvider:
         try:
             return self._fetch_ticker(symbol, direction)
         except Exception as exc:
+            self._cycle_primary_error = exc
             try:
                 quote = self.fallback.fetch(symbol, direction)
             except TypeError:
@@ -255,55 +283,73 @@ class PositionMonitor:
             self.notifier.broadcast(text)
 
     def run_once(self, manager: OrderManager) -> list[dict[str, Any]]:
+        begin_cycle = getattr(self.provider, "begin_cycle", None)
+        if callable(begin_cycle):
+            begin_cycle()
         positions = manager.position_snapshots()
         challenger_positions = manager.challenger_position_snapshots()
+        prepare_cycle = getattr(self.provider, "prepare_cycle", None)
+        if (positions or challenger_positions) and callable(prepare_cycle):
+            prepare_cycle()
         exits: list[dict[str, Any]] = []
         errors: list[str] = []
         warnings: list[str] = []
-        for position in positions:
-            symbol = str(position["symbol"])
-            try:
-                try:
-                    quote = self.provider.fetch(symbol, str(position["direction"]))
-                except TypeError:
-                    # Compatibility for simple injected providers used by callers/tests.
-                    quote = self.provider.fetch(symbol)
-                if quote.fallback_reason:
-                    warnings.append(f"{symbol}: ticker unavailable; using 1m fallback ({quote.fallback_reason})")
-                event = manager.monitor_market_price(symbol, quote.price, quote.observed_at, quote.source)
-                if event:
-                    exits.append(event)
-                    icon = "🛑" if event["reason"] == "stop_loss" else "🏁"
-                    self._alert(
-                        f"{icon} <b>IMMEDIATE PAPER EXIT</b>\n"
-                        "━━━━━━━━━━━━━━━━━━\n"
-                        f"🪙 <b>{event['symbol']}</b> · <code>{event['direction']}</code>\n"
-                        f"Reason: <b>{event['reason'].replace('_', ' ').upper()}</b>\n"
-                        f"Observed: <code>${event['observed_price']:.8g}</code>\n"
-                        f"Accounting price: <code>${event['accounting_price']:.8g}</code>\n"
-                        f"Feed time: <code>{event['observed_at']}</code>"
-                    )
-            except Exception as exc:
-                errors.append(f"{symbol}: {exc}")
 
-        for position in challenger_positions:
+        all_positions = [(False, position) for position in positions] + [
+            (True, position) for position in challenger_positions
+        ]
+
+        def fetch_quote(item: tuple[bool, dict[str, Any]]):
+            shadow, position = item
             symbol = str(position["symbol"])
             try:
                 try:
                     quote = self.provider.fetch(symbol, str(position["direction"]))
                 except TypeError:
                     quote = self.provider.fetch(symbol)
-                event = manager.monitor_challenger_market_price(
-                    symbol, quote.price, quote.observed_at, quote.source
+                return shadow, position, quote, None
+            except Exception as exc:
+                return shadow, position, None, exc
+
+        if all_positions:
+            with ThreadPoolExecutor(max_workers=min(8, len(all_positions))) as executor:
+                fetched = list(executor.map(fetch_quote, all_positions))
+        else:
+            fetched = []
+
+        for shadow, position, quote, fetch_error in fetched:
+            symbol = str(position["symbol"])
+            if fetch_error is not None:
+                errors.append(f"{'shadow ' if shadow else ''}{symbol}: {fetch_error}")
+                continue
+            try:
+                if not shadow and quote.fallback_reason:
+                    warnings.append(f"{symbol}: ticker unavailable; using 1m fallback ({quote.fallback_reason})")
+                event = (
+                    manager.monitor_challenger_market_price(symbol, quote.price, quote.observed_at, quote.source)
+                    if shadow else
+                    manager.monitor_market_price(symbol, quote.price, quote.observed_at, quote.source)
                 )
                 if event:
                     exits.append(event)
-                    self.log(
-                        f"Shadow {event['reason']} exit: {symbol} {event['direction']} "
-                        f"observed={event['observed_price']:.10g} accounting={event['accounting_price']:.10g}"
-                    )
+                    if shadow:
+                        self.log(
+                            f"Shadow {event['reason']} exit: {symbol} {event['direction']} "
+                            f"observed={event['observed_price']:.10g} accounting={event['accounting_price']:.10g}"
+                        )
+                    else:
+                        icon = "🛑" if event["reason"] == "stop_loss" else "🏁"
+                        self._alert(
+                            f"{icon} <b>IMMEDIATE PAPER EXIT</b>\n"
+                            "━━━━━━━━━━━━━━━━━━\n"
+                            f"🪙 <b>{event['symbol']}</b> · <code>{event['direction']}</code>\n"
+                            f"Reason: <b>{event['reason'].replace('_', ' ').upper()}</b>\n"
+                            f"Observed: <code>${event['observed_price']:.8g}</code>\n"
+                            f"Accounting price: <code>${event['accounting_price']:.8g}</code>\n"
+                            f"Feed time: <code>{event['observed_at']}</code>"
+                        )
             except Exception as exc:
-                errors.append(f"shadow {symbol}: {exc}")
+                errors.append(f"{'shadow ' if shadow else ''}{symbol}: {exc}")
 
         feed_issues = errors + warnings
         if feed_issues:

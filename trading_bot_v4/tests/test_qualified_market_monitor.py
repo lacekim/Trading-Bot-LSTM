@@ -42,7 +42,15 @@ class QualifiedMarketMonitorTests(unittest.TestCase):
         self.assertEqual([row["symbol"] for row in rows], ["BTC", "CHZ"])
         self.assertTrue(all(row["status"] == "healthy" for row in rows))
         self.assertAlmostEqual(rows[0]["spread_bps"], 200.0, places=4)
+        self.assertTrue(monitor._last_heartbeat_monotonic > 0)
         manager.close()
+
+    def test_stopped_thread_is_reported_unhealthy(self):
+        monitor = QualifiedMarketMonitor(
+            ShutdownController(), lambda: ([], []), provider=PairProvider(), db_path=self.db,
+        )
+        self.assertFalse(monitor.is_healthy())
+        self.assertEqual(monitor.health_issue(), "thread_stopped")
 
     def test_hourly_entry_uses_fresh_directional_snapshot_and_audits_prices(self):
         manager = OrderManager(self.db)

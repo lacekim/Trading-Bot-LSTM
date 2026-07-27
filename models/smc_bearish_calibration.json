@@ -1,0 +1,20 @@
+{
+  "threshold": 0.6800000000000002,
+  "precision": 0.2809530095036959,
+  "recall": 0.5792624846917948,
+  "f1": 0.3783831829696458,
+  "auc": 0.7327161407213637,
+  "target": "next_1_candle_return < -0.01",
+  "prediction_horizon_candles": 1,
+  "timeframe": "1h",
+  "split_policy": "70% train / 10% model validation / 10% threshold calibration / 10% untouched promotion holdout",
+  "calibration_sequences": 49444,
+  "validation_sequences": 49557,
+  "holdout_auc": 0.7437040207972793,
+  "holdout_precision": 0.232498243970967,
+  "holdout_recall": 0.4222836487348501,
+  "holdout_f1": 0.2998867497168743,
+  "walk_forward_stable": false,
+  "promoted_symbols": {},
+  "promoted": false
+}

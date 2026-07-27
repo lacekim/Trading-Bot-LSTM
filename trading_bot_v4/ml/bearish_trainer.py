@@ -28,7 +28,8 @@ BEARISH_BATCH_SIZE = 256
 BEARISH_MAX_EPOCHS = 30
 BEARISH_HORIZON = 1
 BEARISH_TRAIN_SPLIT = 0.70
-BEARISH_SELECTION_SPLIT = 0.85
+BEARISH_VALIDATION_SPLIT = 0.80
+BEARISH_CALIBRATION_SPLIT = 0.90
 
 
 @dataclass(frozen=True)
@@ -82,23 +83,32 @@ def _load_bearish_dataset(timeframe: str) -> pd.DataFrame:
     return dataset.reset_index(drop=True)
 
 
-def _split_bearish_three_way(dataset: pd.DataFrame, features: list[str]):
+def _split_bearish_four_way(dataset: pd.DataFrame, features: list[str]):
     scaler = StandardScaler()
     groups = {}
     for symbol, group in dataset.groupby("symbol", sort=True):
         group = group.sort_values("timestamp")
-        train_end, selection_end = int(len(group) * BEARISH_TRAIN_SPLIT), int(len(group) * BEARISH_SELECTION_SPLIT)
-        if train_end <= Config.SEQUENCE_LENGTH or selection_end - train_end <= Config.SEQUENCE_LENGTH or len(group) - selection_end <= Config.SEQUENCE_LENGTH:
+        train_end = int(len(group) * BEARISH_TRAIN_SPLIT)
+        validation_end = int(len(group) * BEARISH_VALIDATION_SPLIT)
+        calibration_end = int(len(group) * BEARISH_CALIBRATION_SPLIT)
+        boundaries = (train_end, validation_end - train_end,
+                      calibration_end - validation_end, len(group) - calibration_end)
+        if any(size <= Config.SEQUENCE_LENGTH for size in boundaries):
             continue
-        train, selection, test = group.iloc[:train_end], group.iloc[train_end:selection_end], group.iloc[selection_end:]
+        train = group.iloc[:train_end]
+        validation = group.iloc[train_end:validation_end]
+        calibration = group.iloc[validation_end:calibration_end]
+        holdout = group.iloc[calibration_end:]
         scaler.partial_fit(train[features].to_numpy(np.float32))
-        groups[symbol] = (train, selection, test)
-    arrays, stats = {}, {"train_rows": 0, "validation_rows": 0, "test_rows": 0,
-                         "train_sequences": 0, "validation_sequences": 0, "test_sequences": 0,
+        groups[symbol] = (train, validation, calibration, holdout)
+    arrays, stats = {}, {"train_rows": 0, "validation_rows": 0, "calibration_rows": 0, "holdout_rows": 0,
+                         "train_sequences": 0, "validation_sequences": 0,
+                         "calibration_sequences": 0, "holdout_sequences": 0,
                          "train_positive": 0, "train_negative": 0}
-    for symbol, (train, selection, test) in groups.items():
+    for symbol, (train, validation, calibration, holdout) in groups.items():
         entry = {}
-        for name, frame in (("train", train), ("validation", selection), ("test", test)):
+        for name, frame in (("train", train), ("validation", validation),
+                            ("calibration", calibration), ("holdout", holdout)):
             entry[f"{name}_features"] = scaler.transform(frame[features].to_numpy(np.float32)).astype(np.float32)
             entry[f"{name}_target"] = frame["target"].to_numpy(np.float32)
             stats[f"{name}_rows"] += len(frame)
@@ -108,20 +118,22 @@ def _split_bearish_three_way(dataset: pd.DataFrame, features: list[str]):
         stats["train_negative"] += int(len(train_y) - train_y.sum())
         arrays[symbol] = entry
     if not arrays:
-        raise ValueError("No assets have enough rows for bearish train/selection/test splits")
+        raise ValueError("No assets have enough rows for bearish train/validation/calibration/holdout splits")
     return arrays, scaler, stats
 
 
-def _validation_endpoints(dataset: pd.DataFrame) -> pd.DataFrame:
+def _partition_endpoints(dataset: pd.DataFrame, start_fraction: float,
+                         end_fraction: float = 1.0) -> pd.DataFrame:
     frames = []
     for _, group in dataset.groupby("symbol", sort=True):
-        split = int(len(group) * BEARISH_SELECTION_SPLIT)
-        validation = group.iloc[split:]
-        if len(validation) > Config.SEQUENCE_LENGTH:
-            frames.append(validation.iloc[Config.SEQUENCE_LENGTH:][
+        start = int(len(group) * start_fraction)
+        end = int(len(group) * end_fraction)
+        partition = group.iloc[start:end]
+        if len(partition) > Config.SEQUENCE_LENGTH:
+            frames.append(partition.iloc[Config.SEQUENCE_LENGTH:][
                 ["timestamp", "symbol", "bearish_future_return", "target"]
             ])
-    return pd.concat(frames, ignore_index=True)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
 def _walk_forward_rows(endpoints: pd.DataFrame, probability: np.ndarray,
@@ -155,24 +167,30 @@ def _walk_forward_rows(endpoints: pd.DataFrame, probability: np.ndarray,
     return rows
 
 
-def _calibrate_symbols(endpoints: pd.DataFrame, probability: np.ndarray) -> tuple[
+def _calibrate_symbols(calibration_endpoints: pd.DataFrame, calibration_probability: np.ndarray,
+                       holdout_endpoints: pd.DataFrame, holdout_probability: np.ndarray) -> tuple[
     dict[str, float], list[dict[str, Any]], list[dict[str, Any]]
 ]:
-    evaluated = endpoints.copy()
-    evaluated["probability"] = probability
+    selected_data = calibration_endpoints.copy()
+    selected_data["probability"] = calibration_probability
+    final_data = holdout_endpoints.copy()
+    final_data["probability"] = holdout_probability
     promoted: dict[str, float] = {}
     report: list[dict[str, Any]] = []
     window_report: list[dict[str, Any]] = []
-    for symbol, frame in evaluated.groupby("symbol", sort=True):
-        y = frame["target"].to_numpy(int)
-        p = frame["probability"].to_numpy(float)
-        if len(frame) < 200 or len(np.unique(y)) < 2:
+    for symbol, selection in selected_data.groupby("symbol", sort=True):
+        final = final_data.loc[final_data["symbol"].eq(symbol)].copy()
+        selection_y = selection["target"].to_numpy(int)
+        selection_p = selection["probability"].to_numpy(float)
+        final_y = final["target"].to_numpy(int)
+        final_p = final["probability"].to_numpy(float)
+        if len(selection) < 100 or len(final) < 100 or len(np.unique(selection_y)) < 2 or len(np.unique(final_y)) < 2:
             continue
         candidates = []
         for threshold in np.arange(0.50, 0.91, 0.01):
-            predicted = p >= threshold
+            predicted = selection_p >= threshold
             precision, recall, f1, _ = precision_recall_fscore_support(
-                y, predicted.astype(int), average="binary", zero_division=0
+                selection_y, predicted.astype(int), average="binary", zero_division=0
             )
             if predicted.sum() >= 15:
                 candidates.append((float(threshold), float(precision), float(recall), float(f1)))
@@ -180,18 +198,25 @@ def _calibrate_symbols(endpoints: pd.DataFrame, probability: np.ndarray) -> tupl
         selected = max(eligible, key=lambda row: (row[3], row[1])) if eligible else max(
             candidates or [(0.90, 0.0, 0.0, 0.0)], key=lambda row: (row[1], row[3])
         )
-        windows = _walk_forward_rows(frame, p, selected[0])
+        final_predicted = final_p >= selected[0]
+        final_precision, final_recall, final_f1, _ = precision_recall_fscore_support(
+            final_y, final_predicted.astype(int), average="binary", zero_division=0
+        )
+        windows = _walk_forward_rows(final, final_p, selected[0])
         window_report.extend({"symbol": symbol, "threshold": selected[0], **row} for row in windows)
-        stable = bool(eligible) and all(
+        stable = bool(eligible) and final_predicted.sum() >= 15 and final_precision >= 0.55 and all(
             row["signals"] >= 3 and row["profit_factor"] >= 1.30 and row["return_pct"] > 0
             for row in windows
         )
         if stable:
             promoted[str(symbol)] = selected[0]
         report.append({
-            "symbol": symbol, "threshold": selected[0], "precision": selected[1],
-            "recall": selected[2], "f1": selected[3], "auc": float(roc_auc_score(y, p)),
-            "signals": int((p >= selected[0]).sum()), "walk_forward_stable": stable,
+            "symbol": symbol, "threshold": selected[0],
+            "calibration_precision": selected[1], "calibration_recall": selected[2],
+            "calibration_f1": selected[3], "precision": float(final_precision),
+            "recall": float(final_recall), "f1": float(final_f1),
+            "auc": float(roc_auc_score(final_y, final_p)),
+            "signals": int(final_predicted.sum()), "walk_forward_stable": stable,
             "promoted": stable,
         })
     return promoted, report, window_report
@@ -217,7 +242,7 @@ def _calibrate(y_true: np.ndarray, probability: np.ndarray) -> dict[str, float]:
 def train_bearish_model(timeframe: str) -> BearishTrainingResult:
     dataset = _load_bearish_dataset(timeframe)
     feature_columns = [*Config.FEATURE_COLUMNS, *SMC_FEATURE_COLUMNS]
-    arrays, scaler, stats = _split_bearish_three_way(dataset, feature_columns)
+    arrays, scaler, stats = _split_bearish_four_way(dataset, feature_columns)
     feature_count = len(feature_columns)
     train_sequences = int(stats["train_sequences"])
     positives, negatives = int(stats["train_positive"]), int(stats["train_negative"])
@@ -233,8 +258,13 @@ def train_bearish_model(timeframe: str) -> BearishTrainingResult:
         arrays, "validation_features", "validation_target", feature_count,
         batch_size=BEARISH_BATCH_SIZE,
     )
-    test_data = _make_sequence_dataset(
-        arrays, "test_features", "test_target", feature_count, batch_size=BEARISH_BATCH_SIZE,
+    calibration_data = _make_sequence_dataset(
+        arrays, "calibration_features", "calibration_target", feature_count,
+        batch_size=BEARISH_BATCH_SIZE,
+    )
+    holdout_data = _make_sequence_dataset(
+        arrays, "holdout_features", "holdout_target", feature_count,
+        batch_size=BEARISH_BATCH_SIZE,
     )
     classifier = V4CNNLSTMClassifier()
     classifier.build_model((Config.SEQUENCE_LENGTH, feature_count))
@@ -248,23 +278,50 @@ def train_bearish_model(timeframe: str) -> BearishTrainingResult:
         ],
         verbose=2,
     )
-    y_true = np.concatenate([batch_y.numpy().reshape(-1) for _, batch_y in test_data])
-    probability = classifier.model.predict(test_data, verbose=0).reshape(-1)
-    calibration = _calibrate(y_true.astype(int), probability)
-    endpoints = _validation_endpoints(dataset)
-    if len(endpoints) != len(probability):
-        raise RuntimeError(f"Bearish validation alignment mismatch: {len(endpoints)} != {len(probability)}")
-    walk_forward = _walk_forward_rows(endpoints, probability, float(calibration["threshold"]))
+    calibration_y = np.concatenate([batch_y.numpy().reshape(-1) for _, batch_y in calibration_data])
+    calibration_probability = classifier.model.predict(calibration_data, verbose=0).reshape(-1)
+    calibration = _calibrate(calibration_y.astype(int), calibration_probability)
+    calibration_endpoints = _partition_endpoints(
+        dataset, BEARISH_VALIDATION_SPLIT, BEARISH_CALIBRATION_SPLIT,
+    )
+    if len(calibration_endpoints) != len(calibration_probability):
+        raise RuntimeError(
+            f"Bearish calibration alignment mismatch: {len(calibration_endpoints)} != {len(calibration_probability)}"
+        )
+
+    holdout_y = np.concatenate([batch_y.numpy().reshape(-1) for _, batch_y in holdout_data])
+    holdout_probability = classifier.model.predict(holdout_data, verbose=0).reshape(-1)
+    holdout_endpoints = _partition_endpoints(dataset, BEARISH_CALIBRATION_SPLIT)
+    if len(holdout_endpoints) != len(holdout_probability):
+        raise RuntimeError(
+            f"Bearish holdout alignment mismatch: {len(holdout_endpoints)} != {len(holdout_probability)}"
+        )
+    holdout_precision, holdout_recall, holdout_f1, _ = precision_recall_fscore_support(
+        holdout_y.astype(int), (holdout_probability >= calibration["threshold"]).astype(int),
+        average="binary", zero_division=0,
+    )
+    holdout_auc = float(roc_auc_score(holdout_y, holdout_probability)) if len(np.unique(holdout_y)) > 1 else float("nan")
+    walk_forward = _walk_forward_rows(
+        holdout_endpoints, holdout_probability, float(calibration["threshold"]),
+    )
     stable = all(
         row["profit_factor"] >= 1.30 and row["return_pct"] > 0 and row["auc"] >= 0.55
         for row in walk_forward
     )
-    promoted_symbols, symbol_report, symbol_windows = _calibrate_symbols(endpoints, probability)
+    promoted_symbols, symbol_report, symbol_windows = _calibrate_symbols(
+        calibration_endpoints, calibration_probability, holdout_endpoints, holdout_probability,
+    )
     calibration.update({
         "target": f"next_{BEARISH_HORIZON}_candle_return < -{Config.MOVEMENT_THRESHOLD}",
         "prediction_horizon_candles": BEARISH_HORIZON,
         "timeframe": timeframe,
-        "validation_sequences": int(len(y_true)),
+        "split_policy": "70% train / 10% model validation / 10% threshold calibration / 10% untouched promotion holdout",
+        "calibration_sequences": int(len(calibration_y)),
+        "validation_sequences": int(len(holdout_y)),
+        "holdout_auc": holdout_auc,
+        "holdout_precision": float(holdout_precision),
+        "holdout_recall": float(holdout_recall),
+        "holdout_f1": float(holdout_f1),
         "walk_forward_stable": stable,
         "promoted_symbols": promoted_symbols,
         "promoted": bool(promoted_symbols),
@@ -278,13 +335,13 @@ def train_bearish_model(timeframe: str) -> BearishTrainingResult:
     pd.DataFrame(symbol_report).to_csv(BEARISH_VALIDATION_PATH, index=False)
     pd.DataFrame(symbol_windows).to_csv(BEARISH_WALK_FORWARD_PATH, index=False)
     return BearishTrainingResult(
-        rows_used=int(stats["train_rows"] + stats["validation_rows"] + stats["test_rows"]),
+        rows_used=int(stats["train_rows"] + stats["validation_rows"] + stats["calibration_rows"] + stats["holdout_rows"]),
         train_sequences=train_sequences,
-        validation_sequences=int(stats["test_sequences"]),
-        validation_auc=float(calibration["auc"]),
-        validation_precision=float(calibration["precision"]),
-        validation_recall=float(calibration["recall"]),
-        validation_f1=float(calibration["f1"]),
+        validation_sequences=int(stats["holdout_sequences"]),
+        validation_auc=holdout_auc,
+        validation_precision=float(holdout_precision),
+        validation_recall=float(holdout_recall),
+        validation_f1=float(holdout_f1),
         threshold=float(calibration["threshold"]),
         model_path=BEARISH_MODEL_PATH,
         scaler_path=BEARISH_SCALER_PATH,

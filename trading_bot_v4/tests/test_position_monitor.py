@@ -69,6 +69,51 @@ class PositionMonitorTests(unittest.TestCase):
         self.assertEqual(manager.open_position_count(), 1)
         manager.close()
 
+    def test_hourly_and_monitor_exit_are_serialized_across_connections(self):
+        barrier = threading.Barrier(2)
+        errors = []
+
+        def hourly_exit():
+            manager = OrderManager(self.db)
+            try:
+                barrier.wait()
+                candle = _signal()
+                candle["timestamp"] = "2026-01-01T02:00:00Z"
+                candle["model_direction"] = "HOLD"
+                candle["open"] = 100.0
+                candle["high"] = 101.0
+                candle["low"] = 97.0
+                manager.process_signals(candle)
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                manager.close()
+
+        def monitor_exit():
+            manager = OrderManager(self.db)
+            try:
+                barrier.wait()
+                manager.monitor_market_price(
+                    "BTC", 97.0, pd.Timestamp.now(tz="UTC").isoformat(), "GMX_TICKER"
+                )
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                manager.close()
+
+        threads = [threading.Thread(target=hourly_exit), threading.Thread(target=monitor_exit)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=5)
+
+        self.assertFalse(any(thread.is_alive() for thread in threads))
+        self.assertEqual(errors, [])
+        manager = OrderManager(self.db)
+        self.assertEqual(manager.open_position_count(), 0)
+        self.assertEqual(manager.connection.execute("SELECT COUNT(*) FROM closed_trades").fetchone()[0], 1)
+        manager.close()
+
     def test_monitor_protects_shadow_position_every_cycle(self):
         manager = OrderManager(self.db)
         manager.connection.execute(
@@ -164,6 +209,18 @@ class PriceProviderTests(unittest.TestCase):
             quote = provider.fetch("PUMP", "LONG")
         self.assertEqual(quote.source, "GMX_1M_FALLBACK")
         self.assertIn("ticker down", quote.fallback_reason)
+
+    def test_primary_failure_is_not_retried_for_every_position_in_cycle(self):
+        fallback = StaticProvider(0.002)
+        provider = GMXTickerPriceProvider(fallback=fallback)
+        provider.begin_cycle()
+        with patch("trading_bot_v4.execution.position_monitor.requests.get",
+                   side_effect=ConnectionError("ticker down")) as request:
+            first = provider.fetch("PUMP", "LONG")
+            second = provider.fetch("BTC", "LONG")
+        self.assertEqual(request.call_count, 1)
+        self.assertEqual(first.source, "GMX_1M_FALLBACK")
+        self.assertEqual(second.source, "GMX_1M_FALLBACK")
 
 
 if __name__ == "__main__": unittest.main()
