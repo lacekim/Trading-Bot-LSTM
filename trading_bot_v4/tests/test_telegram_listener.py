@@ -36,12 +36,18 @@ class TelegramListenerTests(unittest.TestCase):
         controller.update_runtime_snapshot(
             execution_mode="PAPER", scheduler_running=True, entries_allowed=True,
             qualified_assets=["ENA", "LDO"], qualified_long_assets=["ENA", "LDO"],
-            qualified_short_assets=["CHZ"], open_positions=0, equity=10000,
+            qualified_short_assets=["CHZ"], watch_assets=["EIGEN", "PUMP"],
+            open_positions=0, equity=10000,
             realized_pnl=0, unrealized_pnl=0, fees=0,
             next_hourly_update="next-hour", next_daily_research="next-day",
             web3_read_only_status="not configured", live_signing_status="disabled", positions=[],
         )
         return controller
+
+    def test_status_includes_watch_assets_separately(self):
+        text = TelegramControlListener._status_text(self.configured_controller().runtime_snapshot())
+        self.assertIn("WATCH", text)
+        self.assertIn("EIGEN, PUMP", text)
 
     def test_listener_thread_actually_starts_and_stops(self):
         transport = FakeTransport()

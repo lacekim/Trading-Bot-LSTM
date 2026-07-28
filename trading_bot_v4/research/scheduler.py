@@ -269,6 +269,24 @@ def _hourly_analysis_symbols(timeframe: str) -> list[str]:
     return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
 
 
+def _hourly_watch_symbols(timeframe: str) -> list[str]:
+    """Return the current WATCH universe for runtime status reporting."""
+    del timeframe
+    if not DAILY_GO_STATUS_PATH.exists():
+        return []
+    try:
+        status = pd.read_csv(DAILY_GO_STATUS_PATH)
+    except Exception as exc:
+        _log(f"WARNING failed to load daily WATCH list: {exc}")
+        return []
+    if not {"symbol", "decision"}.issubset(status.columns):
+        return []
+    selected = status.loc[
+        status["decision"].astype(str).str.upper().eq("WATCH"), "symbol"
+    ]
+    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
+
+
 def _qualified_short_symbols() -> list[str]:
     """Return only assets that passed bearish final-holdout promotion."""
     try:
@@ -538,6 +556,7 @@ def run_auto_scheduler(args: Any) -> None:
         models = _load_scheduler_models("scheduler startup")
         orders = OrderManager()
         hourly_symbols = _hourly_refresh_symbols(timeframe)
+        hourly_watch_symbols = _hourly_watch_symbols(timeframe)
         hourly_short_symbols = _qualified_short_symbols()
         _log("Restoring persistent state...")
         restored = orders.restore_and_reconcile(Config.EXECUTION_MODE, hourly_symbols)
@@ -586,6 +605,7 @@ def run_auto_scheduler(args: Any) -> None:
     print("Scaler loaded.")
     print(f"Qualified LONG: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     print(f"Qualified SHORT: {', '.join(hourly_short_symbols) if hourly_short_symbols else 'none'}")
+    print(f"WATCH: {', '.join(hourly_watch_symbols) if hourly_watch_symbols else 'none'}")
     print(f"Qualified market monitoring: every {Config.QUALIFIED_MARKET_INTERVAL_SECONDS} seconds")
     print("Daily research refresh: all assets")
     print(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
@@ -596,6 +616,7 @@ def run_auto_scheduler(args: Any) -> None:
     _log("Scheduler started")
     _log(f"Qualified LONG: {', '.join(hourly_symbols) if hourly_symbols else 'none'}")
     _log(f"Qualified SHORT: {', '.join(hourly_short_symbols) if hourly_short_symbols else 'none'}")
+    _log(f"WATCH: {', '.join(hourly_watch_symbols) if hourly_watch_symbols else 'none'}")
     _log("Daily research refresh: all assets")
     _log(f"Next hourly update: {displayed_next_hourly.isoformat(timespec='seconds')}")
     _log(f"Next daily research: {state.next_daily_research.isoformat(timespec='seconds')}")
@@ -613,6 +634,7 @@ def run_auto_scheduler(args: Any) -> None:
         pending_orders=restored["pending_orders"], execution_mode=Config.EXECUTION_MODE, scheduler_running=True,
         entries_allowed=controller.entries_allowed(), qualified_assets=hourly_symbols,
         qualified_long_assets=hourly_symbols, qualified_short_assets=hourly_short_symbols,
+        watch_assets=hourly_watch_symbols,
         open_positions=initial_summary.open_positions, equity=initial_summary.equity,
         realized_pnl=initial_summary.realized_pnl, unrealized_pnl=initial_summary.unrealized_pnl,
         fees=initial_summary.fees, positions=orders.position_snapshots(),
@@ -670,15 +692,18 @@ def run_auto_scheduler(args: Any) -> None:
                         daily_result = _run_daily_research(timeframe, top_validated, models)
                         if daily_result is not None:
                             updated_symbols = _hourly_refresh_symbols(timeframe)
+                            updated_watch_symbols = _hourly_watch_symbols(timeframe)
                             updated_short_symbols = _qualified_short_symbols()
                             orders.update_whitelist(updated_symbols)
                             controller.update_runtime_snapshot(
                                 qualified_assets=updated_symbols,
                                 qualified_long_assets=updated_symbols,
                                 qualified_short_assets=updated_short_symbols,
+                                watch_assets=updated_watch_symbols,
                             )
                             _log(f"Persisted qualified LONG list: {', '.join(updated_symbols) if updated_symbols else 'none'}")
                             _log(f"Persisted qualified SHORT list: {', '.join(updated_short_symbols) if updated_short_symbols else 'none'}")
+                            _log(f"Persisted WATCH list: {', '.join(updated_watch_symbols) if updated_watch_symbols else 'none'}")
                 next_daily = _next_daily_time(datetime.now())
                 controller.update_runtime_snapshot(next_daily_research=next_daily.isoformat(timespec="seconds"))
                 _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")

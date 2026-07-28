@@ -146,6 +146,7 @@ class TelegramControlListener:
         telegram = str(value("telegram_status", "unknown"))
         qualified_long = ", ".join(value("qualified_long_assets", value("qualified_assets", []))) or "none"
         qualified_short = ", ".join(value("qualified_short_assets", [])) or "none"
+        watch_assets = ", ".join(value("watch_assets", [])) or "none"
         return "\n".join([
             "📊 <b>V5 STATUS REPORT</b>",
             "━━━━━━━━━━━━━━━━━━",
@@ -154,6 +155,7 @@ class TelegramControlListener:
             f"{'✅' if entries else '⏸️'} New entries: <b>{'ENABLED' if entries else 'PAUSED'}</b>",
             f"📈 LONG: <code>{escape(qualified_long)}</code>",
             f"📉 SHORT: <code>{escape(qualified_short)}</code>",
+            f"👀 WATCH: <code>{escape(watch_assets)}</code>",
             f"📡 Qualified feed: <code>{escape(str(value('qualified_market_status', 'starting')))}</code>",
             f"📍 Open positions: <b>{value('open_positions', 0)}</b>",
             "",
