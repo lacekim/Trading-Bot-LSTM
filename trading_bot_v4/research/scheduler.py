@@ -7,8 +7,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 import signal
@@ -30,8 +32,21 @@ from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode,
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock
 from trading_bot_v4.telegram.control_listener import TelegramControlListener
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
-from trading_bot_v4.ml.bearish_trainer import BEARISH_MODEL_PATH, BEARISH_SCALER_PATH
-from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH, _update_smc_features, run_daily_research
+from trading_bot_v4.ml.smc_trainer import train_smc_model
+from trading_bot_v4.ml.bearish_trainer import (
+    BEARISH_CALIBRATION_PATH, BEARISH_MODEL_PATH, BEARISH_SCALER_PATH,
+    BEARISH_VALIDATION_PATH, BEARISH_WALK_FORWARD_PATH, train_bearish_model,
+)
+from trading_bot_v4.ml.trainer import train_v4_model
+from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data
+from trading_bot_v4.backtesting.walk_forward import (
+    WALK_FORWARD_REPORT_PATH, WALK_FORWARD_SUMMARY_PATH, run_walk_forward_smc_validation,
+)
+from trading_bot_v4.core.data_handler import V4DataHandler
+from trading_bot_v4.research.daily_research import (
+    DAILY_DASHBOARD_PATH, DAILY_GO_STATUS_PATH, DAILY_QUALIFICATION_AUDIT_PATH,
+    _update_smc_features, run_daily_research,
+)
 from trading_bot_v4.utils.model_cache import ModelScalerCache
 
 
@@ -526,6 +541,62 @@ def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerMod
     )
 
 
+def _daily_artifact_paths() -> list[Path]:
+    original_cache = ModelScalerCache()
+    return [
+        Path(original_cache.model_path), Path(original_cache.scaler_path),
+        SMC_MODEL_PATH, SMC_SCALER_PATH,
+        BEARISH_MODEL_PATH, BEARISH_SCALER_PATH, BEARISH_CALIBRATION_PATH,
+        BEARISH_VALIDATION_PATH, BEARISH_WALK_FORWARD_PATH,
+        WALK_FORWARD_SUMMARY_PATH, WALK_FORWARD_REPORT_PATH,
+        DAILY_GO_STATUS_PATH, DAILY_QUALIFICATION_AUDIT_PATH, DAILY_DASHBOARD_PATH,
+    ]
+
+
+def _run_complete_daily_refresh(timeframe: str, top_validated: int) -> tuple[Any, SchedulerModelBundle]:
+    """Retrain and revalidate every model before publishing daily qualification."""
+    paths = _daily_artifact_paths()
+    with tempfile.TemporaryDirectory(prefix="v5-daily-artifacts-") as directory:
+        backup_root = Path(directory)
+        existing: dict[Path, Path] = {}
+        missing: set[Path] = set()
+        for index, path in enumerate(paths):
+            if path.exists():
+                backup = backup_root / f"{index}_{path.name}"
+                shutil.copy2(path, backup)
+                existing[path] = backup
+            else:
+                missing.add(path)
+        try:
+            _log("Daily full refresh 1/7: refresh all GMX market data")
+            if not V4DataHandler().refresh_gmx_cache(force=True):
+                raise RuntimeError("daily all-asset GMX refresh failed")
+            _log("Daily full refresh 2/7: rebuild all-asset SMC training data")
+            build_all_assets_smc_training_data(timeframe)
+            _log("Daily full refresh 3/7: retrain original LONG model")
+            train_v4_model(timeframe=timeframe, send_telegram=False)
+            _log("Daily full refresh 4/7: retrain SMC LONG model")
+            train_smc_model(timeframe)
+            _log("Daily full refresh 5/7: retrain and calibrate bearish model")
+            train_bearish_model(timeframe)
+            _log("Daily full refresh 6/7: regenerate all-asset LONG walk-forward validation")
+            run_walk_forward_smc_validation(_scheduler_args(timeframe=timeframe, all_assets=True))
+            refreshed_models = _load_scheduler_models("complete daily retraining")
+            _log("Daily full refresh 7/7: regenerate rankings, constrained performance, and qualification")
+            daily_result = _run_daily_research(timeframe, top_validated, refreshed_models)
+            if daily_result is None:
+                raise RuntimeError("daily qualification pipeline failed")
+            return daily_result, refreshed_models
+        except Exception:
+            _log("ERROR complete daily refresh failed; restoring previous validated artifacts")
+            for path, backup in existing.items():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(backup, path)
+            for path in missing:
+                path.unlink(missing_ok=True)
+            raise
+
+
 def run_auto_scheduler(args: Any) -> None:
     """Run the paper-only V4 scheduler until interrupted."""
     allowed_modes = {"RESEARCH", "PAPER", "WEB3_READ_ONLY", "LIVE_SMALL", "LIVE"}
@@ -688,9 +759,17 @@ def run_auto_scheduler(args: Any) -> None:
             if now >= next_daily:
                 with controller.active_cycle() as admitted:
                     if admitted:
-                        models = _maybe_reload_models(models)
-                        daily_result = _run_daily_research(timeframe, top_validated, models)
-                        if daily_result is not None:
+                        if telegram.is_running:
+                            telegram.broadcast(
+                                "🔄 <b>DAILY FULL REFRESH STARTED</b>\n"
+                                "Refreshing data, retraining all models, and rerunning all validation."
+                            )
+                        complete_result = _run_guarded(
+                            "daily.complete_retrain_revalidate",
+                            lambda: _run_complete_daily_refresh(timeframe, top_validated),
+                        )
+                        if complete_result is not None:
+                            daily_result, models = complete_result
                             updated_symbols = _hourly_refresh_symbols(timeframe)
                             updated_watch_symbols = _hourly_watch_symbols(timeframe)
                             updated_short_symbols = _qualified_short_symbols()
@@ -704,6 +783,18 @@ def run_auto_scheduler(args: Any) -> None:
                             _log(f"Persisted qualified LONG list: {', '.join(updated_symbols) if updated_symbols else 'none'}")
                             _log(f"Persisted qualified SHORT list: {', '.join(updated_short_symbols) if updated_short_symbols else 'none'}")
                             _log(f"Persisted WATCH list: {', '.join(updated_watch_symbols) if updated_watch_symbols else 'none'}")
+                            if telegram.is_running:
+                                telegram.broadcast(
+                                    "✅ <b>DAILY FULL REFRESH COMPLETE</b>\n"
+                                    f"LONG: <code>{', '.join(updated_symbols) if updated_symbols else 'none'}</code>\n"
+                                    f"SHORT: <code>{', '.join(updated_short_symbols) if updated_short_symbols else 'none'}</code>\n"
+                                    f"WATCH: <code>{', '.join(updated_watch_symbols) if updated_watch_symbols else 'none'}</code>"
+                                )
+                        elif telegram.is_running:
+                            telegram.broadcast(
+                                "🚨 <b>DAILY FULL REFRESH FAILED</b>\n"
+                                "Previous validated model artifacts were restored. No new qualification was published."
+                            )
                 next_daily = _next_daily_time(datetime.now())
                 controller.update_runtime_snapshot(next_daily_research=next_daily.isoformat(timespec="seconds"))
                 _log(f"Next daily research: {next_daily.isoformat(timespec='seconds')}")

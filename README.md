@@ -34,7 +34,7 @@ Risk management, accounting, dashboard, and Telegram
 
 The automatic scheduler performs two types of work:
 
-- **Daily research:** refreshes the broader GMX universe, ranks assets, evaluates recent readiness, builds the qualified whitelist, and writes the V5 Daily Decision Dashboard.
+- **Daily full refresh:** refreshes the complete GMX universe, rebuilds all-asset training data, retrains the original LONG, SMC LONG, and bearish models, regenerates all-asset LONG walk-forward validation, reruns constrained performance and rankings, rebuilds GO/WATCH/NO-GO qualification, and writes the V5 Daily Decision Dashboard. Previous validated artifacts are restored if any stage fails.
 - **Hourly cycles:** refreshes qualified assets, updates SMC features, runs the model, processes the newest closed-candle signals, manages paper positions, persists accounting state, and sends Telegram updates.
 
 ## Main features
