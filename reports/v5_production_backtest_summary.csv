@@ -1,0 +1,2 @@
+symbol,entry_eligible,candles,trades,long_trades,short_trades,starting_capital,final_capital,return_pct,win_rate_pct,max_drawdown_pct,profit_factor,qualified_long,qualified_short
+VVV,True,5221,1265,1220,45,10000.0,8048.711071745255,-19.51288928254745,41.89723320158103,-21.702887261252002,0.8021543950644845,True,True

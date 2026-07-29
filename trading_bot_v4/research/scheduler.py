@@ -23,6 +23,7 @@ from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
 from trading_bot_v4.execution.bearish_model_paper import (
     combine_directional_signals, load_bearish_calibration, predict_bearish_signals,
 )
+from trading_bot_v4.execution.paper_model_comparison import run_original_baseline_paper_signals
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.execution.position_monitor import PositionMonitor
@@ -462,11 +463,11 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     _run_guarded("hourly.update_smc_features", update_smc_features)
 
     def update_active_paper_signals() -> dict[str, Any]:
-        return run_smc_model_paper_trading(
-            _scheduler_args(timeframe=timeframe, symbols=analysis_symbols, model=models.smc_model, scaler=models.smc_scaler)
+        return run_original_baseline_paper_signals(
+            analysis_symbols, timeframe, models.original_model, models.original_scaler
         )
 
-    signal_result = _run_guarded("hourly.update_active_smc_model_paper_signals", update_active_paper_signals)
+    signal_result = _run_guarded("hourly.update_original_baseline_paper_signals", update_active_paper_signals)
     if signal_result is None:
         _log(_format_paper_summary(orders.sync()))
         return

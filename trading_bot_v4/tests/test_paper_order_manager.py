@@ -53,6 +53,16 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertEqual(result.open_positions, 0)
         manager.close()
 
+    def test_original_one_candle_window_exit_is_preserved(self):
+        manager = OrderManager(self.db)
+        manager.process_signals(signal())
+        result = manager.process_signals(signal("2026-01-01T02:00:00Z", "HOLD", 101.0))
+        trade = manager.connection.execute("SELECT exit_reason FROM closed_trades").fetchone()
+        self.assertEqual(result.orders_closed, 1)
+        self.assertEqual(result.open_positions, 0)
+        self.assertEqual(trade["exit_reason"], "window_exit")
+        manager.close()
+
     def test_risk_limit_rejects_new_order(self):
         with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_OPEN_POSITIONS", 0):
             manager = OrderManager(self.db)

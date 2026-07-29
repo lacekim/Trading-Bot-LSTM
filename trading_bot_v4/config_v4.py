@@ -54,6 +54,9 @@ class V4Config(LegacyConfig):
     PAPER_MAX_FAILED_ORDERS = int(os.getenv("PAPER_MAX_FAILED_ORDERS", "3"))
     PAPER_MAX_CANDLE_AGE_MULTIPLIER = float(os.getenv("PAPER_MAX_CANDLE_AGE_MULTIPLIER", "2.5"))
     PAPER_STOP_TARGET_PRIORITY = os.getenv("PAPER_STOP_TARGET_PRIORITY", "STOP_FIRST").upper()
+    # Preserve the original 1h strategy's one-candle trade window. Protective
+    # monitoring may close sooner; otherwise the next hourly close exits.
+    PAPER_MAX_HOLD_CANDLES = int(os.getenv("PAPER_MAX_HOLD_CANDLES", "1"))
     POSITION_MONITOR_INTERVAL_SECONDS = int(os.getenv("POSITION_MONITOR_INTERVAL_SECONDS", "10"))
     POSITION_MONITOR_FAILURE_THRESHOLD = int(os.getenv("POSITION_MONITOR_FAILURE_THRESHOLD", "3"))
     POSITION_MONITOR_MAX_PRICE_AGE_SECONDS = int(os.getenv("POSITION_MONITOR_MAX_PRICE_AGE_SECONDS", "180"))

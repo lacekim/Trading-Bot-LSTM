@@ -1,6 +1,8 @@
 *.csv
 !reports/v5_bearish_validation.csv
 !reports/v5_bearish_walk_forward.csv
+!reports/v5_production_backtest_summary.csv
+!reports/v5_production_backtest_portfolio.json
 logs/
 runtime/
 *.log

@@ -1,0 +1,11 @@
+{
+  "engine": "V5_ORIGINAL_LONG_PLUS_BEARISH_SHORT",
+  "timeframe": "1h",
+  "qualification_policy": "IGNORED FOR DIAGNOSTIC RESEARCH; every selected asset may trade both directions",
+  "qualified_long_symbols": [],
+  "qualified_short_symbols": [],
+  "assets_tested": 1,
+  "eligible_assets": 1,
+  "equal_weight_return_pct": -19.51288928254745,
+  "warning": "Diagnostic only: qualification was bypassed and model results may include training-period observations."
+}

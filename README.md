@@ -2,6 +2,12 @@
 
 V5 is a continuously running cryptocurrency research, model-inference, asset-selection, and persistent paper-trading system built around GMX market data. It combines an original CNN/LSTM price-direction model with optional Smart Money Concepts (SMC), daily GO/NO-GO qualification, hourly signal processing, portfolio risk controls, a decision dashboard, Telegram monitoring, safe shutdown controls, and Web3 read-only readiness checks.
 
+The original 1-hour CNN/LSTM is the active LONG baseline. SMC is an optional
+research/challenger path and does not silently replace baseline LONG signals.
+The independently trained and promoted bearish model supplies SHORT signals.
+Protective stops and targets are monitored every 10 seconds; positions still
+retain the original strategy's next-hour closed-candle window exit.
+
 The Python package is still named `trading_bot_v4` for compatibility with earlier versions of the project. The current user-facing scheduler and dashboard are V5.
 
 > **Safety status:** PAPER mode is the supported execution mode. Web3 can perform read-only Arbitrum health checks, but GMX transaction construction, signing, broadcasting, and on-chain position reconciliation are not implemented. `LIVE_SMALL` and `LIVE` fail safely instead of submitting transactions.
@@ -539,10 +545,24 @@ python -m trading_bot_v4.main --train-smc-model
 
 ```bash
 # One symbol
-python -m trading_bot_v4.main --backtest --symbol BTC --timeframe 1h
+python -m trading_bot_v4.main --backtest-production --symbol BTC --timeframe 1h
 
 # Entire available GMX universe
-python -m trading_bot_v4.main --backtest --all-assets --timeframe 1h
+python -m trading_bot_v4.main --backtest-production --all-assets --timeframe 1h
+
+`--backtest-production` evaluates the independent LONG and SHORT models per
+asset with the persistent-position, reversal, 2% stop, 4% target, fee, slippage,
+and direction-specific qualification rules used by the paper scheduler. Reports are
+written under `reports/v5_production_backtest_*`. Qualification is the current
+daily snapshot; the report explicitly warns that this is not a reconstructed
+historical daily walk-forward selection.
+
+The older `--backtest` command remains available only as the labeled legacy
+upside-only, next-candle baseline. Do not use its result as V5 performance.
+
+To diagnose both directional models across assets without claiming that the
+trades passed production qualification, add `--ignore-qualification`. That mode
+is clearly labeled research-only in its JSON report.
 
 # Rank backtest results
 python -m trading_bot_v4.main --backtest-rank --timeframe 1h

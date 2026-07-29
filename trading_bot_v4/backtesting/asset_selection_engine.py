@@ -212,13 +212,15 @@ def _performance_overrides(symbol: str, performance: pd.DataFrame) -> dict[str, 
         return {}
     row = rows.iloc[0]
     return {
-        "profit_factor": float(row.get("smc_profit_factor", row.get("original_profit_factor", 0.0))),
-        "trade_frequency_pct": _safe_ratio(float(row.get("smc_trade_count", 0.0)), float(row.get("shared_timestamps", 0.0))) * 100.0,
-        "constrained_smc_return_pct": float(row.get("smc_return_pct", np.nan)),
-        "constrained_smc_profit_factor": float(row.get("smc_profit_factor", np.nan)),
-        "constrained_smc_max_drawdown_pct": float(row.get("smc_max_drawdown_pct", np.nan)),
-        "smc_vs_original_improvement_pct": float(row.get("return_difference_pct", np.nan)),
-        "constrained_smc_trade_count": float(row.get("smc_trade_count", np.nan)),
+        "profit_factor": float(row.get("original_profit_factor", 0.0)),
+        "trade_frequency_pct": _safe_ratio(float(row.get("original_trade_count", 0.0)), float(row.get("shared_timestamps", 0.0))) * 100.0,
+        # Compatibility column names are retained for existing reports, but the
+        # active baseline qualification values now come from the original model.
+        "constrained_smc_return_pct": float(row.get("original_return_pct", np.nan)),
+        "constrained_smc_profit_factor": float(row.get("original_profit_factor", np.nan)),
+        "constrained_smc_max_drawdown_pct": float(row.get("original_max_drawdown_pct", np.nan)),
+        "smc_vs_original_improvement_pct": 0.0,
+        "constrained_smc_trade_count": float(row.get("original_trade_count", np.nan)),
         "shared_timestamps": float(row.get("shared_timestamps", np.nan)),
     }
 
@@ -232,7 +234,7 @@ def _load_walk_forward_stability(timeframe: str) -> dict[str, float]:
     summary["symbol"] = summary["symbol"].astype(str).str.upper()
     summary = summary.loc[summary["timeframe"].astype(str).eq(str(timeframe))]
     if "strategy" in summary.columns:
-        preferred = summary.loc[summary["strategy"].astype(str).eq("smc_filtered")]
+        preferred = summary.loc[summary["strategy"].astype(str).eq("baseline")]
         if not preferred.empty:
             summary = preferred
 

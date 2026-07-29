@@ -15,7 +15,7 @@ from trading_bot import list_gmx_symbols
 from trading_bot_v4.backtesting.asset_selection_engine import run_asset_ranking
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.core.data_handler import V4DataHandler
-from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
+from trading_bot_v4.execution.paper_model_comparison import run_original_baseline_paper_signals
 from trading_bot_v4.execution.validated_whitelist_performance import (
     _load_top_validated_symbols,
     run_go_assets_performance,
@@ -610,13 +610,14 @@ def run_daily_research(args: Any) -> DailyResearchResult:
     )
     rankings = ranking_result.rankings
 
-    run_smc_model_paper_trading(
-        _daily_args(
-            timeframe=timeframe,
-            all_assets=True,
-            model=getattr(args, "smc_model", None),
-            scaler=getattr(args, "smc_scaler", None),
-        )
+    original_model = getattr(args, "model", None)
+    original_scaler = getattr(args, "scaler", None)
+    if original_model is None or original_scaler is None:
+        from trading_bot_v4.utils.model_cache import ModelScalerCache
+        original_model, original_scaler = ModelScalerCache().load()
+    run_original_baseline_paper_signals(
+        sorted({str(symbol).upper() for symbol in list_gmx_symbols(timeframe)}),
+        timeframe, original_model, original_scaler,
     )
 
     validation_symbols = sorted({str(symbol).upper() for symbol in list_gmx_symbols(timeframe)})

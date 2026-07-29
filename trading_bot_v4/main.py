@@ -22,6 +22,7 @@ from trading_bot_v4.core.data_handler import V4DataHandler
 from trading_bot_v4.ml.trainer import train_v4_model
 from trading_bot_v4.ml.predictor import predict_with_v4_model
 from trading_bot_v4.backtesting.backtest_engine import run_v4_backtest
+from trading_bot_v4.backtesting.production_backtest import run_production_backtest
 from trading_bot_v4.backtesting.comparison_engine import run_v4_compare_original
 from trading_bot_v4.backtesting.ranking_engine import run_v4_backtest_ranking
 from trading_bot_v4.backtesting.asset_selection_engine import run_asset_ranking, validate_asset_rankings
@@ -67,6 +68,8 @@ def parse_args():
     parser.add_argument("--train", action="store_true", help="Train the original CNN/LSTM model via V4 modules")
     parser.add_argument("--predict", action="store_true", help="Load the saved model and generate a sample prediction")
     parser.add_argument("--backtest", action="store_true", help="Run a V4 backtest over one asset or all assets")
+    parser.add_argument("--backtest-production", action="store_true", help="Backtest the V5 LONG/SHORT models, qualification, persistent positions, and protection rules")
+    parser.add_argument("--ignore-qualification", action="store_true", help="Research only: let both V5 models trade every selected asset during --backtest-production")
     parser.add_argument("--backtest-rank", action="store_true", help="Backtest every GMX asset and rank them by risk-adjusted performance")
     parser.add_argument("--smc-shadow-backtest", action="store_true", help="Compare baseline model behavior against selected SMC filters")
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
@@ -168,7 +171,11 @@ def main():
         predict_with_v4_model()
         return 0
     if args.backtest:
+        print("WARNING: --backtest is the legacy upside-only, next-candle baseline; it is not the V5 production strategy.")
         run_v4_backtest(args)
+        return 0
+    if args.backtest_production:
+        run_production_backtest(args)
         return 0
     if args.backtest_rank:
         run_v4_backtest_ranking(args)

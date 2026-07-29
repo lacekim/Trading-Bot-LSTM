@@ -478,6 +478,25 @@ class OrderManager:
         minimum = self._timeframe_seconds(str(row["timeframe"])) * Config.PAPER_MIN_BARS_BETWEEN_TRADES
         return "symbol entry cooldown active" if elapsed < minimum else None
 
+    def _position_window_expired(self, position: sqlite3.Row, row: Any) -> bool:
+        """Preserve the baseline strategy's next-closed-candle window exit."""
+        max_candles = int(Config.PAPER_MAX_HOLD_CANDLES)
+        if max_candles <= 0:
+            return False
+        signal = self.connection.execute(
+            "SELECT candle_timestamp FROM signals WHERE signal_id=?", (position["signal_id"],)
+        ).fetchone()
+        if signal is None:
+            return False
+        entered = pd.Timestamp(signal["candle_timestamp"])
+        current = pd.Timestamp(row["timestamp"])
+        if entered.tzinfo is None:
+            entered = entered.tz_localize("UTC")
+        if current.tzinfo is None:
+            current = current.tz_localize("UTC")
+        elapsed = (current - entered).total_seconds()
+        return elapsed >= self._timeframe_seconds(str(row["timeframe"])) * max_candles
+
     def cancel_pending_entries(self) -> int:
         cursor = self.connection.execute(
             "UPDATE orders SET status='CANCELLED' WHERE status='PENDING' AND order_kind='ENTRY'"
@@ -662,10 +681,14 @@ class OrderManager:
                 hit_stop = candle_low <= position["stop_price"] if position["direction"] == "LONG" else candle_high >= position["stop_price"]
                 hit_target = candle_high >= position["target_price"] if position["direction"] == "LONG" else candle_low <= position["target_price"]
                 reverse = row["model_direction"] in {"LONG", "SHORT"} and row["model_direction"] != position["direction"]
-                if hit_stop or hit_target or reverse:
+                window_expired = self._position_window_expired(position, row)
+                if hit_stop or hit_target or reverse or window_expired:
                     stop_first = Config.PAPER_STOP_TARGET_PRIORITY == "STOP_FIRST"
                     use_stop = hit_stop and (not hit_target or stop_first)
-                    reason = "stop_loss" if use_stop else "take_profit" if hit_target else "signal_reversal"
+                    reason = (
+                        "stop_loss" if use_stop else "take_profit" if hit_target
+                        else "signal_reversal" if reverse else "window_exit"
+                    )
                     if reason == "stop_loss":
                         exit_reference = min(candle_open, position["stop_price"]) if position["direction"] == "LONG" else max(candle_open, position["stop_price"])
                     elif reason == "take_profit":
