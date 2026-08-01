@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from html import escape
 import threading
 import time
 from typing import Any, Callable
@@ -73,6 +74,9 @@ class QualifiedMarketMonitor:
             begin_cycle()
         long_symbols, short_symbols = self.qualified_symbols()
         symbols = sorted(set(long_symbols) | set(short_symbols))
+        canary_only = not symbols
+        if canary_only and Config.QUALIFIED_MARKET_CANARY_SYMBOL:
+            symbols = [Config.QUALIFIED_MARKET_CANARY_SYMBOL]
         prepare_cycle = getattr(self.provider, "prepare_cycle", None)
         if symbols and callable(prepare_cycle):
             prepare_cycle()
@@ -110,28 +114,40 @@ class QualifiedMarketMonitor:
             self.log(f"WARNING qualified market feed failure #{self._failures}: {message}")
             if self._failures >= Config.POSITION_MONITOR_FAILURE_THRESHOLD and not self._alerted:
                 self._alerted = True
-                self._alert(f"🚨 <b>QUALIFIED MARKET FEED DEGRADED</b>\n<code>{message}</code>")
+                self._alert(
+                    "🚨 <b>QUALIFIED MARKET FEED DEGRADED</b>\n"
+                    f"<code>{escape(message)}</code>\n"
+                    "Fresh entries are blocked until an executable GMX quote recovers.\n"
+                    "Existing positions remain persisted and use the separate protective monitor."
+                )
         else:
             if self._failures:
                 self.log("Qualified market feed recovered")
+                if self._alerted:
+                    self._alert(
+                        "✅ <b>QUALIFIED MARKET FEED RECOVERED</b>\n"
+                        "Fresh executable GMX quotes are available again."
+                    )
             self._failures = 0
             self._alerted = False
         if wide:
             self.log(f"WARNING qualified market wide spread: {'; '.join(wide)}")
             if not self._spread_alerted:
                 self._spread_alerted = True
-                self._alert(f"⚠️ <b>QUALIFIED MARKET WIDE SPREAD</b>\n<code>{'; '.join(wide)}</code>")
+                self._alert(f"⚠️ <b>QUALIFIED MARKET WIDE SPREAD</b>\n<code>{escape('; '.join(wide))}</code>")
         else:
             self._spread_alerted = False
         self.controller.update_runtime_snapshot(
             qualified_market_status="degraded" if errors else "healthy",
             qualified_market_symbols=checked,
+            qualified_market_canary_only=canary_only,
             qualified_market_failures=self._failures,
             qualified_market_last_error="; ".join(errors),
             qualified_market_last_update=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         )
         self._last_heartbeat_monotonic = time.monotonic()
-        return {"symbols": symbols, "checked": checked, "errors": errors, "wide_spreads": wide}
+        return {"symbols": symbols, "checked": checked, "errors": errors,
+                "wide_spreads": wide, "canary_only": canary_only}
 
     def _run(self) -> None:
         manager = OrderManager(self.db_path)

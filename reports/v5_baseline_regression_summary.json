@@ -1,0 +1,29 @@
+{
+  "reference_report": "v4_ranked_backtest_summary.csv",
+  "current_report": "trading_bot_gmx_1h_all_assets_summary.csv",
+  "report_format": "independent per-asset backtests; not a shared-capital portfolio",
+  "reference": {
+    "assets": 112,
+    "mean_return_pct": -12.633622050299737,
+    "median_return_pct": -15.966543370534005,
+    "profitable_assets": 27,
+    "losing_assets": 85,
+    "flat_assets": 0,
+    "best_return_pct": 237.56981283492144,
+    "worst_return_pct": -99.93506358851708
+  },
+  "current": {
+    "assets": 120,
+    "mean_return_pct": -19.355833131641223,
+    "median_return_pct": -21.621690017544015,
+    "profitable_assets": 14,
+    "losing_assets": 103,
+    "flat_assets": 3,
+    "best_return_pct": 238.11908658740023,
+    "worst_return_pct": -99.92241831684431
+  },
+  "mean_change_percentage_points": -6.722211081341486,
+  "median_change_percentage_points": -5.65514664701001,
+  "profitable_asset_change": -13,
+  "matched_assets": 112
+}

@@ -22,8 +22,13 @@ class QualifiedMarketMonitorTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.db = Path(self.temp.name) / "paper.sqlite3"
+        self.market_cap_risk = patch(
+            "trading_bot_v4.execution.order_manager.Config.MARKET_CAP_RISK_ENABLED", False
+        )
+        self.market_cap_risk.start()
 
     def tearDown(self):
+        self.market_cap_risk.stop()
         self.temp.cleanup()
 
     def test_records_pair_spread_and_health_without_generating_entry(self):
@@ -51,6 +56,19 @@ class QualifiedMarketMonitorTests(unittest.TestCase):
         )
         self.assertFalse(monitor.is_healthy())
         self.assertEqual(monitor.health_issue(), "thread_stopped")
+
+    def test_empty_universe_checks_real_canary_feed(self):
+        manager = OrderManager(self.db)
+        monitor = QualifiedMarketMonitor(
+            ShutdownController(), lambda: ([], []), provider=PairProvider(), db_path=self.db,
+        )
+        with patch("trading_bot_v4.execution.qualified_market_monitor.Config.QUALIFIED_MARKET_CANARY_SYMBOL", "BTC"), \
+             patch("trading_bot_v4.execution.qualified_market_monitor.Config.QUALIFIED_MARKET_MAX_SPREAD_BPS", 500):
+            result = monitor.run_once(manager)
+        self.assertTrue(result["canary_only"])
+        self.assertEqual(result["symbols"], ["BTC"])
+        self.assertEqual(result["checked"], 1)
+        manager.close()
 
     def test_hourly_entry_uses_fresh_directional_snapshot_and_audits_prices(self):
         manager = OrderManager(self.db)

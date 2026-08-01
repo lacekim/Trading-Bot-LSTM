@@ -8,6 +8,13 @@ The independently trained and promoted bearish model supplies SHORT signals.
 Protective stops and targets are monitored every 10 seconds; positions still
 retain the original strategy's next-hour closed-candle window exit.
 
+Original LONG, SMC research, and bearish SHORT signals are persisted separately.
+Daily qualification snapshots are retained under `reports/qualification_history/`,
+and model hashes are recorded under `reports/model_versions/` so forward results
+can be tied to the exact artifacts that produced them. When no asset qualifies,
+the market monitor checks BTC as a feed-health canary instead of declaring the
+feed healthy without making a request.
+
 The Python package is still named `trading_bot_v4` for compatibility with earlier versions of the project. The current user-facing scheduler and dashboard are V5.
 
 > **Safety status:** PAPER mode is the supported execution mode. Web3 can perform read-only Arbitrum health checks, but GMX transaction construction, signing, broadcasting, and on-chain position reconciliation are not implemented. `LIVE_SMALL` and `LIVE` fail safely instead of submitting transactions.
@@ -549,20 +556,120 @@ python -m trading_bot_v4.main --backtest-production --symbol BTC --timeframe 1h
 
 # Entire available GMX universe
 python -m trading_bot_v4.main --backtest-production --all-assets --timeframe 1h
+```
 
 `--backtest-production` evaluates the independent LONG and SHORT models per
-asset with the persistent-position, reversal, 2% stop, 4% target, fee, slippage,
-and direction-specific qualification rules used by the paper scheduler. Reports are
+asset with the persistent-position, reversal, ATR stop/target, fee, slippage,
+and direction-specific qualification rules used by the paper scheduler. New
+LONG entries require a fresh bullish MACD crossover above the trailing 200-hour
+average; SHORT entries require a fresh bearish crossover below that average.
+Positions remain protected every 10 seconds and may remain open for at most eight
+hourly candles, exiting sooner on a stop, target, or model reversal. Reports are
 written under `reports/v5_production_backtest_*`. Qualification is the current
 daily snapshot; the report explicitly warns that this is not a reconstructed
 historical daily walk-forward selection.
 
+New paper entries also pass a capitalization and GMX-depth risk layer. Premium,
+large-, mid-, and small-cap assets risk at most 1.00%, 0.75%, 0.50%, and 0.25%
+respectively, with maximum position sizes of 20%, 15%, 10%, and 5%. Assets below
+$20 million are watch-only. Small-cap exposure is limited to one simultaneous
+position. A stale/missing capitalization snapshot, insufficient directional GMX
+liquidity/open interest, an excessive spread, or a deprecated/migrated contract
+blocks entry. The tier and sizing inputs are persisted with each opened position.
+
 The older `--backtest` command remains available only as the labeled legacy
 upside-only, next-candle baseline. Do not use its result as V5 performance.
+
+### VVV persistent forward-paper policy
+
+VVV uses an explicit lower-turnover policy shared by model inference,
+production backtesting, and paper execution: symmetric 0.60/0.40 directions,
+0.5 ATR stop, 20 ATR target, and a 240-hour maximum hold. Stops, targets, and
+hourly reversals can close sooner. GMX admission/feed checks remain active,
+while MACD and market-cap sizing caps do not suppress this paper candidate.
+The ATR stop still sizes the position to 1% account risk. VVV is included in
+hourly analysis and live-price collection during the forward test even if the
+daily research label is NO-GO; other assets retain their existing qualification
+and execution rules.
+
+The defaults can be overridden without code changes:
+
+```env
+PERSISTENT_POLICY_SYMBOLS=VVV
+PERSISTENT_SIGNAL_THRESHOLD=0.60
+PERSISTENT_STOP_ATR=0.50
+PERSISTENT_TARGET_ATR=20.0
+PERSISTENT_MAX_HOLD_CANDLES=240
+```
+
+Open-position protection uses GMX `/prices/tickers` first and a fresh GMX
+one-minute candle second. If both GMX sources fail and Kraken lists the symbol,
+the paper monitor uses Kraken's public ticker as an emergency cross-venue
+fallback (bid for LONG exits, ask for SHORT exits). Public market data does not
+require a Kraken API key. Configure it with:
+
+```env
+POSITION_MONITOR_KRAKEN_FALLBACK_ENABLED=true
+POSITION_MONITOR_KRAKEN_TIMEOUT_SECONDS=5
+KRAKEN_PUBLIC_API_BASE=https://api.kraken.com/0/public
+```
+
+The recorded exit source identifies Kraken fallback fills. GMX degradation is
+still reported because Kraken and GMX can diverge; fallback protection must not
+be presented as proof that the GMX venue feed is healthy.
+
+### TradingView historical data
+
+TradingView 1-hour OHLCV exports can supplement history that is unavailable in
+the local GMX/Kraken archives. Export raw OHLCV (indicators are calculated by
+the bot), then import each CSV with:
+
+```bash
+python -m trading_bot_v4.main --import-tradingview "/path/to/BINANCE_XRPUSDT.csv" --tradingview-symbol XRP --timeframe 1h
+```
+
+Normalized files are stored under `data/TradingView_OHLCVT` by default. Set
+`TRADINGVIEW_HISTORY_DIR` to change that location. Training and backtests
+automatically prepend TradingView candles that are older than the first local
+GMX candle. TradingView never replaces an overlapping GMX candle, and live
+pricing and paper execution remain GMX-based.
 
 To diagnose both directional models across assets without claiming that the
 trades passed production qualification, add `--ignore-qualification`. That mode
 is clearly labeled research-only in its JSON report.
+
+Use `--model-sides long`, `--model-sides short`, or `--model-sides both` to
+isolate model contributions. `--zero-costs` is exclusively a baseline-parity
+research switch; it must never be reported as executable performance. The
+direct saved-report comparison is:
+
+```bash
+python -m trading_bot_v4.main --baseline-regression
+```
+
+Cost-aware entry gates can be evaluated without altering the protected baseline:
+
+```bash
+python -m trading_bot_v4.main --research-entry-filter --all-assets --timeframe 1h --capital 100000
+```
+
+The research command uses the first 70% of each asset for development and the
+last 30% for validation. A gate is not promoted unless it cuts trades by at
+least half, has adequate development and validation samples, improves net
+return and profit factor after configured costs, and does not worsen drawdown.
+Its recommendation is research evidence only; it is not automatically wired
+into scheduler execution.
+
+The separate all-asset cost-aware LONG challenger can be retrained with:
+
+```bash
+python -m trading_bot_v4.main --train-cost-aware-long --timeframe 1h
+```
+
+It uses causal trailing features only, calibrates its threshold separately,
+and records untouched-holdout results in
+`models/cost_aware_long_calibration.json`. It remains inactive unless every
+promotion requirement passes.
 
 # Rank backtest results
 python -m trading_bot_v4.main --backtest-rank --timeframe 1h

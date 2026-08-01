@@ -1,0 +1,24 @@
+{
+  "chosen_on_development": {
+    "lookback": 60.0,
+    "minimum": 10.0,
+    "pf_min": 1.0,
+    "selected_assets": 1.0,
+    "return_pct": 195.27727007372167,
+    "trades": 200.0,
+    "max_drawdown_pct": -49.78462527820423,
+    "selection_days": 125.0
+  },
+  "validation": {
+    "return_pct": -26.9739976664927,
+    "trades": 125,
+    "max_drawdown_pct": -46.48333844727407,
+    "selection_days": 89
+  },
+  "full_causal": {
+    "return_pct": 73.12926574498735,
+    "trades": 324,
+    "max_drawdown_pct": -53.57511621900988,
+    "selection_days": 213
+  }
+}

@@ -1,2 +1,2 @@
-symbol,entry_eligible,candles,trades,long_trades,short_trades,starting_capital,final_capital,return_pct,win_rate_pct,max_drawdown_pct,profit_factor,qualified_long,qualified_short
-VVV,True,5221,1265,1220,45,10000.0,8048.711071745255,-19.51288928254745,41.89723320158103,-21.702887261252002,0.8021543950644845,True,True
+symbol,entry_eligible,candles,trades,long_trades,short_trades,starting_capital,final_capital,return_pct,win_rate_pct,max_drawdown_pct,profit_factor,qualified_long,qualified_short,long_risk_allowed,short_risk_allowed,market_cap_tier,market_cap_usd,tier_risk_pct,tier_max_position_pct,long_risk_reason,short_risk_reason
+VVV,True,5236,138,135,3,100000.0,386139.01805932925,286.13901805932926,12.318840579710146,-43.3845685162227,1.8863981844747852,True,True,True,True,MID,575386581.0,0.5,10.0,,

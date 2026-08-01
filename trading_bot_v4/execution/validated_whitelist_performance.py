@@ -16,7 +16,7 @@ from trading_bot_v4.execution.paper_model_performance import (
     _require_file,
     _simulate_prepared_signals,
 )
-from trading_bot_v4.execution.smc_model_paper import SMC_MODEL_PAPER_SIGNALS_PATH, VALIDATED_WHITELIST_PAPER_SIGNALS_PATH
+from trading_bot_v4.execution.paper_model_comparison import ORIGINAL_BASELINE_SIGNALS_PATH
 
 
 VALIDATED_WHITELIST_ASSETS = ["PENGU", "DYDX", "AIXBT"]
@@ -83,7 +83,7 @@ def _load_validated_whitelist_signals(
     timeframe: str,
     assets: list[str],
     recent_days: int = 0,
-    signals_path: Path = VALIDATED_WHITELIST_PAPER_SIGNALS_PATH,
+    signals_path: Path = ORIGINAL_BASELINE_SIGNALS_PATH,
 ) -> pd.DataFrame:
     _require_file(signals_path, "paper signals")
     signals = pd.read_csv(signals_path)
@@ -309,7 +309,7 @@ def run_validated_whitelist_recent_sweep(args: Any) -> ValidatedWhitelistRecentS
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
     symbol = str(getattr(args, "asset", "") or getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
-    signals_path = Path(getattr(args, "signals_path", VALIDATED_WHITELIST_PAPER_SIGNALS_PATH))
+    signals_path = Path(getattr(args, "signals_path", ORIGINAL_BASELINE_SIGNALS_PATH))
     output_path = getattr(args, "sweep_output_path", None)
     windows = [7, 14, 30, 60, 90]
 

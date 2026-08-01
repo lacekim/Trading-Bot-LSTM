@@ -8,7 +8,8 @@ import pandas as pd
 
 from trading_bot_v4.execution.order_manager import OrderManager
 from trading_bot_v4.execution.position_monitor import (
-    GMXMinutePriceProvider, GMXTickerPriceProvider, MarketPrice, PositionMonitor,
+    GMXMinutePriceProvider, GMXTickerPriceProvider, KrakenTickerPriceProvider,
+    MarketPrice, PositionMonitor,
 )
 from trading_bot_v4.shutdown_controller import ShutdownController
 
@@ -33,6 +34,11 @@ class StaticProvider:
         return MarketPrice(symbol, self.price, pd.Timestamp.now(tz="UTC").isoformat(), 0.0)
 
 
+class AlwaysFailProvider:
+    def fetch(self, symbol, direction=None):
+        raise ConnectionError(f"feed down for {symbol} {direction or ''}")
+
+
 class FailingProvider:
     def fetch(self, symbol): raise ConnectionError(f"feed unavailable for {symbol}")
 
@@ -41,11 +47,17 @@ class PositionMonitorTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.db = Path(self.temp.name) / "paper.sqlite3"
+        self.market_cap_risk = patch(
+            "trading_bot_v4.execution.order_manager.Config.MARKET_CAP_RISK_ENABLED", False
+        )
+        self.market_cap_risk.start()
         manager = OrderManager(self.db)
         manager.process_signals(_signal())
         manager.close()
 
-    def tearDown(self): self.temp.cleanup()
+    def tearDown(self):
+        self.market_cap_risk.stop()
+        self.temp.cleanup()
 
     def test_monitor_closes_stop_immediately_and_persists_observed_price(self):
         controller, notifier, provider = ShutdownController(), FakeNotifier(), StaticProvider(97.0)
@@ -144,10 +156,21 @@ class PositionMonitorTests(unittest.TestCase):
         manager = OrderManager(self.db)
         for _ in range(3): monitor.run_once(manager)
         self.assertEqual(monitor._consecutive_failures, 3)
-        self.assertTrue(any("POSITION MONITOR DEGRADED" in text for text in notifier.messages))
+        self.assertTrue(any("POSITION MONITOR FEEDS FAILED" in text for text in notifier.messages))
         status = manager.connection.execute("SELECT value FROM runtime_state WHERE key='position_monitor_status'").fetchone()["value"]
         self.assertEqual(status, "degraded")
         manager.close()
+
+    def test_monitor_alert_cooldown_survives_brief_recovery(self):
+        monitor = PositionMonitor(ShutdownController(), FakeNotifier(), StaticProvider(100.0), self.db)
+        with patch(
+            "trading_bot_v4.execution.position_monitor.Config.POSITION_MONITOR_ALERT_COOLDOWN_SECONDS", 900
+        ):
+            self.assertTrue(monitor._alert_allowed("ticker_fallback"))
+            monitor._failure_alerted = False  # a successful cycle clears only the streak latch
+            self.assertFalse(monitor._alert_allowed("ticker_fallback"))
+            self.assertTrue(monitor._alert_allowed("all_feeds_failed"))
+            self.assertFalse(monitor._alert_allowed("ticker_fallback"))
 
     def test_monitor_thread_starts_immediately_and_stops_cleanly(self):
         monitor = PositionMonitor(ShutdownController(), FakeNotifier(), StaticProvider(100.0), self.db, interval_seconds=1)
@@ -209,6 +232,32 @@ class PriceProviderTests(unittest.TestCase):
             quote = provider.fetch("PUMP", "LONG")
         self.assertEqual(quote.source, "GMX_1M_FALLBACK")
         self.assertIn("ticker down", quote.fallback_reason)
+
+    def test_kraken_public_ticker_uses_bid_for_long_and_ask_for_short(self):
+        class Response:
+            def raise_for_status(self): return None
+            def json(self):
+                return {"error": [], "result": {"VVVUSD": {"a": ["11.02"], "b": ["10.98"]}}}
+
+        with patch("trading_bot_v4.execution.position_monitor.requests.get", return_value=Response()):
+            provider = KrakenTickerPriceProvider()
+            long_quote = provider.fetch("VVV", "LONG")
+            short_quote = provider.fetch("VVV", "SHORT")
+        self.assertEqual(long_quote.price, 10.98)
+        self.assertEqual(long_quote.source, "KRAKEN_TICKER_BID")
+        self.assertEqual(short_quote.price, 11.02)
+        self.assertEqual(short_quote.source, "KRAKEN_TICKER_ASK")
+
+    def test_both_gmx_failures_fall_back_to_kraken(self):
+        kraken = StaticProvider(10.98)
+        provider = GMXTickerPriceProvider(
+            fallback=AlwaysFailProvider(), kraken_fallback=kraken
+        )
+        with patch.object(provider, "_fetch_ticker", side_effect=ConnectionError("ticker down")):
+            quote = provider.fetch("VVV", "LONG")
+        self.assertEqual(quote.price, 10.98)
+        self.assertIn("GMX ticker failed", quote.fallback_reason)
+        self.assertIn("GMX 1m failed", quote.fallback_reason)
 
     def test_primary_failure_is_not_retried_for_every_position_in_cycle(self):
         fallback = StaticProvider(0.002)

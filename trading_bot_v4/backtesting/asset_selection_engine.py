@@ -211,18 +211,25 @@ def _performance_overrides(symbol: str, performance: pd.DataFrame) -> dict[str, 
     if rows.empty:
         return {}
     row = rows.iloc[0]
-    return {
+    baseline = {
         "profit_factor": float(row.get("original_profit_factor", 0.0)),
         "trade_frequency_pct": _safe_ratio(float(row.get("original_trade_count", 0.0)), float(row.get("shared_timestamps", 0.0))) * 100.0,
-        # Compatibility column names are retained for existing reports, but the
-        # active baseline qualification values now come from the original model.
-        "constrained_smc_return_pct": float(row.get("original_return_pct", np.nan)),
-        "constrained_smc_profit_factor": float(row.get("original_profit_factor", np.nan)),
-        "constrained_smc_max_drawdown_pct": float(row.get("original_max_drawdown_pct", np.nan)),
+        "baseline_return_pct": float(row.get("original_return_pct", np.nan)),
+        "baseline_profit_factor": float(row.get("original_profit_factor", np.nan)),
+        "baseline_max_drawdown_pct": float(row.get("original_max_drawdown_pct", np.nan)),
+        "baseline_trade_count": float(row.get("original_trade_count", np.nan)),
         "smc_vs_original_improvement_pct": 0.0,
-        "constrained_smc_trade_count": float(row.get("original_trade_count", np.nan)),
         "shared_timestamps": float(row.get("shared_timestamps", np.nan)),
     }
+    # Temporary compatibility aliases for historical report readers. New
+    # qualification code consumes the explicitly named baseline fields above.
+    baseline.update({
+        "constrained_smc_return_pct": baseline["baseline_return_pct"],
+        "constrained_smc_profit_factor": baseline["baseline_profit_factor"],
+        "constrained_smc_max_drawdown_pct": baseline["baseline_max_drawdown_pct"],
+        "constrained_smc_trade_count": baseline["baseline_trade_count"],
+    })
+    return baseline
 
 
 def _load_walk_forward_stability(timeframe: str) -> dict[str, float]:

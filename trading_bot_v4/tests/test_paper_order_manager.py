@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pandas as pd
 
 from trading_bot_v4.execution.order_manager import OrderManager
+from trading_bot_v4.risk.market_cap_tiers import AssetRiskDecision
 
 
 def signal(timestamp="2026-01-01T01:00:00Z", direction="LONG", price=100.0, symbol="BTC", **ohlc):
@@ -19,8 +20,13 @@ class PaperOrderManagerTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.db = Path(self.temp.name) / "paper.sqlite3"
+        self.market_cap_risk = patch(
+            "trading_bot_v4.execution.order_manager.Config.MARKET_CAP_RISK_ENABLED", False
+        )
+        self.market_cap_risk.start()
 
     def tearDown(self):
+        self.market_cap_risk.stop()
         self.temp.cleanup()
 
     def test_persists_and_deduplicates_position(self):
@@ -34,13 +40,14 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertEqual(restored.open_positions, 1)
 
     def test_reversal_closes_and_respects_symbol_cooldown(self):
-        manager = OrderManager(self.db)
-        manager.process_signals(signal())
-        result = manager.process_signals(signal("2026-01-01T02:00:00Z", "SHORT", 101.0))
-        self.assertEqual(result.orders_closed, 1)
-        self.assertEqual(result.orders_opened, 0)
-        self.assertIn("cooldown", result.rejection_reasons)
-        manager.close()
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MIN_BARS_BETWEEN_TRADES", 4):
+            manager = OrderManager(self.db)
+            manager.process_signals(signal())
+            result = manager.process_signals(signal("2026-01-01T02:00:00Z", "SHORT", 101.0))
+            self.assertEqual(result.orders_closed, 1)
+            self.assertEqual(result.orders_opened, 0)
+            self.assertIn("cooldown", result.rejection_reasons)
+            manager.close()
 
     def test_exit_only_reversal_closes_without_opening_unqualified_short(self):
         manager = OrderManager(self.db)
@@ -53,15 +60,16 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertEqual(result.open_positions, 0)
         manager.close()
 
-    def test_original_one_candle_window_exit_is_preserved(self):
-        manager = OrderManager(self.db)
-        manager.process_signals(signal())
-        result = manager.process_signals(signal("2026-01-01T02:00:00Z", "HOLD", 101.0))
-        trade = manager.connection.execute("SELECT exit_reason FROM closed_trades").fetchone()
-        self.assertEqual(result.orders_closed, 1)
-        self.assertEqual(result.open_positions, 0)
-        self.assertEqual(trade["exit_reason"], "window_exit")
-        manager.close()
+    def test_configured_window_exit_is_enforced(self):
+        with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_HOLD_CANDLES", 1):
+            manager = OrderManager(self.db)
+            manager.process_signals(signal())
+            result = manager.process_signals(signal("2026-01-01T02:00:00Z", "HOLD", 101.0))
+            trade = manager.connection.execute("SELECT exit_reason FROM closed_trades").fetchone()
+            self.assertEqual(result.orders_closed, 1)
+            self.assertEqual(result.open_positions, 0)
+            self.assertEqual(trade["exit_reason"], "window_exit")
+            manager.close()
 
     def test_risk_limit_rejects_new_order(self):
         with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MAX_OPEN_POSITIONS", 0):
@@ -107,6 +115,25 @@ class PaperOrderManagerTests(unittest.TestCase):
             self.assertEqual(result.orders_opened, 0)
             self.assertIn("maximum trades per day", result.rejection_reasons)
             manager.close()
+
+    def test_small_cap_tier_caps_position_and_persists_entry_risk(self):
+        manager = OrderManager(self.db)
+        observed_at = pd.Timestamp.now(tz="UTC").isoformat()
+        manager.record_qualified_market_snapshot("BTC", 99.9, 100.0, observed_at, 10.0, 5.0, 0.0)
+        decision = AssetRiskDecision(True, "SMALL", 50_000_000.0, .25, 5.0)
+        with patch("trading_bot_v4.execution.order_manager.Config.MARKET_CAP_RISK_ENABLED", True), \
+             patch("trading_bot_v4.execution.order_manager.evaluate_asset_risk", return_value=decision):
+            result = manager.process_signals(signal())
+        position = manager.connection.execute("SELECT position_id,notional FROM positions").fetchone()
+        metadata = manager.connection.execute(
+            "SELECT tier,market_cap_usd,risk_pct,max_position_pct FROM position_risk_metadata"
+        ).fetchone()
+        self.assertEqual(result.orders_opened, 1)
+        self.assertLessEqual(position["notional"], 500.0)
+        self.assertEqual(metadata["tier"], "SMALL")
+        self.assertEqual(metadata["market_cap_usd"], 50_000_000.0)
+        self.assertEqual(metadata["risk_pct"], .25)
+        manager.close()
 
     def test_whitelist_update_is_persistent(self):
         manager = OrderManager(self.db)

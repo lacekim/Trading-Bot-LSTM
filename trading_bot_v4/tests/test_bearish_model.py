@@ -44,10 +44,10 @@ class BearishModelTests(unittest.TestCase):
 
     def test_directional_activation_uses_separate_long_and_short_universes(self):
         signals = pd.DataFrame([
-            {"symbol": "LONG_OK", "model_direction": "LONG"},
-            {"symbol": "SHORT_OK", "model_direction": "SHORT"},
-            {"symbol": "SHORT_OK", "model_direction": "LONG"},
-            {"symbol": "OTHER", "model_direction": "SHORT"},
+            {"symbol": "LONG_OK", "model_direction": "LONG", "macd_line": 2, "macd_signal": 1, "macd_histogram": 1, "macd_histogram_previous": -1, "price_vs_ma200": .1},
+            {"symbol": "SHORT_OK", "model_direction": "SHORT", "macd_line": 0, "macd_signal": 1, "macd_histogram": -1, "macd_histogram_previous": 1, "price_vs_ma200": -.1},
+            {"symbol": "SHORT_OK", "model_direction": "LONG", "macd_line": 0, "macd_signal": 1, "macd_histogram": -1, "macd_histogram_previous": 1, "price_vs_ma200": .1},
+            {"symbol": "OTHER", "model_direction": "SHORT", "macd_line": 0, "macd_signal": 1, "macd_histogram": -1, "macd_histogram_previous": 1, "price_vs_ma200": -.1},
         ])
         active = _active_directional_signals(signals, ["LONG_OK"], {"SHORT_OK"})
         self.assertEqual(active[["symbol", "model_direction"]].values.tolist(), [

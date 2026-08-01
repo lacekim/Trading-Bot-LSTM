@@ -18,6 +18,8 @@ from collections import Counter
 import pandas as pd
 
 from trading_bot_v4.config_v4 import V4Config as Config
+from trading_bot_v4.risk.market_cap_tiers import AssetRiskDecision, MAX_SPREAD_BPS, evaluate_asset_risk
+from trading_bot_v4.execution.persistent_policy import policy_for
 
 
 def _now() -> str:
@@ -139,6 +141,15 @@ class OrderManager:
           direction TEXT NOT NULL, entry_time TEXT NOT NULL, exit_time TEXT NOT NULL,
           entry_price REAL NOT NULL, exit_price REAL NOT NULL,
           return_pct REAL NOT NULL, exit_reason TEXT NOT NULL, signal_id TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS signal_model_lineage (
+          signal_id TEXT PRIMARY KEY, model_side TEXT NOT NULL,
+          model_version TEXT NOT NULL, recorded_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS position_risk_metadata (
+          position_id TEXT PRIMARY KEY, symbol TEXT NOT NULL, tier TEXT NOT NULL,
+          market_cap_usd REAL NOT NULL, risk_pct REAL NOT NULL,
+          max_position_pct REAL NOT NULL, recorded_at TEXT NOT NULL
         );
         """)
         order_columns = {row[1] for row in self.connection.execute("PRAGMA table_info(orders)")}
@@ -318,7 +329,7 @@ class OrderManager:
             reason = "stop_loss" if hit_stop else "take_profit"
             accounting_price = float(position["stop_price"] if hit_stop else position["target_price"])
             monitor_id = f"monitor_{hashlib.sha256(f'{position['position_id']}|{observed_at}|{reason}'.encode()).hexdigest()[:16]}"
-            self._close_position(position, accounting_price, reason, monitor_id)
+            close_result = self._close_position(position, accounting_price, reason, monitor_id)
             self.connection.execute(
                 """INSERT INTO position_exit_events(
                     timestamp,position_id,symbol,reason,observed_price,accounting_price,observed_at,source
@@ -330,7 +341,12 @@ class OrderManager:
             return {
                 "position_id": position["position_id"], "symbol": symbol,
                 "direction": position["direction"], "reason": reason,
+                "entry_price": float(position["entry_price"]),
                 "observed_price": observed_price, "accounting_price": accounting_price,
+                "exit_price": close_result["exit_price"],
+                "gross_pnl": close_result["gross_pnl"],
+                "fees": close_result["fees"],
+                "net_pnl": close_result["net_pnl"],
                 "observed_at": observed_at, "source": source,
             }
         except Exception:
@@ -416,7 +432,7 @@ class OrderManager:
     def _risk_block_reason(self) -> str | None:
         daily = self._daily_risk()
         equity, _ = self._equity()
-        if int(daily["trades_opened"]) >= Config.PAPER_MAX_TRADES_PER_DAY:
+        if Config.PAPER_MAX_TRADES_PER_DAY > 0 and int(daily["trades_opened"]) >= Config.PAPER_MAX_TRADES_PER_DAY:
             return "maximum trades per day reached"
         if float(daily["realized_pnl"]) <= -(float(daily["start_equity"]) * Config.PAPER_MAX_DAILY_LOSS_PCT / 100.0):
             return "daily realized-loss limit reached"
@@ -480,7 +496,7 @@ class OrderManager:
 
     def _position_window_expired(self, position: sqlite3.Row, row: Any) -> bool:
         """Preserve the baseline strategy's next-closed-candle window exit."""
-        max_candles = int(Config.PAPER_MAX_HOLD_CANDLES)
+        max_candles = int(policy_for(str(position["symbol"])).max_hold_candles)
         if max_candles <= 0:
             return False
         signal = self.connection.execute(
@@ -540,7 +556,7 @@ class OrderManager:
              float(row["model_probability"]), float(row["price"]), "REJECTED", reason, _now()),
         )
 
-    def _close_position(self, position: sqlite3.Row, price: float, reason: str, signal_id: str) -> None:
+    def _close_position(self, position: sqlite3.Row, price: float, reason: str, signal_id: str) -> dict[str, float]:
         self._daily_risk()
         slip = (Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS) / 10000.0
         exit_price = price * (1 - slip if position["direction"] == "LONG" else 1 + slip)
@@ -570,6 +586,12 @@ class OrderManager:
             "UPDATE daily_risk SET realized_pnl=realized_pnl+?, updated_at=? WHERE trading_date=?",
             (net, _now(), trading_date),
         )
+        return {
+            "exit_price": float(exit_price),
+            "gross_pnl": float(gross),
+            "fees": float(position["entry_fee"] + exit_fee),
+            "net_pnl": float(net),
+        }
 
     def _open_position(self, row: Any, signal_id: str) -> bool:
         if not self.new_entries_allowed():
@@ -590,8 +612,40 @@ class OrderManager:
         account = self._account()
         positions = self._positions()
         exposure = sum(float(p["notional"]) for p in positions)
-        risk_sized_notional = equity * Config.PAPER_MAX_RISK_PER_TRADE / max(Config.PAPER_STOP_LOSS_PCT, 0.0001)
-        notional = min(risk_sized_notional, equity * Config.PAPER_MAX_POSITION_PCT / 100.0,
+        model_price = float(row["price"])
+        direction = str(row["model_direction"])
+        policy = policy_for(str(row["symbol"]))
+        asset_risk = (
+            evaluate_asset_risk(str(row["symbol"]), direction)
+            if Config.MARKET_CAP_RISK_ENABLED else
+            AssetRiskDecision(True, "DISABLED", 0.0, Config.RISK_PERCENTAGE, Config.PAPER_MAX_POSITION_PCT)
+        )
+        if not asset_risk.allowed:
+            self._reject(row, signal_id, f"asset risk blocked: {asset_risk.reason}")
+            return False
+        if asset_risk.tier == "SMALL":
+            small_open = self.connection.execute(
+                """SELECT COUNT(*) FROM positions p JOIN position_risk_metadata r
+                   ON r.position_id=p.position_id WHERE r.tier='SMALL'"""
+            ).fetchone()[0]
+            if small_open >= Config.SMALL_CAP_MAX_OPEN_POSITIONS:
+                self._reject(row, signal_id, "asset risk blocked: maximum small-cap positions reached")
+                return False
+        atr = float(row.get("atr", float("nan")))
+        legacy_atr_fallback = not pd.notna(atr) or atr <= 0
+        if legacy_atr_fallback:
+            # Compatibility for signals persisted before ATR was added to the
+            # schema. New inference always supplies true ATR.
+            atr = (
+                model_price * Config.PAPER_STOP_LOSS_PCT / 100.0
+                / max(policy.stop_atr, 1e-12)
+            )
+        stop_distance = atr * policy.stop_atr
+        sizing_risk = asset_risk.risk_pct if policy.use_tier_sizing else Config.RISK_PERCENTAGE
+        sizing_cap = asset_risk.max_position_pct if policy.use_tier_sizing else Config.PAPER_MAX_POSITION_PCT
+        risk_amount = equity * min(Config.RISK_PERCENTAGE, sizing_risk) / 100.0
+        risk_sized_notional = (risk_amount / stop_distance) * model_price
+        notional = min(risk_sized_notional, equity * min(Config.PAPER_MAX_POSITION_PCT, sizing_cap) / 100.0,
                        equity * Config.PAPER_MAX_PORTFOLIO_EXPOSURE_PCT / 100.0 - exposure)
         leverage = max(1.0, Config.PAPER_LEVERAGE)
         collateral = notional / leverage
@@ -602,8 +656,14 @@ class OrderManager:
         if notional < Config.PAPER_MIN_ORDER_USD or float(account["cash"]) - collateral < cash_buffer:
             self._reject(row, signal_id, "insufficient exposure capacity or cash buffer")
             return False
-        direction, model_price = str(row["model_direction"]), float(row["price"])
         snapshot = self.latest_qualified_market_price(str(row["symbol"]), direction)
+        if Config.MARKET_CAP_RISK_ENABLED and snapshot is None:
+            self._reject(row, signal_id, "asset risk blocked: fresh GMX executable quote unavailable")
+            return False
+        if (snapshot and asset_risk.tier in MAX_SPREAD_BPS
+                and float(snapshot["spread_bps"]) > MAX_SPREAD_BPS[asset_risk.tier]):
+            self._reject(row, signal_id, f"asset risk blocked: spread exceeds {asset_risk.tier} limit")
+            return False
         price = float(snapshot["price"]) if snapshot else model_price
         observed_at = str(snapshot["observed_at"]) if snapshot else str(row["timestamp"])
         price_source = str(snapshot["source"]) if snapshot else "HOURLY_CANDLE_CLOSE"
@@ -613,10 +673,16 @@ class OrderManager:
         fill = price * (1 + slip if direction == "LONG" else 1 - slip)
         fee = notional * Config.PAPER_FEE_BPS / 10000.0
         quantity = notional / fill
-        stop_factor = Config.PAPER_STOP_LOSS_PCT / 100.0
-        target_factor = Config.PAPER_TAKE_PROFIT_PCT / 100.0
-        stop = fill * (1 - stop_factor if direction == "LONG" else 1 + stop_factor)
-        target = fill * (1 + target_factor if direction == "LONG" else 1 - target_factor)
+        if legacy_atr_fallback:
+            stop_factor = Config.PAPER_STOP_LOSS_PCT / 100.0
+            target_factor = Config.PAPER_TAKE_PROFIT_PCT / 100.0
+            stop = fill * (1 - stop_factor if direction == "LONG" else 1 + stop_factor)
+            target = fill * (1 + target_factor if direction == "LONG" else 1 - target_factor)
+        else:
+            stop_distance = atr * policy.stop_atr
+            target_distance = atr * policy.target_atr
+            stop = fill - stop_distance if direction == "LONG" else fill + stop_distance
+            target = fill + target_distance if direction == "LONG" else fill - target_distance
         order_id, position_id = f"po_{signal_id}", f"pp_{signal_id}"
         self.connection.execute("INSERT INTO signals VALUES(?,?,?,?,?,?,?,?,?)",
             (signal_id, str(row["timestamp"]), str(row["symbol"]), direction,
@@ -630,6 +696,16 @@ class OrderManager:
         self.connection.execute("INSERT INTO positions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (position_id, str(row["symbol"]), direction, _now(), fill, quantity, notional, collateral,
              leverage, stop, target, fee, signal_id, fill, 0.0))
+        self.connection.execute(
+            "INSERT INTO position_risk_metadata VALUES(?,?,?,?,?,?,?)",
+            (position_id, str(row["symbol"]), asset_risk.tier, asset_risk.market_cap_usd,
+             asset_risk.risk_pct, asset_risk.max_position_pct, _now()),
+        )
+        self.connection.execute(
+            "INSERT OR REPLACE INTO signal_model_lineage VALUES(?,?,?,?)",
+            (signal_id, str(row.get("model_side", "UNKNOWN")),
+             str(row.get("model_version", "UNKNOWN")), _now()),
+        )
         self.connection.execute("UPDATE account SET cash=cash-?-?, fees=fees+?, updated_at=? WHERE id=1",
                                 (collateral, fee, fee, _now()))
         trading_date = datetime.now(timezone.utc).date().isoformat()
@@ -690,9 +766,9 @@ class OrderManager:
                         else "signal_reversal" if reverse else "window_exit"
                     )
                     if reason == "stop_loss":
-                        exit_reference = min(candle_open, position["stop_price"]) if position["direction"] == "LONG" else max(candle_open, position["stop_price"])
+                        exit_reference = float(position["stop_price"])
                     elif reason == "take_profit":
-                        exit_reference = max(candle_open, position["target_price"]) if position["direction"] == "LONG" else min(candle_open, position["target_price"])
+                        exit_reference = float(position["target_price"])
                     else:
                         exit_reference = price
                     self._close_position(position, exit_reference, reason, self.signal_id(row)); closed += 1

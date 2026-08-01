@@ -1,0 +1,101 @@
+{
+  "stable": false,
+  "promoted": false,
+  "policy": "expanding train / separate calibration / unseen next segment; >=100 trades, positive return and PF>=1.20 every fold",
+  "features": [
+    "returns",
+    "volatility",
+    "rsi_norm",
+    "macd_norm",
+    "momentum",
+    "volume_ratio",
+    "atr_norm",
+    "green_candles",
+    "price_range",
+    "volume_directional",
+    "bb_position",
+    "volume_obv",
+    "price_vs_ma50",
+    "volume_change",
+    "hl_ratio",
+    "close_position",
+    "trend_short",
+    "trend_long"
+  ],
+  "round_trip_cost_rate": 0.0024,
+  "folds": [
+    {
+      "fold": 1,
+      "train_end": 0.55,
+      "calibration_end": 0.7,
+      "test_end": 0.8,
+      "threshold": 0.23572052119920955,
+      "train_rows": 332131,
+      "calibration_rows": 90601,
+      "test_rows": 60424,
+      "calibration": {
+        "trades": 2718,
+        "return_pct": -99.9841011934459,
+        "mean_trade_pct": -0.2951826269378485,
+        "profit_factor": 0.6941977512685593,
+        "win_rate_pct": 40.10301692420898
+      },
+      "test": {
+        "trades": 5319,
+        "return_pct": -99.99996864825006,
+        "mean_trade_pct": -0.2554050495599234,
+        "profit_factor": 0.7419072995916081,
+        "win_rate_pct": 42.65839443504419
+      }
+    },
+    {
+      "fold": 2,
+      "train_end": 0.65,
+      "calibration_end": 0.8,
+      "test_end": 0.9,
+      "threshold": 0.32,
+      "train_rows": 392553,
+      "calibration_rows": 90603,
+      "test_rows": 60428,
+      "calibration": {
+        "trades": 1117,
+        "return_pct": -50.538470663011914,
+        "mean_trade_pct": -0.02692202451917205,
+        "profit_factor": 0.9734859283339176,
+        "win_rate_pct": 47.717099373321396
+      },
+      "test": {
+        "trades": 380,
+        "return_pct": 93.43260383038547,
+        "mean_trade_pct": 0.21229082926576692,
+        "profit_factor": 1.2712441842308255,
+        "win_rate_pct": 50.78947368421053
+      }
+    },
+    {
+      "fold": 3,
+      "train_end": 0.75,
+      "calibration_end": 0.9,
+      "test_end": 1.0,
+      "threshold": 0.32,
+      "train_rows": 452980,
+      "calibration_rows": 90604,
+      "test_rows": 60444,
+      "calibration": {
+        "trades": 1127,
+        "return_pct": 1717.621766251899,
+        "mean_trade_pct": 0.2960928495636446,
+        "profit_factor": 1.3334625009902508,
+        "win_rate_pct": 52.52883762200532
+      },
+      "test": {
+        "trades": 132,
+        "return_pct": -1.807786725409266,
+        "mean_trade_pct": 0.021130056001220903,
+        "profit_factor": 1.027350000665634,
+        "win_rate_pct": 47.72727272727273
+      }
+    }
+  ],
+  "note": "Walk-forward stability alone does not deploy a model; the final artifact must also pass its untouched holdout."
+}

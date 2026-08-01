@@ -85,7 +85,14 @@ def load_gmx_ohlc(symbol=None, timeframe=None):
     df = df.dropna(subset=required_columns)
     df = df.set_index('Date').sort_index()
     df = df[~df.index.duplicated(keep='last')]
-    return df[['Open', 'High', 'Low', 'Close', 'Volume']]
+    df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+    from trading_bot_v4.features.tradingview_history import prepend_tradingview_history
+    return prepend_tradingview_history(
+        df,
+        symbol or Config.GMX_SYMBOL,
+        timeframe or Config.TIMEFRAME,
+        Config.TRADINGVIEW_HISTORY_DIR,
+    )
 
 sns.set_style('darkgrid')
 

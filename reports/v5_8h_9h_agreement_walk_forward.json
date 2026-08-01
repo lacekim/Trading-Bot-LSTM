@@ -1,0 +1,70 @@
+{
+  "stable": false,
+  "promoted": false,
+  "policy": "8h and 9h SHORT agreement; 8h exit",
+  "results": [
+    {
+      "fold": 1,
+      "threshold_8h": 0.01143569974952677,
+      "threshold_9h": Infinity,
+      "calibration": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      },
+      "test": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      }
+    },
+    {
+      "fold": 2,
+      "threshold_8h": 0.004926907236361216,
+      "threshold_9h": Infinity,
+      "calibration": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      },
+      "test": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      }
+    },
+    {
+      "fold": 3,
+      "threshold_8h": 0.009028592304220321,
+      "threshold_9h": 0.008899617941692507,
+      "calibration": {
+        "trades": 357,
+        "long_trades": 0,
+        "short_trades": 357,
+        "return_pct": 108.77724939181314,
+        "profit_factor": 1.4999896346136432,
+        "win_rate_pct": 54.061624649859944
+      },
+      "test": {
+        "trades": 112,
+        "long_trades": 0,
+        "short_trades": 112,
+        "return_pct": 46.53029935075153,
+        "profit_factor": 2.1994586507426472,
+        "win_rate_pct": 58.92857142857143
+      }
+    }
+  ]
+}

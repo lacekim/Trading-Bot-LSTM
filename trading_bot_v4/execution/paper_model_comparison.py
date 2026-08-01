@@ -12,26 +12,31 @@ from trading_bot import list_gmx_symbols, load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.core.data_handler import V4DataHandler
 from trading_bot_v4.execution.smc_model_paper import _predict_smc_model_signals
-from trading_bot_v4.execution.smc_model_paper import (
-    SMC_MODEL_PAPER_SIGNALS_PATH, SMC_MODEL_PAPER_SUMMARY_PATH, _timeframe_delta,
-)
+from trading_bot_v4.execution.smc_model_paper import _timeframe_delta
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
 from trading_bot_v4.utils.logger import build_logger
 from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.artifact_lineage import artifact_version
 from trading_bot_v4.utils.signal_direction import binary_upside_direction
+from trading_bot_v4.utils.macd_confirmation import macd_components
+from trading_bot_v4.execution.persistent_policy import direction_for_probability, policy_for
 
 
 logger = build_logger("v4_paper_model_comparison")
+
+ORIGINAL_BASELINE_SIGNALS_PATH = Path("logs/v5_original_long_paper_signals.csv")
+ORIGINAL_BASELINE_SUMMARY_PATH = Path("logs/v5_original_long_paper_summary.csv")
 
 PAPER_MODEL_COMPARISON_CSV_PATH = Path("logs/v4_paper_model_comparison.csv")
 PAPER_MODEL_COMPARISON_HTML_PATH = Path("logs/v4_paper_model_comparison.html")
 
 
-def _direction_from_probability(probability: float) -> str:
-    return binary_upside_direction(probability, Config.MIN_SIGNAL_THRESHOLD)
+def _direction_from_probability(probability: float, symbol: str = "") -> str:
+    return direction_for_probability(probability, symbol) if symbol else binary_upside_direction(probability, Config.MIN_SIGNAL_THRESHOLD)
 
 
-def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timeframe: str) -> pd.DataFrame:
+def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timeframe: str,
+                                    closed_only: bool = True) -> pd.DataFrame:
     raw = load_gmx_ohlc(symbol, timeframe)
     handler = V4DataHandler()
     features = handler.prepare_features(raw.copy())
@@ -44,11 +49,15 @@ def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timefr
     feature_frame = feature_frame.replace([np.inf, -np.inf], np.nan).dropna(subset=Config.FEATURE_COLUMNS)
     prices = pd.to_numeric(raw["Close"], errors="coerce").reindex(feature_frame.index)
     feature_frame["price"] = prices
+    feature_frame["atr"] = handler.calculate_atr(raw, Config.ATR_PERIOD).reindex(feature_frame.index)
+    feature_frame = feature_frame.join(macd_components(raw["Close"]).reindex(feature_frame.index))
+    feature_frame["macd_histogram_previous"] = feature_frame["macd_histogram"].shift(1)
+    feature_frame["price_vs_ma200"] = prices / prices.rolling(200).mean() - 1.0
     for source, target in (("Open", "open"), ("High", "high"), ("Low", "low"), ("Close", "close")):
         feature_frame[target] = pd.to_numeric(raw[source], errors="coerce").reindex(feature_frame.index)
     timestamps = pd.Series(pd.to_datetime(feature_frame.index), index=feature_frame.index)
     feature_frame["candle_gap_seconds"] = timestamps.diff().dt.total_seconds().fillna(0.0)
-    feature_frame = feature_frame.dropna(subset=["price", "open", "high", "low", "close"])
+    feature_frame = feature_frame.dropna(subset=["price", "open", "high", "low", "close", "atr"])
 
     if len(feature_frame) <= Config.SEQUENCE_LENGTH:
         raise ValueError(f"Insufficient original model feature rows for {symbol} {timeframe}: {len(feature_frame)}")
@@ -59,10 +68,11 @@ def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timefr
     sequences = np.array([scaled[start : start + seq_len] for start in range(0, len(scaled) - seq_len)], dtype=np.float32)
     probabilities = model.predict(sequences, verbose=0).reshape(-1)
     signal_frame = feature_frame.iloc[seq_len:].copy()
-    timestamps = pd.to_datetime(signal_frame.index, utc=True)
-    closed_mask = timestamps + _timeframe_delta(timeframe) <= pd.Timestamp.now(tz="UTC")
-    signal_frame = signal_frame.loc[closed_mask].copy()
-    probabilities = probabilities[closed_mask]
+    if closed_only:
+        timestamps = pd.to_datetime(signal_frame.index, utc=True)
+        closed_mask = timestamps + _timeframe_delta(timeframe) <= pd.Timestamp.now(tz="UTC")
+        signal_frame = signal_frame.loc[closed_mask].copy()
+        probabilities = probabilities[closed_mask]
 
     signals = pd.DataFrame(
         {
@@ -70,30 +80,39 @@ def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timefr
             "symbol": symbol,
             "timeframe": timeframe,
             "original_probability": probabilities,
-            "original_direction": [_direction_from_probability(float(probability)) for probability in probabilities],
+            "original_direction": [_direction_from_probability(float(probability), symbol) for probability in probabilities],
             "original_price": signal_frame["price"].to_numpy(dtype=float),
             "open": signal_frame["open"].to_numpy(dtype=float),
             "high": signal_frame["high"].to_numpy(dtype=float),
             "low": signal_frame["low"].to_numpy(dtype=float),
             "close": signal_frame["close"].to_numpy(dtype=float),
             "candle_gap_seconds": signal_frame["candle_gap_seconds"].to_numpy(dtype=float),
+            "atr": signal_frame["atr"].to_numpy(dtype=float),
+            "macd_line": signal_frame["macd_line"].to_numpy(dtype=float),
+            "macd_signal": signal_frame["macd_signal"].to_numpy(dtype=float),
+            "macd_histogram": signal_frame["macd_histogram"].to_numpy(dtype=float),
+            "macd_histogram_previous": signal_frame["macd_histogram_previous"].to_numpy(dtype=float),
+            "price_vs_ma200": signal_frame["price_vs_ma200"].to_numpy(dtype=float),
         }
     )
     signals["original_candidate"] = signals["original_direction"].isin(["LONG", "SHORT"])
     return signals
 
 
-def predict_original_baseline_signals(model: Any, scaler: Any, symbol: str, timeframe: str) -> pd.DataFrame:
+def predict_original_baseline_signals(model: Any, scaler: Any, symbol: str, timeframe: str,
+                                      closed_only: bool = True) -> pd.DataFrame:
     """Return original-model inference in the scheduler's standard signal schema."""
-    signals = _predict_original_model_signals(model, scaler, symbol, timeframe).rename(columns={
+    signals = _predict_original_model_signals(
+        model, scaler, symbol, timeframe, closed_only=closed_only
+    ).rename(columns={
         "original_probability": "model_probability",
         "original_direction": "model_direction",
         "original_price": "price",
         "original_candidate": "is_trade_candidate",
     })
-    signals["threshold"] = float(Config.MIN_SIGNAL_THRESHOLD)
+    signals["threshold"] = float(policy_for(symbol).threshold)
     signals["feature_count"] = len(Config.FEATURE_COLUMNS)
-    signals["model_side"] = "ORIGINAL_UPSIDE"
+    signals["model_side"] = "ORIGINAL_PERSISTENT" if policy_for(symbol).enabled else "ORIGINAL_UPSIDE"
     return signals
 
 
@@ -101,6 +120,7 @@ def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, mode
                                         scaler: Any) -> dict[str, Any]:
     """Generate the active baseline LONG signals and persist daily-analysis inputs."""
     frames, summaries = [], []
+    version = artifact_version([Config.MODEL_DIR / Config.MODEL_NAME, Config.MODEL_DIR / Config.SCALER_NAME])
     for symbol in symbols:
         try:
             signals = predict_original_baseline_signals(model, scaler, str(symbol).upper(), timeframe)
@@ -108,6 +128,7 @@ def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, mode
             logger.warning("Skipping %s %s during original baseline inference: %s", symbol, timeframe, exc)
             continue
         frames.append(signals)
+        signals["model_version"] = version
         latest = signals.iloc[-1] if not signals.empty else None
         summaries.append({
             "symbol": str(symbol).upper(), "timeframe": timeframe,
@@ -118,11 +139,11 @@ def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, mode
             "latest_price": float(latest["price"]) if latest is not None else np.nan,
         })
     combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
-    SMC_MODEL_PAPER_SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    combined.to_csv(SMC_MODEL_PAPER_SIGNALS_PATH, index=False)
-    pd.DataFrame(summaries).to_csv(SMC_MODEL_PAPER_SUMMARY_PATH, index=False)
-    return {"signals": combined, "signals_path": SMC_MODEL_PAPER_SIGNALS_PATH,
-            "summary_path": SMC_MODEL_PAPER_SUMMARY_PATH, "assets_evaluated": len(summaries)}
+    ORIGINAL_BASELINE_SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(ORIGINAL_BASELINE_SIGNALS_PATH, index=False)
+    pd.DataFrame(summaries).to_csv(ORIGINAL_BASELINE_SUMMARY_PATH, index=False)
+    return {"signals": combined, "signals_path": ORIGINAL_BASELINE_SIGNALS_PATH,
+            "summary_path": ORIGINAL_BASELINE_SUMMARY_PATH, "assets_evaluated": len(summaries)}
 
 
 def _prepare_smc_signals(smc_signals: pd.DataFrame) -> pd.DataFrame:

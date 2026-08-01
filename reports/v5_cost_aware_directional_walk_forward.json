@@ -1,0 +1,74 @@
+{
+  "stable": false,
+  "promoted": false,
+  "policy": "causal all-asset return regression; LONG/SHORT only beyond separately calibrated symmetric margin",
+  "round_trip_cost_rate": 0.0024,
+  "folds": [
+    {
+      "fold": 1,
+      "threshold": 0.00310457291838875,
+      "calibration": {
+        "trades": 751,
+        "long_trades": 122,
+        "short_trades": 629,
+        "return_pct": -22.41010152109085,
+        "mean_trade_pct": -0.04644196023240412,
+        "profit_factor": 0.9151849377055212,
+        "win_rate_pct": 47.13715046604528
+      },
+      "test": {
+        "trades": 798,
+        "long_trades": 183,
+        "short_trades": 615,
+        "return_pct": -44.56288544439758,
+        "mean_trade_pct": 0.07512814653914716,
+        "profit_factor": 0.796151826105055,
+        "win_rate_pct": 44.3609022556391
+      }
+    },
+    {
+      "fold": 2,
+      "threshold": 0.00448938348505878,
+      "calibration": {
+        "trades": 480,
+        "long_trades": 127,
+        "short_trades": 353,
+        "return_pct": -17.44740545009531,
+        "mean_trade_pct": 0.05432457313119599,
+        "profit_factor": 0.8921041127991793,
+        "win_rate_pct": 45.83333333333333
+      },
+      "test": {
+        "trades": 245,
+        "long_trades": 71,
+        "short_trades": 174,
+        "return_pct": -39.01727213308334,
+        "mean_trade_pct": -0.28563565242676014,
+        "profit_factor": 0.59217219813574,
+        "win_rate_pct": 37.95918367346939
+      }
+    },
+    {
+      "fold": 3,
+      "threshold": 0.002395361854834377,
+      "calibration": {
+        "trades": 1200,
+        "long_trades": 235,
+        "short_trades": 965,
+        "return_pct": -42.15684115674478,
+        "mean_trade_pct": 0.12896751240548868,
+        "profit_factor": 0.8785250297818717,
+        "win_rate_pct": 50.0
+      },
+      "test": {
+        "trades": 341,
+        "long_trades": 111,
+        "short_trades": 230,
+        "return_pct": 11.148403626199865,
+        "mean_trade_pct": 0.08803815197144242,
+        "profit_factor": 1.0921561249986613,
+        "win_rate_pct": 49.266862170087975
+      }
+    }
+  ]
+}

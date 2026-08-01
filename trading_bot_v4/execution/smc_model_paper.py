@@ -73,11 +73,12 @@ def _build_smc_model_feature_frame(symbol: str, timeframe: str) -> pd.DataFrame:
 
     prices = pd.to_numeric(raw["Close"], errors="coerce").reindex(combined.index)
     combined["price"] = prices
+    combined["atr"] = handler.calculate_atr(raw, Config.ATR_PERIOD).reindex(combined.index)
     for source, target in [("Open", "open"), ("High", "high"), ("Low", "low"), ("Close", "close")]:
         combined[target] = pd.to_numeric(raw[source], errors="coerce").reindex(combined.index)
     timestamp_series = pd.Series(pd.to_datetime(combined.index), index=combined.index)
     combined["candle_gap_seconds"] = timestamp_series.diff().dt.total_seconds().fillna(0.0)
-    combined = combined.dropna(subset=["price", "open", "high", "low", "close"])
+    combined = combined.dropna(subset=["price", "open", "high", "low", "close", "atr"])
     return combined
 
 
@@ -111,6 +112,7 @@ def _predict_smc_model_signals(model: Any, scaler: Any, symbol: str, timeframe: 
             "low": signal_frame["low"].to_numpy(dtype=float),
             "close": signal_frame["close"].to_numpy(dtype=float),
             "candle_gap_seconds": signal_frame["candle_gap_seconds"].to_numpy(dtype=float),
+            "atr": signal_frame["atr"].to_numpy(dtype=float),
         }
     )
     signals["is_trade_candidate"] = signals["model_direction"].isin(["LONG", "SHORT"])

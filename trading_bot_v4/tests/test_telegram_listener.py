@@ -1,11 +1,14 @@
 import threading
 import time
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from trading_bot_v4.research.scheduler import _start_telegram_listener
 from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode
 from trading_bot_v4.telegram.control_listener import TelegramControlListener
+from trading_bot_v4.telegram.notifier import V4TelegramNotifier
 
 
 class FakeTransport:
@@ -26,6 +29,29 @@ class FakeTransport:
 
     def send_to(self, chat_id, text):
         self.sent.append((chat_id, text))
+
+
+class FailOnceTransport(FakeTransport):
+    def __init__(self):
+        super().__init__()
+        self.send_attempts = 0
+
+    def send_to(self, chat_id, text):
+        self.send_attempts += 1
+        if self.send_attempts == 1:
+            raise ConnectionError("temporary Telegram outage")
+        super().send_to(chat_id, text)
+
+
+class UpdateTransport(FakeTransport):
+    def __init__(self, updates):
+        super().__init__()
+        self.updates = updates
+
+    def get_updates_checked(self, offset, timeout=10):
+        self.polling.set()
+        self.release.wait(0.02)
+        return [item for item in self.updates if int(item["update_id"]) >= offset]
 
 
 class TelegramListenerTests(unittest.TestCase):
@@ -49,6 +75,29 @@ class TelegramListenerTests(unittest.TestCase):
         self.assertIn("WATCH", text)
         self.assertIn("EIGEN, PUMP", text)
 
+    def test_status_distinguishes_watchlists_and_shows_complete_position_exits(self):
+        controller = self.configured_controller()
+        controller.update_runtime_snapshot(
+            open_positions=1,
+            positions=[{
+                "symbol": "VVV", "direction": "LONG", "entry_price": 11.61,
+                "current_price": 11.85, "unrealized_pnl": 195.75,
+                "stop_price": 11.52, "target_price": 15.08,
+                "notional": 8000.0, "leverage": 5.0,
+            }],
+        )
+        text = TelegramControlListener._status_text(controller.runtime_snapshot())
+        self.assertIn("Qualified LONG", text)
+        self.assertIn("Qualified SHORT", text)
+        self.assertNotIn("Qualified LONG watchlist", text)
+        self.assertNotIn("Qualified SHORT watchlist", text)
+        self.assertIn("ACTIVE POSITION DETAILS", text)
+        self.assertIn("VVV LONG", text)
+        self.assertIn("Stop exit", text)
+        self.assertIn("Target exit", text)
+        self.assertIn("Notional", text)
+        self.assertIn("live monitor + hourly model exits", text)
+
     def test_listener_thread_actually_starts_and_stops(self):
         transport = FakeTransport()
         listener = TelegramControlListener("token", {"123"}, self.configured_controller(), transport=transport)
@@ -58,6 +107,52 @@ class TelegramListenerTests(unittest.TestCase):
         self.assertTrue(listener.is_running)
         transport.release.set(); listener.stop()
         self.assertFalse(listener.is_running)
+
+    def test_failed_command_reply_is_queued_and_retried(self):
+        transport = FailOnceTransport()
+        listener = TelegramControlListener(
+            "token", {"123"}, self.configured_controller(), transport=transport
+        )
+        listener.start()
+        self.assertTrue(listener.handle_message("123", "/status"))
+        deadline = time.monotonic() + 5
+        while not transport.sent and time.monotonic() < deadline:
+            time.sleep(0.02)
+        self.assertEqual(len(transport.sent), 1)
+        self.assertIn("V5 STATUS REPORT", transport.sent[0][1])
+        transport.release.set()
+        listener.stop()
+
+    def test_shutdown_update_before_start_is_ignored_and_offset_persisted(self):
+        stale_shutdown = {
+            "update_id": 77,
+            "message": {
+                "date": int(time.time()) - 60,
+                "chat": {"id": 123},
+                "text": "/shutdown_graceful",
+            },
+        }
+        with TemporaryDirectory() as directory:
+            offset_path = Path(directory) / "telegram.offset"
+            controller = self.configured_controller()
+            transport = UpdateTransport([stale_shutdown])
+            listener = TelegramControlListener(
+                "token", {"123"}, controller, transport=transport, offset_path=offset_path
+            )
+            listener.start()
+            deadline = time.monotonic() + 2
+            while (not offset_path.exists() or offset_path.read_text() != "78") and time.monotonic() < deadline:
+                time.sleep(0.02)
+            self.assertFalse(controller.is_shutdown_requested())
+            self.assertEqual(offset_path.read_text(), "78")
+            transport.release.set()
+            listener.stop()
+
+            restarted = TelegramControlListener(
+                "token", {"123"}, controller,
+                transport=UpdateTransport([stale_shutdown]), offset_path=offset_path,
+            )
+            self.assertEqual(restarted._offset, 78)
 
     def test_auto_paper_start_helper_starts_listener(self):
         transport, output = FakeTransport(), []
@@ -138,6 +233,29 @@ class TelegramListenerTests(unittest.TestCase):
         safe = listener._safe_error(Exception(f"failure at https://api.telegram.org/bot{token}/getUpdates"))
         self.assertNotIn(token, safe)
         self.assertIn("bot<redacted>", safe)
+
+    def test_notifier_falls_back_to_plain_text_when_telegram_rejects_html(self):
+        class Response:
+            def __init__(self, status, description=""):
+                self.status_code = status
+                self._description = description
+                self.text = description
+
+            def json(self):
+                return {"description": self._description}
+
+        notifier = V4TelegramNotifier()
+        notifier.token = "token"
+        notifier.base_url = "https://api.telegram.org/bottoken"
+        with patch(
+            "trading_bot_v4.telegram.notifier.requests.post",
+            side_effect=[Response(400, "Bad Request: can't parse entities"), Response(200)],
+        ) as post:
+            notifier.send_to("123", "<b>Status</b> <code>bad <value></code>")
+        self.assertEqual(post.call_count, 2)
+        fallback_payload = post.call_args_list[1].kwargs["json"]
+        self.assertNotIn("parse_mode", fallback_payload)
+        self.assertNotIn("<b>", fallback_payload["text"])
 
 
 if __name__ == "__main__": unittest.main()

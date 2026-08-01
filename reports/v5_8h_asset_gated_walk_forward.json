@@ -1,0 +1,128 @@
+{
+  "stable": false,
+  "promoted": false,
+  "horizon": 8,
+  "results": [
+    {
+      "fold": 1,
+      "short_threshold": 0.00779290453577523,
+      "qualified_symbols": [
+        "0G",
+        "AERO",
+        "AVNT",
+        "BOME",
+        "DOLO",
+        "EIGEN",
+        "ENA",
+        "FARTCOIN",
+        "FIL",
+        "IP",
+        "LDO",
+        "LINEA",
+        "MEGA",
+        "MET",
+        "MOODENG",
+        "S",
+        "SATS",
+        "STX",
+        "TAO",
+        "TRUMP",
+        "VIRTUAL",
+        "WIF",
+        "ZORA",
+        "ZRO"
+      ],
+      "calibration": {
+        "trades": 209,
+        "long_trades": 0,
+        "short_trades": 209,
+        "return_pct": 96.39524623987022,
+        "profit_factor": 1.9452949949692855,
+        "win_rate_pct": 58.3732057416268
+      },
+      "test": {
+        "trades": 201,
+        "long_trades": 0,
+        "short_trades": 201,
+        "return_pct": -19.01324808830649,
+        "profit_factor": 0.8302502092084243,
+        "win_rate_pct": 52.736318407960205
+      }
+    },
+    {
+      "fold": 2,
+      "short_threshold": 0.011783120372524684,
+      "qualified_symbols": [
+        "AIXBT",
+        "AR",
+        "INJ",
+        "KTA",
+        "MEME",
+        "PUMP",
+        "XPL",
+        "ZORA"
+      ],
+      "calibration": {
+        "trades": 120,
+        "long_trades": 0,
+        "short_trades": 120,
+        "return_pct": 91.76479470520972,
+        "profit_factor": 2.288580182188521,
+        "win_rate_pct": 62.5
+      },
+      "test": {
+        "trades": 46,
+        "long_trades": 0,
+        "short_trades": 46,
+        "return_pct": -3.4159002060834,
+        "profit_factor": 0.8914478716407517,
+        "win_rate_pct": 52.17391304347826
+      }
+    },
+    {
+      "fold": 3,
+      "short_threshold": 0.008103903321718967,
+      "qualified_symbols": [
+        "0G",
+        "AIXBT",
+        "ANIME",
+        "APT",
+        "ASTER",
+        "AVNT",
+        "BCH",
+        "BOME",
+        "CRV",
+        "FIL",
+        "HYPE",
+        "ICP",
+        "MEME",
+        "NEAR",
+        "OP",
+        "PUMP",
+        "SATS",
+        "TIA",
+        "VVV",
+        "WELL",
+        "WLD",
+        "XMR",
+        "ZORA"
+      ],
+      "calibration": {
+        "trades": 239,
+        "long_trades": 0,
+        "short_trades": 239,
+        "return_pct": 107.72577922244312,
+        "profit_factor": 1.7616406115943068,
+        "win_rate_pct": 58.15899581589959
+      },
+      "test": {
+        "trades": 73,
+        "long_trades": 0,
+        "short_trades": 73,
+        "return_pct": 4.554383498740866,
+        "profit_factor": 1.1205588399264608,
+        "win_rate_pct": 56.16438356164384
+      }
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "stable": false,
+  "promoted": false,
+  "horizon": 8,
+  "stop_atr": 2.0,
+  "target_atr": 3.0,
+  "target_policy": "separate realized protected LONG and SHORT returns",
+  "results": [
+    {
+      "fold": 1,
+      "long_threshold": 0.003938047815375951,
+      "short_threshold": 0.010701463822233121,
+      "calibration": {
+        "trades": 667,
+        "long_trades": 331,
+        "short_trades": 336,
+        "return_pct": -4.1846805068983866,
+        "profit_factor": 0.9751690928774533,
+        "win_rate_pct": 49.92503748125937
+      },
+      "test": {
+        "trades": 457,
+        "long_trades": 221,
+        "short_trades": 236,
+        "return_pct": -25.878934227108342,
+        "profit_factor": 0.7759896745665099,
+        "win_rate_pct": 44.201312910284464
+      }
+    },
+    {
+      "fold": 2,
+      "long_threshold": 0.014735956475253387,
+      "short_threshold": 0.007125044196135544,
+      "calibration": {
+        "trades": 563,
+        "long_trades": 65,
+        "short_trades": 498,
+        "return_pct": -5.777970912143648,
+        "profit_factor": 0.9681242702306186,
+        "win_rate_pct": 49.55595026642984
+      },
+      "test": {
+        "trades": 382,
+        "long_trades": 16,
+        "short_trades": 366,
+        "return_pct": 35.480780628898835,
+        "profit_factor": 1.3448424758479405,
+        "win_rate_pct": 55.497382198952884
+      }
+    },
+    {
+      "fold": 3,
+      "long_threshold": 0.008953400904573382,
+      "short_threshold": 0.00338053958059669,
+      "calibration": {
+        "trades": 695,
+        "long_trades": 64,
+        "short_trades": 631,
+        "return_pct": 13.195567896904127,
+        "profit_factor": 1.0691704389261618,
+        "win_rate_pct": 47.62589928057554
+      },
+      "test": {
+        "trades": 360,
+        "long_trades": 26,
+        "short_trades": 334,
+        "return_pct": -7.1572617296695835,
+        "profit_factor": 0.9050969947093868,
+        "win_rate_pct": 46.666666666666664
+      }
+    }
+  ]
+}

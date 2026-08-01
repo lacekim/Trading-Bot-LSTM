@@ -1,0 +1,56 @@
+{
+  "promoted": false,
+  "selected_gate": {
+    "probability": 0.72,
+    "trend_lookback": 200,
+    "require_green": true,
+    "min_atr_pct": 0.0
+  },
+  "development": {
+    "gate": "p0.72_ma200_green1_atr0.00",
+    "segment": "development",
+    "probability": 0.72,
+    "trend_lookback": 200,
+    "require_green": true,
+    "min_atr_pct": 0.0,
+    "assets": 120,
+    "trades": 21,
+    "mean_return_pct": 0.003153741791126948,
+    "median_return_pct": 0.0,
+    "profitable_assets": 2,
+    "profit_factor": 1.0477847211531657,
+    "worst_drawdown_pct": -1.4664995369348066
+  },
+  "validation_baseline": {
+    "gate": "p0.58_ma0_green0_atr0.00",
+    "segment": "validation",
+    "probability": 0.58,
+    "trend_lookback": 0,
+    "require_green": false,
+    "min_atr_pct": 0.0,
+    "assets": 120,
+    "trades": 55438,
+    "mean_return_pct": -50.495559118580026,
+    "median_return_pct": -57.15509580651491,
+    "profitable_assets": 1,
+    "profit_factor": 0.543871518709506,
+    "worst_drawdown_pct": -94.278008535235
+  },
+  "validation_selected": {
+    "gate": "p0.72_ma200_green1_atr0.00",
+    "segment": "validation",
+    "probability": 0.72,
+    "trend_lookback": 200,
+    "require_green": true,
+    "min_atr_pct": 0.0,
+    "assets": 120,
+    "trades": 6,
+    "mean_return_pct": 0.01509538478340002,
+    "median_return_pct": 0.0,
+    "profitable_assets": 1,
+    "profit_factor": 2.117443983164048,
+    "worst_drawdown_pct": -1.0258993403224115
+  },
+  "requirements": ">=100 development and >=50 validation trades, <=50% baseline trades, higher validation return and PF > baseline and 1.0, no worse drawdown",
+  "limitation": "Chronological signal validation, but the currently loaded model may have seen these candles during training."
+}

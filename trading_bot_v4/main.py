@@ -23,6 +23,9 @@ from trading_bot_v4.ml.trainer import train_v4_model
 from trading_bot_v4.ml.predictor import predict_with_v4_model
 from trading_bot_v4.backtesting.backtest_engine import run_v4_backtest
 from trading_bot_v4.backtesting.production_backtest import run_production_backtest
+from trading_bot_v4.backtesting.causal_portfolio import run_causal_portfolio
+from trading_bot_v4.backtesting.baseline_regression import run_baseline_regression
+from trading_bot_v4.backtesting.trade_filter_research import run_trade_filter_research
 from trading_bot_v4.backtesting.comparison_engine import run_v4_compare_original
 from trading_bot_v4.backtesting.ranking_engine import run_v4_backtest_ranking
 from trading_bot_v4.backtesting.asset_selection_engine import run_asset_ranking, validate_asset_rankings
@@ -46,6 +49,11 @@ from trading_bot_v4.execution.validated_whitelist_performance import (
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.ml.bearish_trainer import train_bearish_model
+from trading_bot_v4.ml.cost_aware_long_trainer import (
+    train_cost_aware_long_model, run_cost_aware_long_walk_forward,
+    run_cost_aware_directional_walk_forward,
+)
+from trading_bot_v4.ml.multi_horizon_directional import run_multi_horizon_walk_forward
 from trading_bot_v4.research.daily_research import run_daily_research
 from trading_bot_v4.research.scheduler import request_model_reload, run_auto_scheduler
 from trading_bot_v4.utils.logger import build_logger
@@ -69,7 +77,14 @@ def parse_args():
     parser.add_argument("--predict", action="store_true", help="Load the saved model and generate a sample prediction")
     parser.add_argument("--backtest", action="store_true", help="Run a V4 backtest over one asset or all assets")
     parser.add_argument("--backtest-production", action="store_true", help="Backtest the V5 LONG/SHORT models, qualification, persistent positions, and protection rules")
+    parser.add_argument("--backtest-causal-portfolio", action="store_true", help="Run the shared-capital causal rolling-selector diagnostic over original all-asset trades")
     parser.add_argument("--ignore-qualification", action="store_true", help="Research only: let both V5 models trade every selected asset during --backtest-production")
+    parser.add_argument("--model-sides", choices=["long", "short", "both"], default="both", help="Directional model sides included by --backtest-production")
+    parser.add_argument("--zero-costs", action="store_true", help="Research parity only: remove fees, slippage, and price impact from --backtest-production")
+    parser.add_argument("--baseline-regression", action="store_true", help="Compare the saved original and current all-assets baseline reports directly")
+    parser.add_argument("--research-entry-filter", action="store_true", help="Chronologically evaluate cost-aware LONG entry gates without changing the baseline")
+    parser.add_argument("--reference-report", default="v4_ranked_backtest_summary.csv", help="Reference CSV for --baseline-regression")
+    parser.add_argument("--current-report", default="trading_bot_gmx_1h_all_assets_summary.csv", help="Current CSV for --baseline-regression")
     parser.add_argument("--backtest-rank", action="store_true", help="Backtest every GMX asset and rank them by risk-adjusted performance")
     parser.add_argument("--smc-shadow-backtest", action="store_true", help="Compare baseline model behavior against selected SMC filters")
     parser.add_argument("--walk-forward-smc", action="store_true", help="Run walk-forward baseline vs SMC-filter validation for every GMX asset")
@@ -90,6 +105,10 @@ def parse_args():
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--train-bearish-model", action="store_true", help="Train and calibrate the independent downside SMC model")
+    parser.add_argument("--train-cost-aware-long", action="store_true", help="Train and holdout-validate the all-asset cost-aware LONG challenger")
+    parser.add_argument("--walk-forward-cost-aware-long", action="store_true", help="Run repeated expanding walk-forward validation for the cost-aware LONG challenger")
+    parser.add_argument("--walk-forward-cost-aware-directional", action="store_true", help="Run causal LONG/SHORT return-regression walk-forward validation")
+    parser.add_argument("--walk-forward-multi-horizon", action="store_true", help="Compare causal 4h/8h/12h LONG/SHORT challengers")
     parser.add_argument("--compare-models", action="store_true", help="Analysis-only comparison of original and SMC model artifacts")
     parser.add_argument("--rank-assets", action="store_true", help="Rank GMX assets for analysis-only V4 asset selection")
     parser.add_argument("--validate-asset-rankings", action="store_true", help="Validate asset rankings against constrained paper performance")
@@ -110,6 +129,8 @@ def parse_args():
         help="Minimum distance from the previous same-side swing, measured in ATR",
     )
     parser.add_argument("--refresh", action="store_true", help="Refresh the GMX OHLC cache before doing anything else")
+    parser.add_argument("--import-tradingview", metavar="CSV", help="Import a TradingView 1h OHLCV CSV as supplementary history")
+    parser.add_argument("--tradingview-symbol", default="", help="Asset symbol for --import-tradingview (otherwise inferred from filename)")
     parser.add_argument("--symbol", default=V4Config.GMX_SYMBOL, help="GMX symbol to backtest")
     parser.add_argument("--asset", default="", help="Single GMX asset for supported analysis commands")
     parser.add_argument("--timeframe", default=V4Config.TIMEFRAME, help="GMX data timeframe")
@@ -123,6 +144,19 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.import_tradingview:
+        from trading_bot_v4.features.tradingview_history import import_tradingview_csv
+        result = import_tradingview_csv(
+            args.import_tradingview,
+            V4Config.TRADINGVIEW_HISTORY_DIR,
+            symbol=args.tradingview_symbol or None,
+            timeframe=str(args.timeframe),
+        )
+        print(f"TradingView history imported: {result.symbol}")
+        print(f"Rows: {result.rows}")
+        print(f"Range: {result.first_timestamp} to {result.last_timestamp}")
+        print(f"Output: {result.output_path}")
+        return 0
     if args.resume_paper:
         orders = OrderManager()
         try:
@@ -167,6 +201,18 @@ def main():
         print(f"validation F1: {result.validation_f1:.6f}")
         print(f"calibrated threshold: {result.threshold:.2f}")
         return 0
+    if args.train_cost_aware_long:
+        train_cost_aware_long_model(str(args.timeframe))
+        return 0
+    if args.walk_forward_cost_aware_long:
+        run_cost_aware_long_walk_forward(str(args.timeframe))
+        return 0
+    if args.walk_forward_cost_aware_directional:
+        run_cost_aware_directional_walk_forward(str(args.timeframe))
+        return 0
+    if args.walk_forward_multi_horizon:
+        run_multi_horizon_walk_forward(str(args.timeframe))
+        return 0
     if args.predict:
         predict_with_v4_model()
         return 0
@@ -176,6 +222,15 @@ def main():
         return 0
     if args.backtest_production:
         run_production_backtest(args)
+        return 0
+    if args.backtest_causal_portfolio:
+        run_causal_portfolio(starting_capital=args.capital)
+        return 0
+    if args.baseline_regression:
+        run_baseline_regression(args)
+        return 0
+    if args.research_entry_filter:
+        run_trade_filter_research(args)
         return 0
     if args.backtest_rank:
         run_v4_backtest_ranking(args)

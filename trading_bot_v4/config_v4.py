@@ -21,10 +21,12 @@ class V4Config(LegacyConfig):
 
     # Paper-only execution constraints for analysis reports. These do not affect live trading.
     PAPER_MAX_RISK_PER_TRADE = float(os.getenv("PAPER_MAX_RISK_PER_TRADE", "0.25"))
-    PAPER_MIN_BARS_BETWEEN_TRADES = int(os.getenv("PAPER_MIN_BARS_BETWEEN_TRADES", "4"))
+    # The protected baseline may re-enter on the next closed hourly candle.
+    PAPER_MIN_BARS_BETWEEN_TRADES = int(os.getenv("PAPER_MIN_BARS_BETWEEN_TRADES", "0"))
     PAPER_FEE_BPS = float(os.getenv("PAPER_FEE_BPS", "5"))
     PAPER_SLIPPAGE_BPS = float(os.getenv("PAPER_SLIPPAGE_BPS", "5"))
-    PAPER_MAX_TRADES_PER_DAY = int(os.getenv("PAPER_MAX_TRADES_PER_DAY", "3"))
+    # Zero disables this overlay. The original strategy had no daily trade cap.
+    PAPER_MAX_TRADES_PER_DAY = int(os.getenv("PAPER_MAX_TRADES_PER_DAY", "0"))
     PAPER_MAX_DAILY_LOSS_PCT = float(os.getenv("PAPER_MAX_DAILY_LOSS_PCT", "3"))
     PAPER_USE_COMPOUNDING = os.getenv("PAPER_USE_COMPOUNDING", "false").lower() in {"1", "true", "yes", "on"}
 
@@ -41,10 +43,10 @@ class V4Config(LegacyConfig):
     PAPER_STOP_LOSS_PCT = float(os.getenv("PAPER_STOP_LOSS_PCT", "2"))
     PAPER_TAKE_PROFIT_PCT = float(os.getenv("PAPER_TAKE_PROFIT_PCT", "4"))
     PAPER_MAX_OPEN_POSITIONS = int(os.getenv("PAPER_MAX_OPEN_POSITIONS", "5"))
-    PAPER_MAX_POSITION_PCT = float(os.getenv("PAPER_MAX_POSITION_PCT", "20"))
-    PAPER_MAX_PORTFOLIO_EXPOSURE_PCT = float(os.getenv("PAPER_MAX_PORTFOLIO_EXPOSURE_PCT", "80"))
+    PAPER_MAX_POSITION_PCT = float(os.getenv("PAPER_MAX_POSITION_PCT", "95"))
+    PAPER_MAX_PORTFOLIO_EXPOSURE_PCT = float(os.getenv("PAPER_MAX_PORTFOLIO_EXPOSURE_PCT", "95"))
     PAPER_MIN_ORDER_USD = float(os.getenv("PAPER_MIN_ORDER_USD", "30"))
-    PAPER_CASH_BUFFER_PCT = float(os.getenv("PAPER_CASH_BUFFER_PCT", "10"))
+    PAPER_CASH_BUFFER_PCT = float(os.getenv("PAPER_CASH_BUFFER_PCT", "0"))
     PAPER_PRICE_IMPACT_BPS = float(os.getenv("PAPER_PRICE_IMPACT_BPS", "2"))
     PAPER_FUNDING_BPS_PER_DAY = float(os.getenv("PAPER_FUNDING_BPS_PER_DAY", "0"))
     PAPER_BORROWING_BPS_PER_DAY = float(os.getenv("PAPER_BORROWING_BPS_PER_DAY", "0"))
@@ -54,20 +56,28 @@ class V4Config(LegacyConfig):
     PAPER_MAX_FAILED_ORDERS = int(os.getenv("PAPER_MAX_FAILED_ORDERS", "3"))
     PAPER_MAX_CANDLE_AGE_MULTIPLIER = float(os.getenv("PAPER_MAX_CANDLE_AGE_MULTIPLIER", "2.5"))
     PAPER_STOP_TARGET_PRIORITY = os.getenv("PAPER_STOP_TARGET_PRIORITY", "STOP_FIRST").upper()
-    # Preserve the original 1h strategy's one-candle trade window. Protective
-    # monitoring may close sooner; otherwise the next hourly close exits.
-    PAPER_MAX_HOLD_CANDLES = int(os.getenv("PAPER_MAX_HOLD_CANDLES", "1"))
+    # Positions still exit sooner on protection or an hourly model reversal.
+    PAPER_MAX_HOLD_CANDLES = int(os.getenv("PAPER_MAX_HOLD_CANDLES", "8"))
     POSITION_MONITOR_INTERVAL_SECONDS = int(os.getenv("POSITION_MONITOR_INTERVAL_SECONDS", "10"))
     POSITION_MONITOR_FAILURE_THRESHOLD = int(os.getenv("POSITION_MONITOR_FAILURE_THRESHOLD", "3"))
+    POSITION_MONITOR_ALERT_COOLDOWN_SECONDS = int(os.getenv("POSITION_MONITOR_ALERT_COOLDOWN_SECONDS", "900"))
     POSITION_MONITOR_MAX_PRICE_AGE_SECONDS = int(os.getenv("POSITION_MONITOR_MAX_PRICE_AGE_SECONDS", "180"))
     POSITION_MONITOR_REQUEST_TIMEOUT_SECONDS = int(os.getenv("POSITION_MONITOR_REQUEST_TIMEOUT_SECONDS", "5"))
     POSITION_MONITOR_WATCHDOG_SECONDS = int(os.getenv("POSITION_MONITOR_WATCHDOG_SECONDS", "45"))
+    POSITION_MONITOR_KRAKEN_FALLBACK_ENABLED = os.getenv(
+        "POSITION_MONITOR_KRAKEN_FALLBACK_ENABLED", "true"
+    ).lower() in {"1", "true", "yes", "on"}
+    POSITION_MONITOR_KRAKEN_TIMEOUT_SECONDS = int(os.getenv("POSITION_MONITOR_KRAKEN_TIMEOUT_SECONDS", "5"))
+    KRAKEN_PUBLIC_API_BASE = os.getenv("KRAKEN_PUBLIC_API_BASE", "https://api.kraken.com/0/public")
     QUALIFIED_MARKET_INTERVAL_SECONDS = int(os.getenv("QUALIFIED_MARKET_INTERVAL_SECONDS", "10"))
     QUALIFIED_MARKET_MAX_SPREAD_BPS = float(os.getenv("QUALIFIED_MARKET_MAX_SPREAD_BPS", "50"))
     QUALIFIED_MARKET_SNAPSHOT_MAX_AGE_SECONDS = int(os.getenv("QUALIFIED_MARKET_SNAPSHOT_MAX_AGE_SECONDS", "30"))
     QUALIFIED_MARKET_WATCHDOG_SECONDS = int(os.getenv("QUALIFIED_MARKET_WATCHDOG_SECONDS", "45"))
     QUALIFIED_MARKET_RETENTION_HOURS = int(os.getenv("QUALIFIED_MARKET_RETENTION_HOURS", "168"))
+    QUALIFIED_MARKET_CANARY_SYMBOL = os.getenv("QUALIFIED_MARKET_CANARY_SYMBOL", "BTC").upper()
     MONITOR_HEARTBEAT_RETENTION_HOURS = int(os.getenv("MONITOR_HEARTBEAT_RETENTION_HOURS", "168"))
+    MARKET_CAP_RISK_ENABLED = os.getenv("MARKET_CAP_RISK_ENABLED", "true").lower() in {"1", "true", "yes", "on"}
+    SMALL_CAP_MAX_OPEN_POSITIONS = int(os.getenv("SMALL_CAP_MAX_OPEN_POSITIONS", "1"))
 
     # Promotion uses recent economics plus separate validated/walk-forward evidence.
     GO_MIN_RECENT_PROFIT_FACTOR = float(os.getenv("GO_MIN_RECENT_PROFIT_FACTOR", "1.30"))

@@ -1,0 +1,67 @@
+{
+  "stable": false,
+  "promoted": false,
+  "horizon": 8,
+  "results": [
+    {
+      "fold": 1,
+      "threshold": 0.5888800928962837,
+      "calibration": {
+        "trades": 375,
+        "long_trades": 0,
+        "short_trades": 375,
+        "return_pct": 70.24564980017499,
+        "profit_factor": 1.2535295255673884,
+        "win_rate_pct": 51.733333333333334
+      },
+      "test": {
+        "trades": 312,
+        "long_trades": 0,
+        "short_trades": 312,
+        "return_pct": -20.33508853079181,
+        "profit_factor": 0.8828807262239396,
+        "win_rate_pct": 50.32051282051282
+      }
+    },
+    {
+      "fold": 2,
+      "threshold": 0.6206424571242609,
+      "calibration": {
+        "trades": 243,
+        "long_trades": 0,
+        "short_trades": 243,
+        "return_pct": 52.77575295270969,
+        "profit_factor": 1.3448197729094808,
+        "win_rate_pct": 57.20164609053497
+      },
+      "test": {
+        "trades": 156,
+        "long_trades": 0,
+        "short_trades": 156,
+        "return_pct": 27.862867905485555,
+        "profit_factor": 1.2705799485743827,
+        "win_rate_pct": 57.692307692307686
+      }
+    },
+    {
+      "fold": 3,
+      "threshold": 0.5673081444250824,
+      "calibration": {
+        "trades": 335,
+        "long_trades": 0,
+        "short_trades": 335,
+        "return_pct": 81.71401147572304,
+        "profit_factor": 1.4387357190794756,
+        "win_rate_pct": 52.537313432835816
+      },
+      "test": {
+        "trades": 150,
+        "long_trades": 0,
+        "short_trades": 150,
+        "return_pct": 0.6500948253837846,
+        "profit_factor": 1.0100716605595002,
+        "win_rate_pct": 52.666666666666664
+      }
+    }
+  ]
+}

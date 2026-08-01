@@ -1,0 +1,179 @@
+{
+  "14": [
+    {
+      "fold": 1,
+      "calibration": {
+        "trades": 918,
+        "long_trades": 86,
+        "short_trades": 832,
+        "return_pct": 9.576048066897558,
+        "profit_factor": 1.041060210375707,
+        "win_rate_pct": 51.307189542483655
+      },
+      "test": {
+        "trades": 616,
+        "long_trades": 76,
+        "short_trades": 540,
+        "return_pct": -27.700446802315014,
+        "profit_factor": 0.82876080592382,
+        "win_rate_pct": 48.37662337662338
+      }
+    },
+    {
+      "fold": 2,
+      "calibration": {
+        "trades": 367,
+        "long_trades": 98,
+        "short_trades": 269,
+        "return_pct": 30.741993786369015,
+        "profit_factor": 1.2705793578753253,
+        "win_rate_pct": 56.13079019073569
+      },
+      "test": {
+        "trades": 223,
+        "long_trades": 75,
+        "short_trades": 148,
+        "return_pct": 3.936460754867488,
+        "profit_factor": 1.0685470394149026,
+        "win_rate_pct": 53.81165919282511
+      }
+    },
+    {
+      "fold": 3,
+      "calibration": {
+        "trades": 593,
+        "long_trades": 201,
+        "short_trades": 392,
+        "return_pct": 3.200574198352868,
+        "profit_factor": 1.0192971016772416,
+        "win_rate_pct": 52.1079258010118
+      },
+      "test": {
+        "trades": 327,
+        "long_trades": 104,
+        "short_trades": 223,
+        "return_pct": 1.1962740620951706,
+        "profit_factor": 1.0158570947783814,
+        "win_rate_pct": 49.54128440366973
+      }
+    }
+  ],
+  "30": [
+    {
+      "fold": 1,
+      "calibration": {
+        "trades": 436,
+        "long_trades": 83,
+        "short_trades": 353,
+        "return_pct": -3.771666522348127,
+        "profit_factor": 0.9682773272207379,
+        "win_rate_pct": 49.31192660550459
+      },
+      "test": {
+        "trades": 374,
+        "long_trades": 56,
+        "short_trades": 318,
+        "return_pct": -21.71571461580646,
+        "profit_factor": 0.7964696140296266,
+        "win_rate_pct": 53.20855614973262
+      }
+    },
+    {
+      "fold": 2,
+      "calibration": {
+        "trades": 694,
+        "long_trades": 238,
+        "short_trades": 456,
+        "return_pct": -19.97667502276206,
+        "profit_factor": 0.898185059945888,
+        "win_rate_pct": 50.43227665706051
+      },
+      "test": {
+        "trades": 485,
+        "long_trades": 167,
+        "short_trades": 318,
+        "return_pct": -10.800316266108744,
+        "profit_factor": 0.9091615750652569,
+        "win_rate_pct": 50.92783505154639
+      }
+    },
+    {
+      "fold": 3,
+      "calibration": {
+        "trades": 441,
+        "long_trades": 199,
+        "short_trades": 242,
+        "return_pct": 5.8450981976460925,
+        "profit_factor": 1.0404327872955272,
+        "win_rate_pct": 56.4625850340136
+      },
+      "test": {
+        "trades": 176,
+        "long_trades": 84,
+        "short_trades": 92,
+        "return_pct": -21.82539387891147,
+        "profit_factor": 0.5959344885272266,
+        "win_rate_pct": 37.5
+      }
+    }
+  ],
+  "60": [
+    {
+      "fold": 1,
+      "calibration": {
+        "trades": 400,
+        "long_trades": 108,
+        "short_trades": 292,
+        "return_pct": 31.506274187256956,
+        "profit_factor": 1.2756824194377994,
+        "win_rate_pct": 54.75
+      },
+      "test": {
+        "trades": 333,
+        "long_trades": 68,
+        "short_trades": 265,
+        "return_pct": -17.77221241832977,
+        "profit_factor": 0.8225970883478119,
+        "win_rate_pct": 52.552552552552555
+      }
+    },
+    {
+      "fold": 2,
+      "calibration": {
+        "trades": 648,
+        "long_trades": 67,
+        "short_trades": 581,
+        "return_pct": -11.47797356250948,
+        "profit_factor": 0.9371977062565905,
+        "win_rate_pct": 50.0
+      },
+      "test": {
+        "trades": 426,
+        "long_trades": 60,
+        "short_trades": 366,
+        "return_pct": -14.42756285947615,
+        "profit_factor": 0.8597947471121468,
+        "win_rate_pct": 52.347417840375584
+      }
+    },
+    {
+      "fold": 3,
+      "calibration": {
+        "trades": 526,
+        "long_trades": 281,
+        "short_trades": 245,
+        "return_pct": 39.652696321332506,
+        "profit_factor": 1.2250189041926451,
+        "win_rate_pct": 56.463878326996195
+      },
+      "test": {
+        "trades": 277,
+        "long_trades": 173,
+        "short_trades": 104,
+        "return_pct": -13.461754979615348,
+        "profit_factor": 0.8081707781978623,
+        "win_rate_pct": 44.04332129963899
+      }
+    }
+  ]
+}

@@ -5,7 +5,10 @@ from __future__ import annotations
 import threading
 import random
 import re
+import time
+from queue import Empty, Queue
 from html import escape
+from pathlib import Path
 from typing import Callable, Protocol
 
 import requests
@@ -25,7 +28,8 @@ class TelegramControlListener:
                  send: Callable[[str, str], None] | None = None,
                  transport: TelegramTransport | None = None,
                  on_error: Callable[[str], None] | None = None,
-                 on_event: Callable[[str], None] | None = None):
+                 on_event: Callable[[str], None] | None = None,
+                 offset_path: Path | None = Path("runtime/telegram_update_offset")):
         self.token = token
         self.authorized = {str(value) for value in authorized_chat_ids if str(value)}
         self.controller = controller
@@ -37,8 +41,28 @@ class TelegramControlListener:
         self._stop = threading.Event()
         self._started = threading.Event()
         self._thread: threading.Thread | None = None
-        self._offset = 0
+        self._outbox_thread: threading.Thread | None = None
+        self._outbox: Queue[tuple[str, str, int]] = Queue()
+        self._offset_path = offset_path
+        self._offset = self._load_offset()
+        self._started_at_epoch = 0
         self._consecutive_failures = 0
+
+    def _load_offset(self) -> int:
+        if self._offset_path is None:
+            return 0
+        try:
+            return max(0, int(self._offset_path.read_text(encoding="utf-8").strip()))
+        except (FileNotFoundError, OSError, TypeError, ValueError):
+            return 0
+
+    def _save_offset(self) -> None:
+        if self._offset_path is None:
+            return
+        self._offset_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self._offset_path.with_suffix(".tmp")
+        temporary.write_text(str(self._offset), encoding="utf-8")
+        temporary.replace(self._offset_path)
 
     def _safe_error(self, exc: Exception) -> str:
         message = str(exc)
@@ -72,6 +96,11 @@ class TelegramControlListener:
         self.transport.verify_connection()
         self._set_health("connected")
         self._stop.clear()
+        self._started_at_epoch = int(time.time())
+        self._outbox_thread = threading.Thread(
+            target=self._deliver_outbox, name="v5-telegram-outbox", daemon=True
+        )
+        self._outbox_thread.start()
         self._thread = threading.Thread(target=self._poll, name="v5-telegram-control", daemon=True)
         self._thread.start()
         if not self._started.wait(timeout=2) or not self._thread.is_alive():
@@ -81,14 +110,55 @@ class TelegramControlListener:
         self._stop.set()
         if self._thread:
             self._thread.join(timeout=17)
+        if self._outbox_thread:
+            self._outbox_thread.join(timeout=12)
         self._started.clear()
         self._set_health("stopped")
 
     def _send(self, chat_id: str, text: str) -> None:
         if self._send_override:
             self._send_override(chat_id, text)
-        else:
+            return
+        try:
             self.transport.send_to(chat_id, text)
+        except Exception as exc:
+            if self._permanent_delivery_error(exc):
+                self.on_error(f"Telegram permanently rejected message; not retrying: {self._safe_error(exc)}")
+                return
+            # Telegram may accept outbound messages while long polling is
+            # degraded, or vice versa. Do not permanently discard a command
+            # reply/alert after one transient network failure.
+            self._outbox.put((chat_id, text, 1))
+            self.on_error(
+                f"Telegram delivery queued for retry after failure: {self._safe_error(exc)}"
+            )
+
+    @staticmethod
+    def _permanent_delivery_error(exc: Exception) -> bool:
+        response = getattr(exc, "response", None)
+        status = getattr(response, "status_code", None)
+        return status is not None and 400 <= int(status) < 500 and int(status) != 429
+
+    def _deliver_outbox(self) -> None:
+        while not self._stop.is_set():
+            try:
+                chat_id, message, attempt = self._outbox.get(timeout=0.5)
+            except Empty:
+                continue
+            try:
+                self.transport.send_to(chat_id, message)
+                self.on_event(f"Telegram queued delivery succeeded after {attempt} retry attempt(s)")
+            except Exception as exc:
+                safe_error = self._safe_error(exc)
+                if self._permanent_delivery_error(exc):
+                    self.on_error(f"Telegram permanently rejected queued message; dropped: {safe_error}")
+                else:
+                    self.on_error(f"Telegram queued delivery attempt #{attempt} failed: {safe_error}")
+                    delay = min(60.0, 2.0 ** min(attempt, 5)) + random.uniform(0.0, 1.0)
+                    if not self._stop.wait(delay):
+                        self._outbox.put((chat_id, message, attempt + 1))
+            finally:
+                self._outbox.task_done()
 
     def broadcast(self, text: str) -> None:
         for chat_id in sorted(self.authorized):
@@ -147,14 +217,14 @@ class TelegramControlListener:
         qualified_long = ", ".join(value("qualified_long_assets", value("qualified_assets", []))) or "none"
         qualified_short = ", ".join(value("qualified_short_assets", [])) or "none"
         watch_assets = ", ".join(value("watch_assets", [])) or "none"
-        return "\n".join([
+        lines = [
             "📊 <b>V5 STATUS REPORT</b>",
             "━━━━━━━━━━━━━━━━━━",
             f"⚙️ Mode: <code>{escape(str(value('execution_mode')))}</code>",
             f"{'🟢' if running else '🔴'} Scheduler: <b>{'RUNNING' if running else 'STOPPED'}</b>",
             f"{'✅' if entries else '⏸️'} New entries: <b>{'ENABLED' if entries else 'PAUSED'}</b>",
-            f"📈 LONG: <code>{escape(qualified_long)}</code>",
-            f"📉 SHORT: <code>{escape(qualified_short)}</code>",
+            f"📈 Qualified LONG: <code>{escape(qualified_long)}</code>",
+            f"📉 Qualified SHORT: <code>{escape(qualified_short)}</code>",
             f"👀 WATCH: <code>{escape(watch_assets)}</code>",
             f"📡 Qualified feed: <code>{escape(str(value('qualified_market_status', 'starting')))}</code>",
             f"📍 Open positions: <b>{value('open_positions', 0)}</b>",
@@ -175,7 +245,42 @@ class TelegramControlListener:
             f"Monitor heartbeat: <code>{escape(str(value('position_monitor_last_heartbeat', 'pending')))}</code>",
             f"Web3 read-only: <code>{escape(str(value('web3_read_only_status')))}</code>",
             f"Live signing: <b>{escape(str(value('live_signing_status', 'disabled')).upper())}</b>",
-        ])
+        ]
+        positions = value("positions", []) or []
+        if positions:
+            lines.extend([
+                "",
+                "📍 <b>ACTIVE POSITION DETAILS</b>",
+                "━━━━━━━━━━━━━━━━━━",
+            ])
+            lines.extend(TelegramControlListener._position_detail_lines(positions))
+        return "\n".join(lines)
+
+    @staticmethod
+    def _position_detail_lines(positions: list[dict]) -> list[str]:
+        lines: list[str] = []
+        for position in positions:
+            direction = str(position.get("direction", "UNKNOWN")).upper()
+            entry = float(position.get("entry_price", 0))
+            current = float(position.get("current_price", entry))
+            stop = float(position.get("stop_price", 0))
+            target = float(position.get("target_price", 0))
+            pnl = float(position.get("unrealized_pnl", 0))
+            emoji = "🟢" if direction == "LONG" else "🔴"
+            pnl_emoji = "📈" if pnl >= 0 else "📉"
+            stop_distance = abs((current - stop) / current * 100) if current else 0.0
+            target_distance = abs((target - current) / current * 100) if current else 0.0
+            lines.extend([
+                f"{emoji} <b>{escape(str(position.get('symbol', 'UNKNOWN')))} {escape(direction)}</b>",
+                f"Entry: <code>${entry:.8g}</code> → Current: <code>${current:.8g}</code>",
+                f"{pnl_emoji} Unrealized P&amp;L: <code>${pnl:+.2f}</code>",
+                f"🛑 Stop exit: <code>${stop:.8g}</code> (<code>{stop_distance:.2f}%</code> away)",
+                f"🏁 Target exit: <code>${target:.8g}</code> (<code>{target_distance:.2f}%</code> away)",
+                f"💵 Notional: <code>${float(position.get('notional', 0)):.2f}</code> · Leverage: <code>{float(position.get('leverage', 1)):.2f}x</code>",
+                "⏱ Protection: <code>live monitor + hourly model exits</code>",
+                "",
+            ])
+        return lines
 
     @staticmethod
     def _positions_text(snapshot: dict) -> str:
@@ -183,17 +288,7 @@ class TelegramControlListener:
         if not positions:
             return "📭 <b>NO OPEN POSITIONS</b>\nThe paper account is currently flat."
         lines = ["📍 <b>OPEN POSITIONS</b>", "━━━━━━━━━━━━━━━━━━"]
-        for position in positions:
-            pnl = float(position["unrealized_pnl"])
-            emoji = "🟢" if position["direction"] == "LONG" else "🔴"
-            pnl_emoji = "📈" if pnl >= 0 else "📉"
-            lines.extend([
-                f"{emoji} <b>{escape(str(position['symbol']))} {escape(str(position['direction']))}</b>",
-                f"Entry: <code>${position['entry_price']:.8g}</code> → Current: <code>${position['current_price']:.8g}</code>",
-                f"{pnl_emoji} Unrealized P&amp;L: <code>${pnl:+.2f}</code>",
-                f"🛑 SL: <code>${position['stop_price']:.8g}</code> · 🏁 TP: <code>${position['target_price']:.8g}</code>",
-                "",
-            ])
+        lines.extend(TelegramControlListener._position_detail_lines(positions))
         return "\n".join(lines)
 
     @staticmethod
@@ -276,7 +371,17 @@ class TelegramControlListener:
             try:
                 for update in self.transport.get_updates_checked(self._offset, timeout=10):
                     self._offset = max(self._offset, int(update["update_id"]) + 1)
+                    # Save before executing a command. A shutdown command stops
+                    # polling immediately, so relying on the next getUpdates
+                    # request to acknowledge it causes it to replay on restart.
+                    self._save_offset()
                     message = update.get("message", {})
+                    message_time = int(message.get("date", 0) or 0)
+                    if message_time and message_time < self._started_at_epoch:
+                        self.on_event(
+                            f"Ignored stale Telegram update {update['update_id']} from before listener startup"
+                        )
+                        continue
                     self.handle_message(str(message.get("chat", {}).get("id", "")), str(message.get("text", "")))
                 if self._consecutive_failures:
                     self.on_event("Telegram polling recovered")

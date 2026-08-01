@@ -1,11 +1,77 @@
 {
   "engine": "V5_ORIGINAL_LONG_PLUS_BEARISH_SHORT",
   "timeframe": "1h",
+  "model_sides": "long",
+  "zero_costs": false,
   "qualification_policy": "IGNORED FOR DIAGNOSTIC RESEARCH; every selected asset may trade both directions",
   "qualified_long_symbols": [],
   "qualified_short_symbols": [],
   "assets_tested": 1,
   "eligible_assets": 1,
-  "equal_weight_return_pct": -19.51288928254745,
-  "warning": "Diagnostic only: qualification was bypassed and model results may include training-period observations."
+  "market_cap_risk_enabled": true,
+  "risk_allowed_long_assets": 1,
+  "risk_allowed_short_assets": 1,
+  "equal_weight_return_pct": 286.13901805932926,
+  "warning": "Diagnostic only: qualification was bypassed and model results may include training-period observations. Market-cap and GMX-depth admission use the latest available snapshot across history; historical cap tiers, historical executable spreads, and shared-portfolio small-cap concurrency cannot be reconstructed by this independent per-asset test.",
+  "baseline_parity": {
+    "symbol": "VVV",
+    "persistent_policy": true,
+    "configuration_parity": false,
+    "baseline": {
+      "timeframe": "1h",
+      "sequence_length": 36,
+      "signal_threshold": 0.58,
+      "risk_percentage": 1.0,
+      "atr_stop_multiplier": 0.75,
+      "atr_target_multiplier": 1.5,
+      "maximum_hold_candles": 1,
+      "cooldown_candles": 0,
+      "maximum_trades_per_day": null,
+      "fee_bps": 0.0,
+      "slippage_bps": 0.0,
+      "compounding": true
+    },
+    "active": {
+      "timeframe": "1h",
+      "sequence_length": 36,
+      "signal_threshold": 0.6,
+      "risk_percentage": 1.0,
+      "atr_stop_multiplier": 0.5,
+      "atr_target_multiplier": 20.0,
+      "maximum_hold_candles": 240,
+      "cooldown_candles": 0,
+      "maximum_trades_per_day": null,
+      "fee_bps": 5.0,
+      "slippage_bps": 7.0,
+      "compounding": true,
+      "fixed_stop_loss_pct": null,
+      "fixed_take_profit_pct": null
+    },
+    "deviations": {
+      "signal_threshold": {
+        "baseline": 0.58,
+        "active": 0.6
+      },
+      "atr_stop_multiplier": {
+        "baseline": 0.75,
+        "active": 0.5
+      },
+      "atr_target_multiplier": {
+        "baseline": 1.5,
+        "active": 20.0
+      },
+      "maximum_hold_candles": {
+        "baseline": 1,
+        "active": 240
+      },
+      "fee_bps": {
+        "baseline": 0.0,
+        "active": 5.0
+      },
+      "slippage_bps": {
+        "baseline": 0.0,
+        "active": 7.0
+      }
+    }
+  }
 }

@@ -32,6 +32,7 @@ DAILY_DASHBOARD_PATH = Path("reports/v5_daily_decision_dashboard.html")
 DAILY_GO_STATUS_PATH = Path("reports/v4_daily_go_status.csv")
 DAILY_QUALIFICATION_AUDIT_PATH = Path("reports/v5_daily_qualification_audit.csv")
 DAILY_SMC_FEATURE_DIR = Path("reports/smc_features")
+DAILY_QUALIFICATION_HISTORY_DIR = Path("reports/qualification_history")
 
 
 @dataclass(frozen=True)
@@ -199,6 +200,9 @@ def _status_alerts(current: pd.DataFrame) -> list[str]:
 
     DAILY_GO_STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
     current_status.to_csv(DAILY_GO_STATUS_PATH, index=False)
+    DAILY_QUALIFICATION_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    history_path = DAILY_QUALIFICATION_HISTORY_DIR / f"{pd.Timestamp.now(tz='UTC').date().isoformat()}.csv"
+    current_status.to_csv(history_path, index=False)
     return alerts
 
 
@@ -212,9 +216,9 @@ def _readiness_recent_metrics(readiness: pd.DataFrame) -> pd.DataFrame:
         "profit_factor_30d",
         "max_drawdown_30d_pct",
         "trade_count_30d",
-        "constrained_smc_return_pct",
-        "constrained_smc_profit_factor",
-        "constrained_smc_max_drawdown_pct",
+        "baseline_return_pct",
+        "baseline_profit_factor",
+        "baseline_max_drawdown_pct",
         "walk_forward_stability",
         "forward_trades",
         "forward_profit_factor",
@@ -310,8 +314,8 @@ def _dashboard_decision_views(
     display_columns = [
         "symbol", "status", "confidence_pct", "return_7d_pct", "return_14d_pct", "return_30d_pct",
         "profit_factor_30d", "max_drawdown_30d_pct", "trade_count_30d", "criteria",
-        "constrained_smc_return_pct", "constrained_smc_profit_factor",
-        "constrained_smc_max_drawdown_pct", "walk_forward_stability",
+        "baseline_return_pct", "baseline_profit_factor",
+        "baseline_max_drawdown_pct", "walk_forward_stability",
         "forward_trades", "forward_profit_factor", "forward_expectancy",
     ]
     return joined[[column for column in display_columns if column in joined.columns]], opportunity, allocation, regime
@@ -323,8 +327,8 @@ def _apply_validated_oos_gate(readiness: pd.DataFrame, rankings: pd.DataFrame) -
     if gated.empty or rankings.empty:
         return gated
     columns = [
-        "symbol", "constrained_smc_return_pct", "constrained_smc_profit_factor",
-        "constrained_smc_max_drawdown_pct", "constrained_smc_trade_count",
+        "symbol", "baseline_return_pct", "baseline_profit_factor",
+        "baseline_max_drawdown_pct", "baseline_trade_count",
         "walk_forward_stability",
     ]
     available = [column for column in columns if column in rankings.columns]
@@ -336,12 +340,12 @@ def _apply_validated_oos_gate(readiness: pd.DataFrame, rankings: pd.DataFrame) -
         gated["failed_conditions"] = ""
 
     rules = [
-        ("constrained_smc_return_pct", lambda value: value > 0.0, "validated return > 0"),
-        ("constrained_smc_profit_factor", lambda value: value >= Config.GO_MIN_VALIDATED_PROFIT_FACTOR,
+        ("baseline_return_pct", lambda value: value > 0.0, "validated return > 0"),
+        ("baseline_profit_factor", lambda value: value >= Config.GO_MIN_VALIDATED_PROFIT_FACTOR,
          f"validated profit factor >= {Config.GO_MIN_VALIDATED_PROFIT_FACTOR:.2f}"),
-        ("constrained_smc_max_drawdown_pct", lambda value: value > Config.GO_MAX_VALIDATED_DRAWDOWN_PCT,
+        ("baseline_max_drawdown_pct", lambda value: value > Config.GO_MAX_VALIDATED_DRAWDOWN_PCT,
          f"validated drawdown > {Config.GO_MAX_VALIDATED_DRAWDOWN_PCT:.2f}%"),
-        ("constrained_smc_trade_count", lambda value: value >= Config.GO_MIN_VALIDATED_TRADES,
+        ("baseline_trade_count", lambda value: value >= Config.GO_MIN_VALIDATED_TRADES,
          f"validated trades >= {Config.GO_MIN_VALIDATED_TRADES}"),
         ("walk_forward_stability", lambda value: value >= Config.GO_MIN_WALK_FORWARD_STABILITY,
          f"walk-forward stability >= {Config.GO_MIN_WALK_FORWARD_STABILITY:.0f}"),

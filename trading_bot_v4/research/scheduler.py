@@ -28,6 +28,10 @@ from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSumma
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
 from trading_bot_v4.execution.position_monitor import PositionMonitor
 from trading_bot_v4.execution.qualified_market_monitor import QualifiedMarketMonitor
+from trading_bot_v4.features.gmx_feature_collection import collect_hourly_gmx_features
+from trading_bot_v4.risk.market_cap_tiers import collect_market_caps
+from trading_bot_v4.utils.macd_confirmation import macd_entry_confirmation
+from trading_bot_v4.execution.persistent_policy import policy_for, persistent_symbols
 from trading_bot_v4.execution.shutdown import ShutdownCoordinator
 from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode, graceful_signal_handler
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock
@@ -49,6 +53,7 @@ from trading_bot_v4.research.daily_research import (
     _update_smc_features, run_daily_research,
 )
 from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.artifact_lineage import write_model_manifest
 
 
 SCHEDULER_LOG_PATH = Path("logs/v4_scheduler.log")
@@ -181,6 +186,14 @@ def _load_scheduler_models(reason: str) -> SchedulerModelBundle:
         except Exception as exc:
             _log(f"WARNING bearish model unavailable: {exc}")
     _log("Scheduler models loaded")
+    manifest_paths = [
+        original_cache.model_path, original_cache.scaler_path,
+        SMC_MODEL_PATH, SMC_SCALER_PATH,
+    ]
+    if BEARISH_MODEL_PATH.exists() and BEARISH_SCALER_PATH.exists() and BEARISH_CALIBRATION_PATH.exists():
+        manifest_paths.extend([BEARISH_MODEL_PATH, BEARISH_SCALER_PATH, BEARISH_CALIBRATION_PATH])
+    manifest = write_model_manifest(manifest_paths, reason)
+    _log(f"Model lineage manifest: {manifest}")
     return SchedulerModelBundle(
         original_model=original_model,
         original_scaler=original_scaler,
@@ -264,7 +277,7 @@ def _hourly_refresh_symbols(timeframe: str) -> list[str]:
         status["decision"].astype(str).str.upper().eq("GO"),
         "symbol",
     ]
-    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
+    return list(dict.fromkeys([*selected.astype(str).str.upper().tolist(), *sorted(persistent_symbols())]))
 
 
 def _hourly_analysis_symbols(timeframe: str) -> list[str]:
@@ -282,7 +295,7 @@ def _hourly_analysis_symbols(timeframe: str) -> list[str]:
     selected = status.loc[
         status["decision"].astype(str).str.upper().isin({"GO", "WATCH"}), "symbol"
     ]
-    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
+    return list(dict.fromkeys([*selected.astype(str).str.upper().tolist(), *sorted(persistent_symbols())]))
 
 
 def _hourly_watch_symbols(timeframe: str) -> list[str]:
@@ -304,14 +317,17 @@ def _hourly_watch_symbols(timeframe: str) -> list[str]:
 
 
 def _qualified_short_symbols() -> list[str]:
-    """Return only assets that passed bearish final-holdout promotion."""
+    """Return bearish promotions plus bidirectional forward-paper symbols."""
+    forward_symbols = persistent_symbols()
     try:
         calibration = load_bearish_calibration()
     except (FileNotFoundError, ValueError, json.JSONDecodeError):
-        return []
+        return sorted(forward_symbols)
     if not calibration.get("promoted", False):
-        return []
-    return sorted({str(symbol).upper() for symbol in calibration.get("promoted_symbols", {})})
+        return sorted(forward_symbols)
+    return sorted(forward_symbols | {
+        str(symbol).upper() for symbol in calibration.get("promoted_symbols", {})
+    })
 
 
 def _analysis_symbols_with_positions(analysis_symbols: list[str], short_symbols: set[str],
@@ -332,9 +348,11 @@ def _active_directional_signals(signals: pd.DataFrame, long_symbols: list[str],
     open_symbols = {str(value).upper() for value in (open_symbols or set())}
     symbol = signals["symbol"].astype(str).str.upper()
     direction = signals["model_direction"].astype(str).str.upper()
-    entry_eligible = (direction.eq("LONG") & symbol.isin(long_symbols)) | (
-        direction.eq("SHORT") & symbol.isin(short_symbols)
+    persistent = symbol.map(lambda value: policy_for(value).enabled)
+    directional_qualification = (direction.eq("LONG") & (symbol.isin(long_symbols) | persistent)) | (
+        direction.eq("SHORT") & (symbol.isin(short_symbols) | persistent)
     )
+    entry_eligible = directional_qualification & (persistent | macd_entry_confirmation(signals))
     allowed = entry_eligible | direction.eq("HOLD") | symbol.isin(open_symbols)
     active = signals.loc[allowed].copy()
     active["_entry_eligible"] = entry_eligible.loc[allowed].to_numpy()
@@ -437,6 +455,7 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     cycle_started = time.monotonic()
     positions_before = orders.position_snapshots()
     challenger_positions_before = orders.challenger_position_snapshots()
+    _run_guarded("hourly.collect_gmx_market_features", collect_hourly_gmx_features)
     symbols = _hourly_refresh_symbols(timeframe)
     analysis_symbols = _hourly_analysis_symbols(timeframe)
     short_symbols = set(_qualified_short_symbols())
@@ -626,6 +645,8 @@ def run_auto_scheduler(args: Any) -> None:
     qualified_market_monitor = None
     try:
         models = _load_scheduler_models("scheduler startup")
+        if Config.MARKET_CAP_RISK_ENABLED:
+            _run_guarded("startup.refresh_market_caps", collect_market_caps)
         orders = OrderManager()
         hourly_symbols = _hourly_refresh_symbols(timeframe)
         hourly_watch_symbols = _hourly_watch_symbols(timeframe)
@@ -760,6 +781,8 @@ def run_auto_scheduler(args: Any) -> None:
             if now >= next_daily:
                 with controller.active_cycle() as admitted:
                     if admitted:
+                        if Config.MARKET_CAP_RISK_ENABLED:
+                            _run_guarded("daily.refresh_market_caps", collect_market_caps)
                         if telegram.is_running:
                             telegram.broadcast(
                                 "🔄 <b>DAILY FULL REFRESH STARTED</b>\n"

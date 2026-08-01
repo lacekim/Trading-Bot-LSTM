@@ -1,0 +1,213 @@
+{
+  "promoted": false,
+  "qualified_horizons": [],
+  "data_policy": "GMX hourly directional liquidity lagged one complete hour plus completed-candle BTC 200MA/return regime; global chronological non-overlapping tests",
+  "execution_policy": "shared capital, after configured fees/slippage/impact, initial 2ATR stop, +1ATR breakeven, causal 2ATR trail, max hold",
+  "promotion_policy": "every unseen fold positive, PF>=1.30, and >=20 trades",
+  "results": [
+    {
+      "horizon": 4,
+      "fold": 1,
+      "train_range": [
+        "2026-04-07 12:00:00",
+        "2026-05-22 15:00:00"
+      ],
+      "calibration_range": [
+        "2026-05-22 16:00:00",
+        "2026-06-02 22:00:00"
+      ],
+      "test_range": [
+        "2026-06-02 23:00:00",
+        "2026-06-19 20:00:00"
+      ],
+      "long_threshold": Infinity,
+      "short_threshold": Infinity,
+      "calibration": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      },
+      "test": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      }
+    },
+    {
+      "horizon": 4,
+      "fold": 2,
+      "train_range": [
+        "2026-04-07 12:00:00",
+        "2026-06-08 13:00:00"
+      ],
+      "calibration_range": [
+        "2026-06-08 14:00:00",
+        "2026-06-19 20:00:00"
+      ],
+      "test_range": [
+        "2026-06-19 21:00:00",
+        "2026-07-06 18:00:00"
+      ],
+      "long_threshold": 0.0040741534359857055,
+      "short_threshold": 0.004807196960723261,
+      "calibration": {
+        "trades": 136,
+        "long_trades": 58,
+        "short_trades": 78,
+        "return_pct": 6.594435838755608,
+        "profit_factor": 1.3079692126022118,
+        "win_rate_pct": 50.0
+      },
+      "test": {
+        "trades": 211,
+        "long_trades": 69,
+        "short_trades": 142,
+        "return_pct": -4.866530670950842,
+        "profit_factor": 0.8931868012201803,
+        "win_rate_pct": 44.54976303317535
+      }
+    },
+    {
+      "horizon": 4,
+      "fold": 3,
+      "train_range": [
+        "2026-04-07 12:00:00",
+        "2026-06-25 11:00:00"
+      ],
+      "calibration_range": [
+        "2026-06-25 12:00:00",
+        "2026-07-06 18:00:00"
+      ],
+      "test_range": [
+        "2026-07-06 19:00:00",
+        "2026-07-29 07:00:00"
+      ],
+      "long_threshold": 0.0021278777646410174,
+      "short_threshold": Infinity,
+      "calibration": {
+        "trades": 78,
+        "long_trades": 78,
+        "short_trades": 0,
+        "return_pct": 5.355727540548627,
+        "profit_factor": 1.5345363987034901,
+        "win_rate_pct": 48.717948717948715
+      },
+      "test": {
+        "trades": 175,
+        "long_trades": 175,
+        "short_trades": 0,
+        "return_pct": -7.967829301264917,
+        "profit_factor": 0.7530069149436373,
+        "win_rate_pct": 34.85714285714286
+      }
+    },
+    {
+      "horizon": 8,
+      "fold": 1,
+      "train_range": [
+        "2026-04-07 12:00:00",
+        "2026-05-22 13:00:00"
+      ],
+      "calibration_range": [
+        "2026-05-22 14:00:00",
+        "2026-06-02 20:00:00"
+      ],
+      "test_range": [
+        "2026-06-02 21:00:00",
+        "2026-06-19 17:00:00"
+      ],
+      "long_threshold": Infinity,
+      "short_threshold": Infinity,
+      "calibration": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      },
+      "test": {
+        "trades": 0,
+        "long_trades": 0,
+        "short_trades": 0,
+        "return_pct": 0.0,
+        "profit_factor": 0.0,
+        "win_rate_pct": 0.0
+      }
+    },
+    {
+      "horizon": 8,
+      "fold": 2,
+      "train_range": [
+        "2026-04-07 12:00:00",
+        "2026-06-08 11:00:00"
+      ],
+      "calibration_range": [
+        "2026-06-08 12:00:00",
+        "2026-06-19 17:00:00"
+      ],
+      "test_range": [
+        "2026-06-19 18:00:00",
+        "2026-07-06 15:00:00"
+      ],
+      "long_threshold": 0.005294063935474948,
+      "short_threshold": 0.005871331264684814,
+      "calibration": {
+        "trades": 59,
+        "long_trades": 32,
+        "short_trades": 27,
+        "return_pct": 5.231289463971911,
+        "profit_factor": 1.4753333209068835,
+        "win_rate_pct": 42.3728813559322
+      },
+      "test": {
+        "trades": 105,
+        "long_trades": 52,
+        "short_trades": 53,
+        "return_pct": -1.5521850055365882,
+        "profit_factor": 0.9183566952366348,
+        "win_rate_pct": 45.714285714285715
+      }
+    },
+    {
+      "horizon": 8,
+      "fold": 3,
+      "train_range": [
+        "2026-04-07 12:00:00",
+        "2026-06-25 08:00:00"
+      ],
+      "calibration_range": [
+        "2026-06-25 09:00:00",
+        "2026-07-06 15:00:00"
+      ],
+      "test_range": [
+        "2026-07-06 16:00:00",
+        "2026-07-29 03:00:00"
+      ],
+      "long_threshold": 0.0035902684823588987,
+      "short_threshold": Infinity,
+      "calibration": {
+        "trades": 39,
+        "long_trades": 39,
+        "short_trades": 0,
+        "return_pct": 5.061145548337498,
+        "profit_factor": 1.8611974242750533,
+        "win_rate_pct": 53.84615384615385
+      },
+      "test": {
+        "trades": 98,
+        "long_trades": 98,
+        "short_trades": 0,
+        "return_pct": -11.570543307491077,
+        "profit_factor": 0.566912738846073,
+        "win_rate_pct": 30.612244897959183
+      }
+    }
+  ]
+}

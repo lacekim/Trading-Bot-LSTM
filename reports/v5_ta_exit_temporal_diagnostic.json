@@ -1,0 +1,139 @@
+{
+  "policy": "identical cached model predictions; MACD crossover + 200MA entry; three non-overlapping temporal windows; configured costs",
+  "ma200_slope_lag_hours": 72,
+  "limitation": "temporal diagnostic only: deployed model artifacts may have been trained on observations inside these windows",
+  "results": [
+    {
+      "hold_candles": 4,
+      "window": 1,
+      "start": "2026-03-19 07:00:00+00:00",
+      "end": "2026-05-02 10:00:00+00:00",
+      "assets": 118,
+      "trades": 362,
+      "equal_weight_return_pct": -0.015064235646950804,
+      "profit_factor": 0.990406498028598,
+      "win_rate_pct": 43.370165745856355
+    },
+    {
+      "hold_candles": 4,
+      "window": 2,
+      "start": "2026-05-02 10:00:00+00:00",
+      "end": "2026-06-15 13:00:00+00:00",
+      "assets": 120,
+      "trades": 671,
+      "equal_weight_return_pct": 1.2797929094382472,
+      "profit_factor": 1.5907689667514229,
+      "win_rate_pct": 52.90611028315947
+    },
+    {
+      "hold_candles": 4,
+      "window": 3,
+      "start": "2026-06-15 13:00:00+00:00",
+      "end": "2026-07-29 16:00:00+00:00",
+      "assets": 118,
+      "trades": 393,
+      "equal_weight_return_pct": -0.4827768300084969,
+      "profit_factor": 0.7302320219928554,
+      "win_rate_pct": 37.404580152671755
+    },
+    {
+      "hold_candles": 8,
+      "window": 1,
+      "start": "2026-03-19 07:00:00+00:00",
+      "end": "2026-05-02 10:00:00+00:00",
+      "assets": 118,
+      "trades": 362,
+      "equal_weight_return_pct": -0.06770987400155414,
+      "profit_factor": 0.962281930171712,
+      "win_rate_pct": 40.331491712707184
+    },
+    {
+      "hold_candles": 8,
+      "window": 2,
+      "start": "2026-05-02 10:00:00+00:00",
+      "end": "2026-06-15 13:00:00+00:00",
+      "assets": 120,
+      "trades": 670,
+      "equal_weight_return_pct": 1.5252167536726555,
+      "profit_factor": 1.6472925632242044,
+      "win_rate_pct": 53.73134328358209
+    },
+    {
+      "hold_candles": 8,
+      "window": 3,
+      "start": "2026-06-15 13:00:00+00:00",
+      "end": "2026-07-29 16:00:00+00:00",
+      "assets": 118,
+      "trades": 393,
+      "equal_weight_return_pct": -0.33674818237708704,
+      "profit_factor": 0.824193669550843,
+      "win_rate_pct": 38.16793893129771
+    },
+    {
+      "hold_candles": 12,
+      "window": 1,
+      "start": "2026-03-19 07:00:00+00:00",
+      "end": "2026-05-02 10:00:00+00:00",
+      "assets": 118,
+      "trades": 362,
+      "equal_weight_return_pct": -0.041704629871370615,
+      "profit_factor": 0.9772431105948608,
+      "win_rate_pct": 40.055248618784525
+    },
+    {
+      "hold_candles": 12,
+      "window": 2,
+      "start": "2026-05-02 10:00:00+00:00",
+      "end": "2026-06-15 13:00:00+00:00",
+      "assets": 120,
+      "trades": 670,
+      "equal_weight_return_pct": 1.5296085648990356,
+      "profit_factor": 1.6339108775405775,
+      "win_rate_pct": 52.68656716417911
+    },
+    {
+      "hold_candles": 12,
+      "window": 3,
+      "start": "2026-06-15 13:00:00+00:00",
+      "end": "2026-07-29 16:00:00+00:00",
+      "assets": 118,
+      "trades": 393,
+      "equal_weight_return_pct": -0.3629762116381886,
+      "profit_factor": 0.8147541348088113,
+      "win_rate_pct": 37.913486005089055
+    },
+    {
+      "hold_candles": 24,
+      "window": 1,
+      "start": "2026-03-19 07:00:00+00:00",
+      "end": "2026-05-02 10:00:00+00:00",
+      "assets": 118,
+      "trades": 361,
+      "equal_weight_return_pct": -0.003917207779607667,
+      "profit_factor": 0.997871329941037,
+      "win_rate_pct": 39.88919667590028
+    },
+    {
+      "hold_candles": 24,
+      "window": 2,
+      "start": "2026-05-02 10:00:00+00:00",
+      "end": "2026-06-15 13:00:00+00:00",
+      "assets": 120,
+      "trades": 670,
+      "equal_weight_return_pct": 1.4999209458938376,
+      "profit_factor": 1.612366769886598,
+      "win_rate_pct": 52.23880597014925
+    },
+    {
+      "hold_candles": 24,
+      "window": 3,
+      "start": "2026-06-15 13:00:00+00:00",
+      "end": "2026-07-29 16:00:00+00:00",
+      "assets": 118,
+      "trades": 391,
+      "equal_weight_return_pct": -0.3297426531553635,
+      "profit_factor": 0.8315193213923752,
+      "win_rate_pct": 38.36317135549872
+    }
+  ]
+}

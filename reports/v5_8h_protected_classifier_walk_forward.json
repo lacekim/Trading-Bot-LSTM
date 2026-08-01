@@ -1,0 +1,73 @@
+{
+  "stable": false,
+  "promoted": false,
+  "horizon": 8,
+  "stop_atr": 2.0,
+  "target_atr": 3.0,
+  "target_policy": "net-profitable protected outcome by direction",
+  "results": [
+    {
+      "fold": 1,
+      "long_threshold": 0.530802870265342,
+      "short_threshold": 0.5682462625975077,
+      "calibration": {
+        "trades": 788,
+        "long_trades": 218,
+        "short_trades": 570,
+        "return_pct": -20.00687516135673,
+        "profit_factor": 0.8890735739729337,
+        "win_rate_pct": 47.46192893401015
+      },
+      "test": {
+        "trades": 459,
+        "long_trades": 144,
+        "short_trades": 315,
+        "return_pct": -30.665751983824073,
+        "profit_factor": 0.7532836180888701,
+        "win_rate_pct": 44.226579520697165
+      }
+    },
+    {
+      "fold": 2,
+      "long_threshold": 0.5535894754827723,
+      "short_threshold": 0.5738776516237605,
+      "calibration": {
+        "trades": 565,
+        "long_trades": 151,
+        "short_trades": 414,
+        "return_pct": -4.164813072732809,
+        "profit_factor": 0.9755907013849965,
+        "win_rate_pct": 49.73451327433629
+      },
+      "test": {
+        "trades": 408,
+        "long_trades": 97,
+        "short_trades": 311,
+        "return_pct": 11.11711708827281,
+        "profit_factor": 1.1016853291897672,
+        "win_rate_pct": 51.71568627450981
+      }
+    },
+    {
+      "fold": 3,
+      "long_threshold": 0.4784012585300774,
+      "short_threshold": 0.5729869494627673,
+      "calibration": {
+        "trades": 705,
+        "long_trades": 353,
+        "short_trades": 352,
+        "return_pct": 17.512422565119824,
+        "profit_factor": 1.086967165682391,
+        "win_rate_pct": 49.9290780141844
+      },
+      "test": {
+        "trades": 356,
+        "long_trades": 208,
+        "short_trades": 148,
+        "return_pct": -4.786032557734865,
+        "profit_factor": 0.939154036190069,
+        "win_rate_pct": 47.47191011235955
+      }
+    }
+  ]
+}

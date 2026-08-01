@@ -1,0 +1,75 @@
+{
+  "promoted": false,
+  "qualified_horizons": [],
+  "stop_atr": 2.0,
+  "target_atr": 3.0,
+  "position_policy": "shared capital; at most 5 positions; 95% portfolio exposure; 1% ATR risk sizing",
+  "results": [
+    {
+      "horizon": 8,
+      "fold": 1,
+      "long_threshold": 0.005417640169554554,
+      "short_threshold": 0.008948356393145441,
+      "calibration": {
+        "trades": 777,
+        "long_trades": 201,
+        "short_trades": 576,
+        "return_pct": 31.664999213252877,
+        "profit_factor": 1.1388308960252544,
+        "win_rate_pct": 49.034749034749034
+      },
+      "test": {
+        "trades": 534,
+        "long_trades": 154,
+        "short_trades": 380,
+        "return_pct": -26.08595778245977,
+        "profit_factor": 0.80994698446517,
+        "win_rate_pct": 45.31835205992509
+      }
+    },
+    {
+      "horizon": 8,
+      "fold": 2,
+      "long_threshold": 0.007450515303380265,
+      "short_threshold": 0.0069381642653111005,
+      "calibration": {
+        "trades": 700,
+        "long_trades": 151,
+        "short_trades": 549,
+        "return_pct": -10.29578305083334,
+        "profit_factor": 0.9481491189560685,
+        "win_rate_pct": 47.14285714285714
+      },
+      "test": {
+        "trades": 460,
+        "long_trades": 55,
+        "short_trades": 405,
+        "return_pct": -5.218732515940339,
+        "profit_factor": 0.9580456751077596,
+        "win_rate_pct": 46.52173913043478
+      }
+    },
+    {
+      "horizon": 8,
+      "fold": 3,
+      "long_threshold": 0.009253953027379856,
+      "short_threshold": 0.006828371094508763,
+      "calibration": {
+        "trades": 622,
+        "long_trades": 75,
+        "short_trades": 547,
+        "return_pct": 26.118753379280136,
+        "profit_factor": 1.1485212754610474,
+        "win_rate_pct": 50.80385852090033
+      },
+      "test": {
+        "trades": 366,
+        "long_trades": 62,
+        "short_trades": 304,
+        "return_pct": -11.730146098625216,
+        "profit_factor": 0.8505268282599874,
+        "win_rate_pct": 44.80874316939891
+      }
+    }
+  ]
+}

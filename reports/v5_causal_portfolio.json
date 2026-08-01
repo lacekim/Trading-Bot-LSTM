@@ -1,0 +1,20 @@
+{
+  "strategy": "causal_rolling_original_one_candle_top_asset",
+  "starting_capital": 100000.0,
+  "final_capital": 89155.54813405313,
+  "total_return_pct": -10.84445186594687,
+  "first_half_return_pct": -10.84445186594687,
+  "next_quarter_return_pct": 0.0,
+  "final_quarter_return_pct": 0.0,
+  "maximum_drawdown_pct": -14.94121570573389,
+  "trades": 124,
+  "lookback_days": 14,
+  "minimum_observations": 50,
+  "minimum_profit_factor": 1.25,
+  "selected_assets": 1,
+  "risk_multiplier": 1.5,
+  "costs_included": true,
+  "round_trip_cost_bps": 24.0,
+  "causality": "Each daily selection uses only trade outcomes timestamped before that day.",
+  "limitation": "The loaded model may have been trained on candles inside this period. The risk multiplier and selector parameters require frozen-artifact forward validation before promotion."
+}

@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 
@@ -17,11 +18,16 @@ def _signal(symbol="BTC"):
 class ShutdownTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
+        self.market_cap_risk = patch(
+            "trading_bot_v4.execution.order_manager.Config.MARKET_CAP_RISK_ENABLED", False
+        )
+        self.market_cap_risk.start()
         self.orders = OrderManager(Path(self.temp.name) / "paper.sqlite3")
         self.orders.process_signals(_signal())
 
     def tearDown(self):
         self.orders.close()
+        self.market_cap_risk.stop()
         self.temp.cleanup()
 
     def test_graceful_preserves_position_and_blocks_entries(self):

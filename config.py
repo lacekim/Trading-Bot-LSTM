@@ -23,6 +23,7 @@ class Config:
     LOOKBACK_PERIOD = '2y'
     DATA_DIR = Path('./data')
     GMX_OHLC_DIR = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/data/GMX_OHLCVT')
+    TRADINGVIEW_HISTORY_DIR = Path(os.getenv('TRADINGVIEW_HISTORY_DIR', './data/TradingView_OHLCVT'))
     GMX_AUTO_REFRESH_ENABLED = os.getenv('GMX_AUTO_REFRESH_ENABLED', 'true').lower() in ('1', 'true', 'yes', 'on')
     GMX_AUTO_REFRESH_SECONDS = int(os.getenv('GMX_AUTO_REFRESH_SECONDS', '3300'))
     GMX_UPDATE_SCRIPT = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/update_gmx_data.py')

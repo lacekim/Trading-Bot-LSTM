@@ -16,6 +16,8 @@ from trading_bot_v4.ml.bearish_trainer import (
     BEARISH_CALIBRATION_PATH, BEARISH_MODEL_PATH, BEARISH_SCALER_PATH,
 )
 from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.macd_confirmation import macd_components
+from trading_bot_v4.utils.artifact_lineage import artifact_version
 
 
 BEARISH_SIGNALS_PATH = Path("logs/v5_bearish_model_paper_signals.csv")
@@ -41,6 +43,9 @@ def predict_bearish_signals(model: Any, scaler: Any, symbol: str, timeframe: str
     frame = features.iloc[length:].copy()
     closed = pd.to_datetime(frame.index, utc=True) + _timeframe_delta(timeframe) <= pd.Timestamp.now(tz="UTC")
     frame, probability = frame.loc[closed], probability[closed]
+    macd = macd_components(frame["close"])
+    macd["macd_histogram_previous"] = macd["macd_histogram"].shift(1)
+    macd["price_vs_ma200"] = frame["close"] / frame["close"].rolling(200).mean() - 1.0
     result = pd.DataFrame({
         "timestamp": frame.index, "symbol": symbol.upper(), "timeframe": timeframe,
         "model_probability": probability,
@@ -49,11 +54,18 @@ def predict_bearish_signals(model: Any, scaler: Any, symbol: str, timeframe: str
         "high": frame["high"].to_numpy(float), "low": frame["low"].to_numpy(float),
         "close": frame["close"].to_numpy(float),
         "candle_gap_seconds": frame["candle_gap_seconds"].to_numpy(float),
+        "atr": frame["atr"].to_numpy(float),
+        "macd_line": macd["macd_line"].to_numpy(float),
+        "macd_signal": macd["macd_signal"].to_numpy(float),
+        "macd_histogram": macd["macd_histogram"].to_numpy(float),
+        "macd_histogram_previous": macd["macd_histogram_previous"].to_numpy(float),
+        "price_vs_ma200": macd["price_vs_ma200"].to_numpy(float),
     })
     result["is_trade_candidate"] = result["model_direction"].eq("SHORT")
     result["threshold"] = threshold
     result["feature_count"] = len(columns)
     result["model_side"] = "BEARISH"
+    result["model_version"] = artifact_version([BEARISH_MODEL_PATH, BEARISH_SCALER_PATH, BEARISH_CALIBRATION_PATH])
     return result
 
 

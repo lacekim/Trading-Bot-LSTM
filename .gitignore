@@ -5,6 +5,7 @@
 !reports/v5_production_backtest_portfolio.json
 logs/
 runtime/
+data/cache/
 *.log
 *.sqlite3
 *.sqlite3-shm

@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
+from html import escape
 import threading
 import time
 from typing import Any, Protocol
@@ -90,16 +91,62 @@ class GMXMinutePriceProvider:
         return MarketPrice(requested, price, observed.isoformat(timespec="seconds"), age, "GMX_1M")
 
 
+class KrakenTickerPriceProvider:
+    """Public Kraken executable-side ticker fallback; no API credentials required."""
+
+    SYMBOL_ALIASES = {"BTC": "XBT", "DOGE": "XDG", "WBTC.B": "XBT"}
+
+    def __init__(self, base_url: str | None = None, timeout: int | None = None):
+        self.base_url = (base_url or Config.KRAKEN_PUBLIC_API_BASE).rstrip("/")
+        self.timeout = int(timeout or Config.POSITION_MONITOR_KRAKEN_TIMEOUT_SECONDS)
+
+    def fetch(self, symbol: str, direction: str | None = None) -> MarketPrice:
+        requested = str(symbol).upper()
+        direction = str(direction or "LONG").upper()
+        if direction not in {"LONG", "SHORT"}:
+            raise ValueError(f"invalid position direction for {requested}: {direction}")
+        base = self.SYMBOL_ALIASES.get(requested, requested)
+        pair = f"{base}USD"
+        response = requests.get(
+            f"{self.base_url}/Ticker", params={"pair": pair}, timeout=self.timeout
+        )
+        response.raise_for_status()
+        payload = response.json()
+        errors = payload.get("error", []) if isinstance(payload, dict) else []
+        if errors:
+            raise ValueError(f"Kraken ticker rejected {pair}: {'; '.join(map(str, errors))}")
+        result = payload.get("result", {}) if isinstance(payload, dict) else {}
+        if not isinstance(result, dict) or not result:
+            raise ValueError(f"Kraken returned no ticker for {pair}")
+        ticker = next(iter(result.values()))
+        # A LONG can be sold at bid; a SHORT can be bought back at ask.
+        side = "b" if direction == "LONG" else "a"
+        values = ticker.get(side, []) if isinstance(ticker, dict) else []
+        if not values:
+            raise ValueError(f"Kraken returned no {'bid' if side == 'b' else 'ask'} for {pair}")
+        price = float(values[0])
+        if price <= 0:
+            raise ValueError(f"Kraken returned an invalid ticker price for {pair}")
+        now = datetime.now(timezone.utc)
+        return MarketPrice(
+            requested, price, now.isoformat(timespec="seconds"), 0.0,
+            f"KRAKEN_TICKER_{'BID' if side == 'b' else 'ASK'}",
+        )
+
+
 class GMXTickerPriceProvider:
     """Read executable-side GMX oracle prices, falling back to 1m closes."""
 
     SYMBOL_ALIASES = GMXMinutePriceProvider.SYMBOL_ALIASES
 
     def __init__(self, base_url: str | None = None, timeout: int | None = None,
-                 fallback: Any | None = None):
+                 fallback: Any | None = None, kraken_fallback: Any | None = None):
         self.base_url = (base_url or Config.GMX_PRICE_API_BASE).rstrip("/")
         self.timeout = int(timeout or Config.POSITION_MONITOR_REQUEST_TIMEOUT_SECONDS)
         self.fallback = fallback or GMXMinutePriceProvider(self.base_url, self.timeout)
+        self.kraken_fallback = kraken_fallback or (
+            KrakenTickerPriceProvider() if Config.POSITION_MONITOR_KRAKEN_FALLBACK_ENABLED else None
+        )
         self._token_decimals: dict[str, int] = {}
         self._ticker_cache: list[dict[str, Any]] = []
         self._ticker_cache_monotonic = 0.0
@@ -223,13 +270,26 @@ class GMXTickerPriceProvider:
         except Exception as exc:
             self._cycle_primary_error = exc
             try:
-                quote = self.fallback.fetch(symbol, direction)
-            except TypeError:
-                quote = self.fallback.fetch(symbol)
-            return MarketPrice(
-                quote.symbol, quote.price, quote.observed_at, quote.age_seconds,
-                "GMX_1M_FALLBACK", str(exc),
-            )
+                try:
+                    quote = self.fallback.fetch(symbol, direction)
+                except TypeError:
+                    quote = self.fallback.fetch(symbol)
+                return MarketPrice(
+                    quote.symbol, quote.price, quote.observed_at, quote.age_seconds,
+                    "GMX_1M_FALLBACK", str(exc),
+                )
+            except Exception as gmx_candle_exc:
+                if self.kraken_fallback is None:
+                    raise
+                try:
+                    quote = self.kraken_fallback.fetch(symbol, direction)
+                except TypeError:
+                    quote = self.kraken_fallback.fetch(symbol)
+                reason = f"GMX ticker failed: {exc}; GMX 1m failed: {gmx_candle_exc}"
+                return MarketPrice(
+                    quote.symbol, quote.price, quote.observed_at, quote.age_seconds,
+                    quote.source, reason,
+                )
 
 
 class PositionMonitor:
@@ -248,6 +308,24 @@ class PositionMonitor:
         self._last_heartbeat_monotonic = 0.0
         self._consecutive_failures = 0
         self._failure_alerted = False
+        self._last_alert_monotonic = 0.0
+        self._last_alert_kind = ""
+
+    def _alert_allowed(self, kind: str) -> bool:
+        now = time.monotonic()
+        cooldown_elapsed = (
+            not self._last_alert_monotonic
+            or now - self._last_alert_monotonic >= Config.POSITION_MONITOR_ALERT_COOLDOWN_SECONDS
+        )
+        # A complete monitor/feed failure must escalate immediately even if a
+        # lower-severity primary-ticker warning was recently sent.
+        severity = {"ticker_fallback": 1, "all_feeds_failed": 2, "monitor_cycle_failed": 3}
+        if (not cooldown_elapsed
+                and severity.get(kind, 0) <= severity.get(self._last_alert_kind, 0)):
+            return False
+        self._last_alert_monotonic = now
+        self._last_alert_kind = kind
+        return True
 
     @property
     def is_running(self) -> bool:
@@ -324,7 +402,9 @@ class PositionMonitor:
                 continue
             try:
                 if not shadow and quote.fallback_reason:
-                    warnings.append(f"{symbol}: ticker unavailable; using 1m fallback ({quote.fallback_reason})")
+                    warnings.append(
+                        f"{symbol}: GMX degraded; using {quote.source} fallback ({quote.fallback_reason})"
+                    )
                 event = (
                     manager.monitor_challenger_market_price(symbol, quote.price, quote.observed_at, quote.source)
                     if shadow else
@@ -344,9 +424,14 @@ class PositionMonitor:
                             "━━━━━━━━━━━━━━━━━━\n"
                             f"🪙 <b>{event['symbol']}</b> · <code>{event['direction']}</code>\n"
                             f"Reason: <b>{event['reason'].replace('_', ' ').upper()}</b>\n"
+                            f"Entry: <code>${event['entry_price']:.8g}</code>\n"
                             f"Observed: <code>${event['observed_price']:.8g}</code>\n"
                             f"Accounting price: <code>${event['accounting_price']:.8g}</code>\n"
-                            f"Feed time: <code>{event['observed_at']}</code>"
+                            f"Executed paper exit: <code>${event['exit_price']:.8g}</code>\n"
+                            f"Net realized P&amp;L: <code>${event['net_pnl']:+.2f}</code>\n"
+                            f"Total trade fees: <code>${event['fees']:.2f}</code>\n"
+                            f"Price source: <code>{escape(str(event['source']))}</code>\n"
+                            f"Feed time: <code>{escape(str(event['observed_at']))}</code>"
                         )
             except Exception as exc:
                 errors.append(f"{'shadow ' if shadow else ''}{symbol}: {exc}")
@@ -362,13 +447,24 @@ class PositionMonitor:
                 position_monitor_last_error=error_text,
             )
             self.log(f"WARNING position monitor failure #{self._consecutive_failures}: {error_text}")
-            if self._consecutive_failures >= self.failure_threshold and not self._failure_alerted:
+            alert_kind = "all_feeds_failed" if errors else "ticker_fallback"
+            if (self._consecutive_failures >= self.failure_threshold
+                    and not self._failure_alerted and self._alert_allowed(alert_kind)):
                 self._failure_alerted = True
-                self._alert(
-                    "🚨 <b>POSITION MONITOR DEGRADED</b>\n"
-                    f"The primary live price feed was degraded for {self._consecutive_failures} consecutive checks.\n"
-                    "Open positions remain persisted. Manual review is required."
-                )
+                if errors:
+                    self._alert(
+                        "🚨 <b>POSITION MONITOR FEEDS FAILED</b>\n"
+                        f"No usable GMX price was obtained for {self._consecutive_failures} consecutive checks.\n"
+                        f"Affected: <code>{escape('; '.join(errors))}</code>\n"
+                        "Open positions remain persisted, but manual price review is required."
+                    )
+                else:
+                    self._alert(
+                        "⚠️ <b>PRIMARY TICKER DEGRADED</b>\n"
+                        f"The GMX live ticker failed for {self._consecutive_failures} consecutive checks.\n"
+                        "A secondary GMX/Kraken price fallback is working and open positions remain protected.\n"
+                        f"Repeat warnings are suppressed for {Config.POSITION_MONITOR_ALERT_COOLDOWN_SECONDS // 60} minutes unless all feeds fail."
+                    )
         else:
             if self._consecutive_failures:
                 self.log("Position monitor price feed recovered")
@@ -412,7 +508,8 @@ class PositionMonitor:
                         position_monitor_last_error=str(exc),
                     )
                     self.log(f"ERROR position monitor cycle failed: {exc}")
-                    if self._consecutive_failures >= self.failure_threshold and not self._failure_alerted:
+                    if (self._consecutive_failures >= self.failure_threshold
+                            and not self._failure_alerted and self._alert_allowed("monitor_cycle_failed")):
                         self._failure_alerted = True
                         self._alert("🚨 <b>POSITION MONITOR FAILED</b>\nManual intervention may be required.")
                 self._stop.wait(self.interval)
