@@ -146,7 +146,7 @@ def _simulate_prepared_signals(
             debug_rows.append({"timestamp": timestamp, "trade_result": "BLOCKED_COOLDOWN", "capital": capital})
             continue
 
-        if trades_today >= max_trades_per_day:
+        if max_trades_per_day > 0 and trades_today >= max_trades_per_day:
             equity.append(capital)
             debug_rows.append({"timestamp": timestamp, "trade_result": "BLOCKED_DAILY_TRADE_LIMIT", "capital": capital})
             continue

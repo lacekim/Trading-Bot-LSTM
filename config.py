@@ -87,6 +87,7 @@ class Config:
     # Stricter threshold
     MIN_SIGNAL_THRESHOLD = 0.58  # 58% minimum confidence
     MIN_DIRECTIONAL_CONFIDENCE = 0.58
+    MODEL_MIN_PROMOTION_ACCURACY_PCT = float(os.getenv('MODEL_MIN_PROMOTION_ACCURACY_PCT', '55.0'))
 
     # Keep live entries aligned with the model signal path; sentiment runs after candidates are found.
     ENABLE_ENTRY_CONTEXT_FILTER = False

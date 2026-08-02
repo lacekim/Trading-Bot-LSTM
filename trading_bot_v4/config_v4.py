@@ -82,6 +82,8 @@ class V4Config(LegacyConfig):
     # Promotion uses recent economics plus separate validated/walk-forward evidence.
     GO_MIN_RECENT_PROFIT_FACTOR = float(os.getenv("GO_MIN_RECENT_PROFIT_FACTOR", "1.30"))
     GO_MIN_VALIDATED_PROFIT_FACTOR = float(os.getenv("GO_MIN_VALIDATED_PROFIT_FACTOR", "1.30"))
+    GO_MIN_RECENT_WIN_RATE_PCT = float(os.getenv("GO_MIN_RECENT_WIN_RATE_PCT", "45.0"))
+    GO_MIN_VALIDATED_WIN_RATE_PCT = float(os.getenv("GO_MIN_VALIDATED_WIN_RATE_PCT", "45.0"))
     GO_MIN_WALK_FORWARD_STABILITY = float(os.getenv("GO_MIN_WALK_FORWARD_STABILITY", "70"))
     GO_MIN_VALIDATED_TRADES = int(os.getenv("GO_MIN_VALIDATED_TRADES", "100"))
     GO_MAX_VALIDATED_DRAWDOWN_PCT = float(os.getenv("GO_MAX_VALIDATED_DRAWDOWN_PCT", "-5"))

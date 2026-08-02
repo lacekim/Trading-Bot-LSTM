@@ -117,7 +117,8 @@ def predict_original_baseline_signals(model: Any, scaler: Any, symbol: str, time
 
 
 def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, model: Any,
-                                        scaler: Any) -> dict[str, Any]:
+                                        scaler: Any, signals_path: Path | None = None,
+                                        summary_path: Path | None = None) -> dict[str, Any]:
     """Generate the active baseline LONG signals and persist daily-analysis inputs."""
     frames, summaries = [], []
     version = artifact_version([Config.MODEL_DIR / Config.MODEL_NAME, Config.MODEL_DIR / Config.SCALER_NAME])
@@ -139,11 +140,13 @@ def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, mode
             "latest_price": float(latest["price"]) if latest is not None else np.nan,
         })
     combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
-    ORIGINAL_BASELINE_SIGNALS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    combined.to_csv(ORIGINAL_BASELINE_SIGNALS_PATH, index=False)
-    pd.DataFrame(summaries).to_csv(ORIGINAL_BASELINE_SUMMARY_PATH, index=False)
-    return {"signals": combined, "signals_path": ORIGINAL_BASELINE_SIGNALS_PATH,
-            "summary_path": ORIGINAL_BASELINE_SUMMARY_PATH, "assets_evaluated": len(summaries)}
+    signals_path = Path(signals_path or ORIGINAL_BASELINE_SIGNALS_PATH)
+    summary_path = Path(summary_path or ORIGINAL_BASELINE_SUMMARY_PATH)
+    signals_path.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(signals_path, index=False)
+    pd.DataFrame(summaries).to_csv(summary_path, index=False)
+    return {"signals": combined, "signals_path": signals_path,
+            "summary_path": summary_path, "assets_evaluated": len(summaries)}
 
 
 def _prepare_smc_signals(smc_signals: pd.DataFrame) -> pd.DataFrame:

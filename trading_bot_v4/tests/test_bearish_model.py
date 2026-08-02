@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import pandas as pd
 
@@ -62,6 +63,16 @@ class BearishModelTests(unittest.TestCase):
         active = _active_directional_signals(signals, [], set(), {"OPEN_ONLY"})
         self.assertEqual(active["symbol"].tolist(), ["OPEN_ONLY"])
         self.assertFalse(bool(active.iloc[0]["_entry_eligible"]))
+
+    def test_persistent_policy_symbol_cannot_bypass_directional_qualification(self):
+        signals = pd.DataFrame([{
+            "symbol": "VVV", "model_direction": "LONG", "macd_line": 2,
+            "macd_signal": 1, "macd_histogram": 1,
+            "macd_histogram_previous": -1, "price_vs_ma200": .1,
+        }])
+        with patch.dict("os.environ", {"PERSISTENT_POLICY_SYMBOLS": "VVV"}, clear=False):
+            active = _active_directional_signals(signals, [], set())
+        self.assertTrue(active.empty)
 
     def test_open_positions_remain_in_hourly_analysis_after_demotion(self):
         result = _analysis_symbols_with_positions(

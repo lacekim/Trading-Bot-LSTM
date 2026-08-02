@@ -31,7 +31,6 @@ from trading_bot_v4.execution.qualified_market_monitor import QualifiedMarketMon
 from trading_bot_v4.features.gmx_feature_collection import collect_hourly_gmx_features
 from trading_bot_v4.risk.market_cap_tiers import collect_market_caps
 from trading_bot_v4.utils.macd_confirmation import macd_entry_confirmation
-from trading_bot_v4.execution.persistent_policy import policy_for, persistent_symbols
 from trading_bot_v4.execution.shutdown import ShutdownCoordinator
 from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode, graceful_signal_handler
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock
@@ -277,7 +276,7 @@ def _hourly_refresh_symbols(timeframe: str) -> list[str]:
         status["decision"].astype(str).str.upper().eq("GO"),
         "symbol",
     ]
-    return list(dict.fromkeys([*selected.astype(str).str.upper().tolist(), *sorted(persistent_symbols())]))
+    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
 
 
 def _hourly_analysis_symbols(timeframe: str) -> list[str]:
@@ -295,7 +294,7 @@ def _hourly_analysis_symbols(timeframe: str) -> list[str]:
     selected = status.loc[
         status["decision"].astype(str).str.upper().isin({"GO", "WATCH"}), "symbol"
     ]
-    return list(dict.fromkeys([*selected.astype(str).str.upper().tolist(), *sorted(persistent_symbols())]))
+    return list(dict.fromkeys(selected.astype(str).str.upper().tolist()))
 
 
 def _hourly_watch_symbols(timeframe: str) -> list[str]:
@@ -318,14 +317,13 @@ def _hourly_watch_symbols(timeframe: str) -> list[str]:
 
 def _qualified_short_symbols() -> list[str]:
     """Return bearish promotions plus bidirectional forward-paper symbols."""
-    forward_symbols = persistent_symbols()
     try:
         calibration = load_bearish_calibration()
     except (FileNotFoundError, ValueError, json.JSONDecodeError):
-        return sorted(forward_symbols)
+        return []
     if not calibration.get("promoted", False):
-        return sorted(forward_symbols)
-    return sorted(forward_symbols | {
+        return []
+    return sorted({
         str(symbol).upper() for symbol in calibration.get("promoted_symbols", {})
     })
 
@@ -348,11 +346,10 @@ def _active_directional_signals(signals: pd.DataFrame, long_symbols: list[str],
     open_symbols = {str(value).upper() for value in (open_symbols or set())}
     symbol = signals["symbol"].astype(str).str.upper()
     direction = signals["model_direction"].astype(str).str.upper()
-    persistent = symbol.map(lambda value: policy_for(value).enabled)
-    directional_qualification = (direction.eq("LONG") & (symbol.isin(long_symbols) | persistent)) | (
-        direction.eq("SHORT") & (symbol.isin(short_symbols) | persistent)
+    directional_qualification = (direction.eq("LONG") & symbol.isin(long_symbols)) | (
+        direction.eq("SHORT") & symbol.isin(short_symbols)
     )
-    entry_eligible = directional_qualification & (persistent | macd_entry_confirmation(signals))
+    entry_eligible = directional_qualification & macd_entry_confirmation(signals)
     allowed = entry_eligible | direction.eq("HOLD") | symbol.isin(open_symbols)
     active = signals.loc[allowed].copy()
     active["_entry_eligible"] = entry_eligible.loc[allowed].to_numpy()

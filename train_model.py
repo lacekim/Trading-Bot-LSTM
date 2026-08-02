@@ -793,6 +793,16 @@ def train_model(timeframe=None, lookback=None, send_telegram=True):
         # Validation
         validation_results = validate_classifier(y_val, y_pred_proba, threshold=0.5)
 
+        # Never replace the active artifact with a retrain that its own
+        # validation labels WARNING/CRITICAL. The scheduler snapshots the
+        # previous artifacts and will restore them when this raises.
+        if validation_results["accuracy"] < Config.MODEL_MIN_PROMOTION_ACCURACY_PCT:
+            raise RuntimeError(
+                "LONG model promotion rejected: validation accuracy "
+                f"{validation_results['accuracy']:.2f}% is below "
+                f"{Config.MODEL_MIN_PROMOTION_ACCURACY_PCT:.2f}%"
+            )
+
         # Generate charts
         history_path = 'training_history.png'
         predictions_path = 'predictions.png'

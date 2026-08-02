@@ -580,22 +580,17 @@ blocks entry. The tier and sizing inputs are persisted with each opened position
 The older `--backtest` command remains available only as the labeled legacy
 upside-only, next-candle baseline. Do not use its result as V5 performance.
 
-### VVV persistent forward-paper policy
+### Optional persistent research policy
 
-VVV uses an explicit lower-turnover policy shared by model inference,
-production backtesting, and paper execution: symmetric 0.60/0.40 directions,
-0.5 ATR stop, 20 ATR target, and a 240-hour maximum hold. Stops, targets, and
-hourly reversals can close sooner. GMX admission/feed checks remain active,
-while MACD and market-cap sizing caps do not suppress this paper candidate.
-The ATR stop still sizes the position to 1% account risk. VVV is included in
-hourly analysis and live-price collection during the forward test even if the
-daily research label is NO-GO; other assets retain their existing qualification
-and execution rules.
+The persistent policy is disabled by default. Naming a symbol here changes its
+signal thresholds and exit parameters only after that direction passes the
+normal daily qualification, MACD confirmation, market-cap sizing, liquidity,
+spread, and feed gates. It never adds a NO-GO asset to the tradable universe.
 
 The defaults can be overridden without code changes:
 
 ```env
-PERSISTENT_POLICY_SYMBOLS=VVV
+PERSISTENT_POLICY_SYMBOLS=
 PERSISTENT_SIGNAL_THRESHOLD=0.60
 PERSISTENT_STOP_ATR=0.50
 PERSISTENT_TARGET_ATR=20.0

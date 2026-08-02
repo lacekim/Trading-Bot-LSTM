@@ -311,11 +311,24 @@ def run_validated_whitelist_recent_sweep(args: Any) -> ValidatedWhitelistRecentS
     symbol = str(getattr(args, "asset", "") or getattr(args, "symbol", Config.GMX_SYMBOL)).upper()
     signals_path = Path(getattr(args, "signals_path", ORIGINAL_BASELINE_SIGNALS_PATH))
     output_path = getattr(args, "sweep_output_path", None)
+    preloaded_signals = getattr(args, "signals_df", None)
     windows = [7, 14, 30, 60, 90]
 
     rows: list[dict[str, Any]] = []
     for recent_days in windows:
-        signals = _load_validated_whitelist_signals(timeframe, [symbol], recent_days=recent_days, signals_path=signals_path)
+        if isinstance(preloaded_signals, pd.DataFrame):
+            signals = preloaded_signals.loc[
+                preloaded_signals["symbol"].astype(str).str.upper().eq(symbol)
+            ].copy()
+            if not signals.empty:
+                latest_timestamp = signals["timestamp"].max()
+                signals = signals.loc[
+                    signals["timestamp"].ge(latest_timestamp - pd.Timedelta(days=recent_days))
+                ].copy()
+        else:
+            signals = _load_validated_whitelist_signals(
+                timeframe, [symbol], recent_days=recent_days, signals_path=signals_path
+            )
         if signals.empty:
             rows.append(
                 {
@@ -390,6 +403,7 @@ def _evaluate_readiness(symbol: str, timeframe: str, sweep: pd.DataFrame) -> tup
     return_14 = _finite_metric(row_14, "return_pct")
     return_30 = _finite_metric(row_30, "return_pct")
     profit_factor_30 = _finite_metric(row_30, "profit_factor")
+    win_rate_30 = _finite_metric(row_30, "win_rate_pct")
     drawdown_30 = _finite_metric(row_30, "max_drawdown_pct")
     trade_count_30 = int(_finite_metric(row_30, "trade_count")) if np.isfinite(_finite_metric(row_30, "trade_count")) else 0
 
@@ -403,6 +417,10 @@ def _evaluate_readiness(symbol: str, timeframe: str, sweep: pd.DataFrame) -> tup
     if not profit_factor_30 >= Config.GO_MIN_RECENT_PROFIT_FACTOR:
         failed.append(
             f"30d profit factor >= {Config.GO_MIN_RECENT_PROFIT_FACTOR:.2f} failed: {profit_factor_30:.6f}"
+        )
+    if not win_rate_30 >= Config.GO_MIN_RECENT_WIN_RATE_PCT:
+        failed.append(
+            f"30d win rate >= {Config.GO_MIN_RECENT_WIN_RATE_PCT:.1f}% failed: {win_rate_30:.6f}%"
         )
     if not drawdown_30 > -5.0:
         failed.append(f"30d max drawdown better than -5% failed: {drawdown_30:.6f}%")
@@ -418,6 +436,7 @@ def _evaluate_readiness(symbol: str, timeframe: str, sweep: pd.DataFrame) -> tup
         "return_14d_pct": return_14,
         "return_30d_pct": return_30,
         "profit_factor_30d": profit_factor_30,
+        "win_rate_30d_pct": win_rate_30,
         "max_drawdown_30d_pct": drawdown_30,
         "trade_count_30d": trade_count_30,
     }
@@ -452,8 +471,12 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     top_validated = int(getattr(args, "top_validated", 0) or 0)
     explicit_symbols = [str(symbol).upper() for symbol in getattr(args, "symbols", []) or []]
+    signals_path = Path(getattr(args, "signals_path", ORIGINAL_BASELINE_SIGNALS_PATH))
     if top_validated > 0 or explicit_symbols:
         symbols = list(dict.fromkeys(explicit_symbols or _load_top_validated_symbols(timeframe, top_validated)))
+        all_signals = _load_validated_whitelist_signals(
+            timeframe, symbols, signals_path=signals_path
+        )
         readiness_rows: list[dict[str, Any]] = []
         sweep_rows: list[pd.DataFrame] = []
         for symbol in symbols:
@@ -465,7 +488,8 @@ def run_paper_readiness(args: Any) -> PaperReadinessResult:
                     "symbol": symbol,
                     "timeframe": timeframe,
                     "capital": float(getattr(args, "capital", 100000.0)),
-                    "signals_path": SMC_MODEL_PAPER_SIGNALS_PATH,
+                    "signals_path": signals_path,
+                    "signals_df": all_signals,
                     "sweep_output_path": None,
                 },
             )()
@@ -826,6 +850,7 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
     timeframe = str(getattr(args, "timeframe", Config.TIMEFRAME))
     starting_capital = float(getattr(args, "capital", 100000.0))
     profitable_only = bool(getattr(args, "profitable_only", False))
+    signals_path = Path(getattr(args, "signals_path", ORIGINAL_BASELINE_SIGNALS_PATH))
     csv_path = Path("logs/v4_profitable_go_assets_performance.csv") if profitable_only else Path("logs/v4_go_assets_performance.csv")
     html_path = Path("logs/v4_profitable_go_assets_performance.html") if profitable_only else Path("logs/v4_go_assets_performance.html")
 
@@ -841,7 +866,7 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
             _write_go_asset_selection_audit(readiness, pd.DataFrame())
         return _empty_go_assets_report(csv_path, html_path, timeframe)
 
-    signals = _load_validated_whitelist_signals(timeframe, candidate_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
+    signals = _load_validated_whitelist_signals(timeframe, candidate_assets, signals_path=signals_path)
     if signals.empty:
         if not profitable_only:
             _write_go_asset_selection_audit(readiness, pd.DataFrame())
@@ -878,7 +903,7 @@ def run_go_assets_performance(args: Any) -> GoAssetsPerformanceResult:
         return _empty_go_assets_report(csv_path, html_path, timeframe)
 
     per_asset_capital = starting_capital / len(selected_assets)
-    signals = _load_validated_whitelist_signals(timeframe, selected_assets, signals_path=SMC_MODEL_PAPER_SIGNALS_PATH)
+    signals = _load_validated_whitelist_signals(timeframe, selected_assets, signals_path=signals_path)
     rows: list[dict[str, Any]] = []
     debug_frames: list[pd.DataFrame] = []
     for symbol in selected_assets:

@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pandas as pd
 
 from trading_bot_v4.execution.order_manager import OrderManager
+from trading_bot_v4.execution.paper_model_performance import _simulate_prepared_signals
 from trading_bot_v4.risk.market_cap_tiers import AssetRiskDecision
 
 
@@ -38,6 +39,18 @@ class PaperOrderManagerTests(unittest.TestCase):
         self.assertEqual(first.orders_opened, 1)
         self.assertEqual(again.orders_opened, 0)
         self.assertEqual(restored.open_positions, 1)
+
+    def test_zero_daily_trade_limit_means_unlimited_in_qualification_simulator(self):
+        frame = pd.DataFrame([
+            {"timestamp": "2026-01-01T01:00:00", "model_direction": "LONG", "Close": 100.0,
+             "High_next": 102.0, "Low_next": 99.5, "Close_next": 101.0, "ATR": 1.0},
+            {"timestamp": "2026-01-01T02:00:00", "model_direction": "LONG", "Close": 101.0,
+             "High_next": 103.0, "Low_next": 100.5, "Close_next": 102.0, "ATR": 1.0},
+        ])
+        with patch("trading_bot_v4.execution.paper_model_performance.Config.PAPER_MAX_TRADES_PER_DAY", 0), \
+             patch("trading_bot_v4.execution.paper_model_performance.Config.PAPER_MIN_BARS_BETWEEN_TRADES", 0):
+            metrics, _ = _simulate_prepared_signals(frame, "model_direction", 10000.0)
+        self.assertEqual(metrics["trade_count"], 2)
 
     def test_reversal_closes_and_respects_symbol_cooldown(self):
         with patch("trading_bot_v4.execution.order_manager.Config.PAPER_MIN_BARS_BETWEEN_TRADES", 4):

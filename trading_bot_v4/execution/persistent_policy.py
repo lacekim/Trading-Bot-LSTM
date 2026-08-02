@@ -17,14 +17,14 @@ class PersistentPolicy:
 
 
 def persistent_symbols() -> set[str]:
-    return {x.strip().upper() for x in os.getenv("PERSISTENT_POLICY_SYMBOLS", "VVV").split(",") if x.strip()}
+    return {x.strip().upper() for x in os.getenv("PERSISTENT_POLICY_SYMBOLS", "").split(",") if x.strip()}
 
 
 def policy_for(symbol: str) -> PersistentPolicy:
     if str(symbol).upper() in persistent_symbols():
         return PersistentPolicy(True, float(os.getenv("PERSISTENT_SIGNAL_THRESHOLD", "0.60")),
             float(os.getenv("PERSISTENT_STOP_ATR", "0.50")), float(os.getenv("PERSISTENT_TARGET_ATR", "20.0")),
-            int(os.getenv("PERSISTENT_MAX_HOLD_CANDLES", "240")), False, False)
+            int(os.getenv("PERSISTENT_MAX_HOLD_CANDLES", "240")), True, True)
     return PersistentPolicy(False, Config.MIN_SIGNAL_THRESHOLD, Config.ATR_SL_MULTIPLIER,
         Config.ATR_TP_MULTIPLIER, Config.PAPER_MAX_HOLD_CANDLES, True, True)
 

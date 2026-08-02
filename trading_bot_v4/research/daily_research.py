@@ -33,6 +33,8 @@ DAILY_GO_STATUS_PATH = Path("reports/v4_daily_go_status.csv")
 DAILY_QUALIFICATION_AUDIT_PATH = Path("reports/v5_daily_qualification_audit.csv")
 DAILY_SMC_FEATURE_DIR = Path("reports/smc_features")
 DAILY_QUALIFICATION_HISTORY_DIR = Path("reports/qualification_history")
+DAILY_ALL_ASSET_SIGNALS_PATH = Path("logs/v5_daily_all_asset_original_signals.csv")
+DAILY_ALL_ASSET_SUMMARY_PATH = Path("logs/v5_daily_all_asset_original_summary.csv")
 
 
 @dataclass(frozen=True)
@@ -214,6 +216,7 @@ def _readiness_recent_metrics(readiness: pd.DataFrame) -> pd.DataFrame:
         "return_14d_pct",
         "return_30d_pct",
         "profit_factor_30d",
+        "win_rate_30d_pct",
         "max_drawdown_30d_pct",
         "trade_count_30d",
         "baseline_return_pct",
@@ -327,7 +330,7 @@ def _apply_validated_oos_gate(readiness: pd.DataFrame, rankings: pd.DataFrame) -
     if gated.empty or rankings.empty:
         return gated
     columns = [
-        "symbol", "baseline_return_pct", "baseline_profit_factor",
+        "symbol", "baseline_return_pct", "baseline_profit_factor", "baseline_win_rate_pct",
         "baseline_max_drawdown_pct", "baseline_trade_count",
         "walk_forward_stability",
     ]
@@ -343,6 +346,8 @@ def _apply_validated_oos_gate(readiness: pd.DataFrame, rankings: pd.DataFrame) -
         ("baseline_return_pct", lambda value: value > 0.0, "validated return > 0"),
         ("baseline_profit_factor", lambda value: value >= Config.GO_MIN_VALIDATED_PROFIT_FACTOR,
          f"validated profit factor >= {Config.GO_MIN_VALIDATED_PROFIT_FACTOR:.2f}"),
+        ("baseline_win_rate_pct", lambda value: value >= Config.GO_MIN_VALIDATED_WIN_RATE_PCT,
+         f"validated win rate >= {Config.GO_MIN_VALIDATED_WIN_RATE_PCT:.1f}%"),
         ("baseline_max_drawdown_pct", lambda value: value > Config.GO_MAX_VALIDATED_DRAWDOWN_PCT,
          f"validated drawdown > {Config.GO_MAX_VALIDATED_DRAWDOWN_PCT:.2f}%"),
         ("baseline_trade_count", lambda value: value >= Config.GO_MIN_VALIDATED_TRADES,
@@ -619,20 +624,25 @@ def run_daily_research(args: Any) -> DailyResearchResult:
     if original_model is None or original_scaler is None:
         from trading_bot_v4.utils.model_cache import ModelScalerCache
         original_model, original_scaler = ModelScalerCache().load()
-    run_original_baseline_paper_signals(
+    daily_signals = run_original_baseline_paper_signals(
         sorted({str(symbol).upper() for symbol in list_gmx_symbols(timeframe)}),
         timeframe, original_model, original_scaler,
+        signals_path=DAILY_ALL_ASSET_SIGNALS_PATH,
+        summary_path=DAILY_ALL_ASSET_SUMMARY_PATH,
     )
 
     validation_symbols = sorted({str(symbol).upper() for symbol in list_gmx_symbols(timeframe)})
     readiness_result = run_paper_readiness(
-        _daily_args(timeframe=timeframe, top_validated=top_count, symbols=validation_symbols)
+        _daily_args(timeframe=timeframe, top_validated=top_count, symbols=validation_symbols,
+                    signals_path=daily_signals["signals_path"])
     )
     readiness = readiness_result.readiness_df if readiness_result.readiness_df is not None else pd.DataFrame()
     if readiness.empty:
         raise ValueError("Daily research readiness report is empty")
 
-    performance_result = run_go_assets_performance(_daily_args(timeframe=timeframe))
+    performance_result = run_go_assets_performance(
+        _daily_args(timeframe=timeframe, signals_path=daily_signals["signals_path"])
+    )
     performance = performance_result.report_df
 
     strict_readiness = _apply_strict_go_status(readiness, performance_result.selected_assets)
