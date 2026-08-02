@@ -1,9 +1,9 @@
 {
   "engine": "V5_ORIGINAL_LONG_PLUS_BEARISH_SHORT",
   "timeframe": "1h",
-  "model_sides": "long",
+  "model_sides": "both",
   "zero_costs": false,
-  "qualification_policy": "IGNORED FOR DIAGNOSTIC RESEARCH; every selected asset may trade both directions",
+  "qualification_policy": "current daily GO list for LONG; current untouched-holdout promotion for SHORT",
   "qualified_long_symbols": [],
   "qualified_short_symbols": [],
   "assets_tested": 1,
@@ -11,8 +11,8 @@
   "market_cap_risk_enabled": true,
   "risk_allowed_long_assets": 1,
   "risk_allowed_short_assets": 1,
-  "equal_weight_return_pct": 286.13901805932926,
-  "warning": "Diagnostic only: qualification was bypassed and model results may include training-period observations. Market-cap and GMX-depth admission use the latest available snapshot across history; historical cap tiers, historical executable spreads, and shared-portfolio small-cap concurrency cannot be reconstructed by this independent per-asset test.",
+  "equal_weight_return_pct": 236.4077394449871,
+  "warning": "Current-snapshot qualification is not a historical daily walk-forward selector. Model results may include training-period observations. Market-cap and GMX-depth admission use the latest available snapshot across history.",
   "baseline_parity": {
     "symbol": "VVV",
     "persistent_policy": true,

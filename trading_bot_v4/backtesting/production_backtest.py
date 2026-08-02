@@ -31,7 +31,7 @@ from trading_bot_v4.utils.model_cache import ModelScalerCache
 from trading_bot_v4.backtesting.baseline_contract import active_execution_parity_audit
 from trading_bot_v4.risk.market_cap_tiers import AssetRiskDecision, evaluate_asset_risk
 from trading_bot_v4.utils.macd_confirmation import macd_entry_confirmation
-from trading_bot_v4.execution.persistent_policy import policy_for
+from trading_bot_v4.execution.persistent_policy import direction_for_probability, policy_for
 
 
 logger = build_logger("v5_production_backtest")
@@ -292,7 +292,15 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
                         Config.PAPER_MAX_POSITION_PCT,
                     ) for direction in ("LONG", "SHORT")
                 }
-            if model_sides == "both":
+            persistent_policy = policy_for(symbol)
+            if persistent_policy.enabled:
+                combined = predict_original_baseline_signals(
+                    long_model, long_scaler, symbol, timeframe, closed_only=False
+                )
+                combined["model_direction"] = combined["model_probability"].map(
+                    lambda probability: direction_for_probability(float(probability), symbol)
+                )
+            elif model_sides == "both":
                 combined = _cached_directional_signals(
                     symbol, timeframe, long_model, long_scaler, bearish_model, bearish_scaler,
                     float(calibration.get("promoted_symbols", {}).get(symbol, bearish_threshold)),
@@ -309,10 +317,14 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
                     ) if model_sides == "short" else pd.DataFrame()
                 )
                 combined = combine_directional_signals(long_signals, short_signals)
-            qualification_eligible = ignore_qualification or symbol in eligible_longs or symbol in eligible_shorts
+            qualification_eligible = (
+                ignore_qualification or persistent_policy.enabled
+                or symbol in eligible_longs or symbol in eligible_shorts
+            )
             # Direction-specific eligibility exactly mirrors the scheduler.
             combined["_entry_eligible"] = (
                 ignore_qualification
+                | persistent_policy.enabled
                 | (combined["model_direction"].eq("LONG") & (symbol in eligible_longs))
                 | (combined["model_direction"].eq("SHORT") & (symbol in eligible_shorts))
             )
@@ -326,7 +338,7 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
                 {direction: decision.max_position_pct for direction, decision in direction_risk.items()}
             ).fillna(0.0)
             combined["_entry_eligible"] &= combined["_asset_risk_allowed"]
-            if policy_for(symbol).require_macd:
+            if persistent_policy.require_macd:
                 combined["_entry_eligible"] &= macd_entry_confirmation(combined)
             # Retain the final row so it can close a position opened on the
             # preceding candle, but never open a position without a following
@@ -339,8 +351,8 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
                 qualification_eligible and any(decision.allowed for decision in direction_risk.values()),
                 fee_bps=fee_bps, slippage_bps=slippage_bps,
             )
-            summary["qualified_long"] = ignore_qualification or symbol in eligible_longs
-            summary["qualified_short"] = ignore_qualification or symbol in eligible_shorts
+            summary["qualified_long"] = ignore_qualification or persistent_policy.enabled or symbol in eligible_longs
+            summary["qualified_short"] = ignore_qualification or persistent_policy.enabled or symbol in eligible_shorts
             summary["long_risk_allowed"] = direction_risk["LONG"].allowed
             summary["short_risk_allowed"] = direction_risk["SHORT"].allowed
             summary["market_cap_tier"] = direction_risk["LONG"].tier
