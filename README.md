@@ -582,16 +582,15 @@ upside-only, next-candle baseline. Do not use its result as V5 performance.
 
 ### Optional persistent research policy
 
-The validated persistent VVV policy is enabled by default. It keeps VVV in the
-hourly analysis universe and uses its symmetric LONG/SHORT threshold and exit
-parameters without the daily qualification or MACD gates. Market-cap admission,
-liquidity, spread, feed, portfolio-risk, and position-protection gates still
-apply. Set `PERSISTENT_POLICY_SYMBOLS=` to disable this forward-paper policy.
+The persistent policy is disabled by default. Naming a symbol here changes its
+signal thresholds and exit parameters only after that direction passes the
+normal daily qualification, MACD confirmation, market-cap sizing, liquidity,
+spread, and feed gates. It never adds a NO-GO asset to the tradable universe.
 
 The defaults can be overridden without code changes:
 
 ```env
-PERSISTENT_POLICY_SYMBOLS=VVV
+PERSISTENT_POLICY_SYMBOLS=
 PERSISTENT_SIGNAL_THRESHOLD=0.60
 PERSISTENT_STOP_ATR=0.50
 PERSISTENT_TARGET_ATR=20.0

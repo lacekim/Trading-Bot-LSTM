@@ -64,7 +64,7 @@ class BearishModelTests(unittest.TestCase):
         self.assertEqual(active["symbol"].tolist(), ["OPEN_ONLY"])
         self.assertFalse(bool(active.iloc[0]["_entry_eligible"]))
 
-    def test_persistent_policy_symbol_uses_forward_paper_qualification(self):
+    def test_persistent_policy_symbol_cannot_bypass_directional_qualification(self):
         signals = pd.DataFrame([{
             "symbol": "VVV", "model_direction": "LONG", "macd_line": 2,
             "macd_signal": 1, "macd_histogram": 1,
@@ -72,8 +72,7 @@ class BearishModelTests(unittest.TestCase):
         }])
         with patch.dict("os.environ", {"PERSISTENT_POLICY_SYMBOLS": "VVV"}, clear=False):
             active = _active_directional_signals(signals, [], set())
-        self.assertEqual(active["symbol"].tolist(), ["VVV"])
-        self.assertTrue(bool(active.iloc[0]["_entry_eligible"]))
+        self.assertTrue(active.empty)
 
     def test_open_positions_remain_in_hourly_analysis_after_demotion(self):
         result = _analysis_symbols_with_positions(
