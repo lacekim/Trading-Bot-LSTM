@@ -1,2 +1,2 @@
 symbol,entry_eligible,candles,trades,long_trades,short_trades,starting_capital,final_capital,return_pct,win_rate_pct,max_drawdown_pct,profit_factor,qualified_long,qualified_short,long_risk_allowed,short_risk_allowed,market_cap_tier,market_cap_usd,tier_risk_pct,tier_max_position_pct,long_risk_reason,short_risk_reason
-VVV,True,5316,150,147,3,100000.0,336407.7394449871,236.4077394449871,10.666666666666668,-43.3845685162227,1.6404733247564862,True,True,True,True,MID,550535317.0,0.5,10.0,,
+GMX,False,33140,0,0,0,100000.0,100000.0,0.0,0.0,0.0,0.0,False,False,True,True,SMALL,65999555.0,0.25,5.0,,

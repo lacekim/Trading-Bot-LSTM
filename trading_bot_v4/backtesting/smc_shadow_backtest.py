@@ -165,84 +165,50 @@ def _run_filtered_signal_backtest(
     candles: int,
     starting_capital: float,
 ) -> tuple[dict[str, float | int | str], pd.DataFrame]:
-    capital = float(starting_capital)
-    trade_log = []
-    equity = []
-    threshold = Config.MIN_SIGNAL_THRESHOLD
+    # Deferred import: production_backtest -> daily_research ->
+    # validated_whitelist_performance -> paper_model_performance, and this
+    # module is reachable from that chain too, so a top-level import here
+    # risks the same circular-import class as paper_model_performance.py.
+    from trading_bot_v4.backtesting.production_backtest import simulate_production_symbol
 
-    for timestamp, row in signals.iterrows():
-        probability = float(row["prob"])
-        entry_price = float(row["Close"])
-        atr = float(row["ATR"])
-
-        if probability > threshold:
-            if not bool(row["smc_allow_long"]):
-                equity.append((timestamp, capital))
-                continue
-            direction = "LONG"
-            stop_loss = entry_price - atr * Config.ATR_SL_MULTIPLIER
-            take_profit = entry_price + atr * Config.ATR_TP_MULTIPLIER
-        else:
-            equity.append((timestamp, capital))
-            continue
-
-        stop_distance = abs(entry_price - stop_loss)
-        risk_amount = capital * (Config.RISK_PERCENTAGE / 100)
-        risk_size = risk_amount / stop_distance if stop_distance else 0
-        max_affordable = capital / entry_price
-        units = min(risk_size, max_affordable * 0.95)
-        if units <= 0:
-            equity.append((timestamp, capital))
-            continue
-
-        high_next = float(row["High_next"])
-        low_next = float(row["Low_next"])
-        close_next = float(row["Close_next"])
-
-        if direction == "LONG":
-            if low_next <= stop_loss:
-                exit_price = stop_loss
-                reason = "Stop Loss"
-            elif high_next >= take_profit:
-                exit_price = take_profit
-                reason = "Take Profit"
-            else:
-                exit_price = close_next
-                reason = "Next Candle Close"
-            profit = (exit_price - entry_price) * units
-        else:
-            if high_next >= stop_loss:
-                exit_price = stop_loss
-                reason = "Stop Loss"
-            elif low_next <= take_profit:
-                exit_price = take_profit
-                reason = "Take Profit"
-            else:
-                exit_price = close_next
-                reason = "Next Candle Close"
-            profit = (entry_price - exit_price) * units
-
-        capital += profit
-        trade_log.append(
-            {
-                "timestamp": timestamp,
-                "symbol": symbol,
-                "direction": direction,
-                "probability": probability,
-                "entry_price": entry_price,
-                "exit_price": exit_price,
-                "stop_loss": stop_loss,
-                "take_profit": take_profit,
-                "units": units,
-                "profit": profit,
-                "capital": capital,
-                "reason": reason,
-                "smc_filter": True,
-            }
+    if signals.empty:
+        empty_trades = pd.DataFrame(columns=["timestamp", "symbol", "direction", "entry_price",
+                                              "exit_price", "profit", "capital", "reason"])
+        summary = _summarize_trades(
+            symbol=symbol, timeframe=timeframe, candles=candles, predictions=0,
+            trades=empty_trades, equity=[], starting_capital=starting_capital,
+            final_capital=starting_capital,
         )
-        equity.append((timestamp, capital))
+        return summary, empty_trades
 
-    trades = pd.DataFrame(trade_log)
+    threshold = Config.MIN_SIGNAL_THRESHOLD
+    raw = load_gmx_ohlc(symbol, timeframe).reindex(signals.index)
+
+    frame = pd.DataFrame(index=signals.index)
+    frame["open"] = raw["Open"]
+    frame["high"] = raw["High"]
+    frame["low"] = raw["Low"]
+    frame["price"] = signals["Close"]
+    frame["atr"] = signals["ATR"]
+    frame["symbol"] = symbol
+    takes_long = (signals["prob"] > threshold) & signals["smc_allow_long"].astype(bool)
+    frame["model_direction"] = np.where(takes_long, "LONG", "HOLD")
+    frame["timestamp"] = frame.index
+    frame = frame.dropna(subset=["open", "high", "low", "price", "atr"])
+
+    production_summary, production_trades = simulate_production_symbol(frame, symbol, starting_capital)
+
+    if production_trades.empty:
+        trades = pd.DataFrame(columns=["timestamp", "symbol", "direction", "entry_price",
+                                        "exit_price", "profit", "capital", "reason"])
+    else:
+        trades = production_trades.rename(columns={
+            "exit_time": "timestamp", "net_pnl": "profit", "exit_reason": "reason",
+        })
+        trades["capital"] = float(starting_capital) + trades["profit"].cumsum()
+        trades["smc_filter"] = True
+
+    equity = list(zip(pd.to_datetime(trades["timestamp"]), trades["capital"])) if not trades.empty else []
     summary = _summarize_trades(
         symbol=symbol,
         timeframe=timeframe,
@@ -251,7 +217,7 @@ def _run_filtered_signal_backtest(
         trades=trades,
         equity=equity,
         starting_capital=starting_capital,
-        final_capital=capital,
+        final_capital=float(production_summary["final_capital"]),
     )
     return summary, trades
 

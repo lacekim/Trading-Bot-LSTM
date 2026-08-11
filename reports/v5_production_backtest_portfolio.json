@@ -7,15 +7,15 @@
   "qualified_long_symbols": [],
   "qualified_short_symbols": [],
   "assets_tested": 1,
-  "eligible_assets": 1,
+  "eligible_assets": 0,
   "market_cap_risk_enabled": true,
   "risk_allowed_long_assets": 1,
   "risk_allowed_short_assets": 1,
-  "equal_weight_return_pct": 236.4077394449871,
+  "equal_weight_return_pct": 0.0,
   "warning": "Current-snapshot qualification is not a historical daily walk-forward selector. Model results may include training-period observations. Market-cap and GMX-depth admission use the latest available snapshot across history.",
   "baseline_parity": {
-    "symbol": "VVV",
-    "persistent_policy": true,
+    "symbol": "GMX",
+    "persistent_policy": false,
     "configuration_parity": false,
     "baseline": {
       "timeframe": "1h",
@@ -34,11 +34,11 @@
     "active": {
       "timeframe": "1h",
       "sequence_length": 36,
-      "signal_threshold": 0.6,
+      "signal_threshold": 0.7,
       "risk_percentage": 1.0,
-      "atr_stop_multiplier": 0.5,
-      "atr_target_multiplier": 20.0,
-      "maximum_hold_candles": 240,
+      "atr_stop_multiplier": 0.75,
+      "atr_target_multiplier": 1.5,
+      "maximum_hold_candles": 8,
       "cooldown_candles": 0,
       "maximum_trades_per_day": null,
       "fee_bps": 5.0,
@@ -50,19 +50,11 @@
     "deviations": {
       "signal_threshold": {
         "baseline": 0.58,
-        "active": 0.6
-      },
-      "atr_stop_multiplier": {
-        "baseline": 0.75,
-        "active": 0.5
-      },
-      "atr_target_multiplier": {
-        "baseline": 1.5,
-        "active": 20.0
+        "active": 0.7
       },
       "maximum_hold_candles": {
         "baseline": 1,
-        "active": 240
+        "active": 8
       },
       "fee_bps": {
         "baseline": 0.0,

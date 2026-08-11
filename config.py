@@ -22,12 +22,12 @@ class Config:
     TIMEFRAME = '1h'
     LOOKBACK_PERIOD = '2y'
     DATA_DIR = Path('./data')
-    GMX_OHLC_DIR = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/data/GMX_OHLCVT')
+    GMX_OHLC_DIR = Path('/Volumes/Extreme_SSD/Algorithmic-Trading-with-Deep-Learning/data/GMX_OHLCVT')
     TRADINGVIEW_HISTORY_DIR = Path(os.getenv('TRADINGVIEW_HISTORY_DIR', './data/TradingView_OHLCVT'))
     GMX_AUTO_REFRESH_ENABLED = os.getenv('GMX_AUTO_REFRESH_ENABLED', 'true').lower() in ('1', 'true', 'yes', 'on')
     GMX_AUTO_REFRESH_SECONDS = int(os.getenv('GMX_AUTO_REFRESH_SECONDS', '3300'))
-    GMX_UPDATE_SCRIPT = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/update_gmx_data.py')
-    GMX_UPDATE_CONFIG = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/config_gmx.json')
+    GMX_UPDATE_SCRIPT = Path('/Volumes/Extreme_SSD/Algorithmic-Trading-with-Deep-Learning/update_gmx_data.py')
+    GMX_UPDATE_CONFIG = Path('/Volumes/Extreme_SSD/Algorithmic-Trading-with-Deep-Learning/config_gmx.json')
     GMX_UPDATE_CHAIN = os.getenv('GMX_UPDATE_CHAIN', 'arbitrum')
     GMX_UPDATE_TIMEOUT_SECONDS = int(os.getenv('GMX_UPDATE_TIMEOUT_SECONDS', '900'))
     GMX_SYMBOL_BLACKLIST = {
@@ -38,7 +38,7 @@ class Config:
         'USDE',
         'USDT',
     }
-    KRAKEN_OHLC_DIR = Path('/Users/mike/Documents/GitHub/Algorithmic-Trading-with-Deep-Learning/data/Kraken_OHLCVT')
+    KRAKEN_OHLC_DIR = Path('/Volumes/Extreme_SSD/Algorithmic-Trading-with-Deep-Learning/data/Kraken_OHLCVT')
     KRAKEN_MAX_GAP_HOURS = 2
     MIN_TRAIN_CANDLES = 2000
     
@@ -85,8 +85,8 @@ class Config:
     
     # ==================== SIGNAL FILTERS ====================
     # Stricter threshold
-    MIN_SIGNAL_THRESHOLD = 0.58  # 58% minimum confidence
-    MIN_DIRECTIONAL_CONFIDENCE = 0.58
+    MIN_SIGNAL_THRESHOLD = 0.70  # Raised from 0.58 after a full-universe threshold sweep on the 2026-08 retrain
+    MIN_DIRECTIONAL_CONFIDENCE = 0.70  # showed 0.58 produced a net-losing signal across nearly every asset
     MODEL_MIN_PROMOTION_ACCURACY_PCT = float(os.getenv('MODEL_MIN_PROMOTION_ACCURACY_PCT', '55.0'))
 
     # Keep live entries aligned with the model signal path; sentiment runs after candidates are found.
