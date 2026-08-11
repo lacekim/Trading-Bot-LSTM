@@ -16,11 +16,15 @@ class MarketCapTierTests(unittest.TestCase):
         self.assertFalse(classify_market_cap(10_000_000).allowed)
 
     def test_directional_gmx_liquidity_is_mandatory(self):
+        # Must stay within MAX_SNAPSHOT_AGE_HOURS of "now" -- a hardcoded past
+        # date is a time bomb that fails once real time passes the freshness
+        # window, independent of the risk logic under test.
+        fresh = pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=1)
         with tempfile.TemporaryDirectory() as tmp:
             caps, gmx = Path(tmp) / "caps.csv", Path(tmp) / "gmx.csv"
-            pd.DataFrame([{"observed_at": "2026-07-29T00:00:00Z", "symbol": "TEST",
+            pd.DataFrame([{"observed_at": fresh.isoformat(), "symbol": "TEST",
                            "market_cap_usd": 500_000_000}]).to_csv(caps, index=False)
-            pd.DataFrame([{"timestamp": "2026-07-29T00:00:00Z", "symbol": "TEST",
+            pd.DataFrame([{"timestamp": fresh.isoformat(), "symbol": "TEST",
                            "available_liquidity_long_usd": 2_000_000,
                            "available_liquidity_short_usd": 10_000,
                            "open_interest_total_usd": 1_000_000}]).to_csv(gmx, index=False)

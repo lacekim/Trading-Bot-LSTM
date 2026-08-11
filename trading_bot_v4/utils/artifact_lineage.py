@@ -10,6 +10,7 @@ from typing import Iterable
 
 
 MODEL_VERSION_DIR = Path("reports/model_versions")
+MODEL_VERSION_RETENTION_COUNT = 100
 
 
 def sha256_file(path: str | Path) -> str:
@@ -27,6 +28,12 @@ def artifact_version(paths: Iterable[str | Path]) -> str:
         digest.update(str(path).encode())
         digest.update(sha256_file(path).encode())
     return digest.hexdigest()[:16]
+
+
+def _prune_model_version_manifests() -> None:
+    manifests = sorted(MODEL_VERSION_DIR.glob("*.json"))
+    for stale in manifests[:-MODEL_VERSION_RETENTION_COUNT]:
+        stale.unlink(missing_ok=True)
 
 
 def write_model_manifest(paths: Iterable[str | Path], reason: str) -> Path:
@@ -47,4 +54,5 @@ def write_model_manifest(paths: Iterable[str | Path], reason: str) -> Path:
     MODEL_VERSION_DIR.mkdir(parents=True, exist_ok=True)
     output = MODEL_VERSION_DIR / f"{generated.strftime('%Y%m%dT%H%M%SZ')}_{payload['version']}.json"
     output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    _prune_model_version_manifests()
     return output

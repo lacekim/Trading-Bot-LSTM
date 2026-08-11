@@ -1,6 +1,10 @@
+import errno
+import os
+import socket
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from trading_bot_v4.runtime_control import ControlServer, InstanceLock, send_shutdown_request
 from trading_bot_v4.shutdown_controller import ShutdownController, ShutdownMode, graceful_signal_handler
@@ -28,15 +32,64 @@ class ShutdownControllerTests(unittest.TestCase):
             self.assertFalse(admitted)
 
     def test_unix_socket_request(self):
+        # Connects to server.path (not the requested path) because on filesystems that
+        # don't support AF_UNIX (e.g. exFAT), start() transparently rebinds to a fallback
+        # path -- see test_socket_bind_falls_back_for_documented_errnos below.
         Path("runtime").mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir="runtime") as temp:
             path = Path(temp) / "bot.sock"
             controller = ShutdownController(); server = ControlServer(controller, path); server.start()
             try:
-                response = send_shutdown_request("close-positions", path)
+                response = send_shutdown_request("close-positions", server.path)
                 self.assertTrue(response["ok"])
                 self.assertEqual(controller.get_requested_mode(), ShutdownMode.CLOSE_POSITIONS)
             finally: server.stop()
+
+    def test_socket_bind_falls_back_for_documented_errnos(self):
+        real_bind = socket.socket.bind
+        calls: list = []
+
+        def flaky_bind(sock_self, address):
+            calls.append(address)
+            if len(calls) == 1:
+                raise OSError(errno.ENOTSUP, "Operation not supported")
+            return real_bind(sock_self, address)
+
+        Path("runtime").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory() as temp:
+            primary = Path("runtime") / "unreachable_primary.sock"
+            fallback = Path(temp) / "fallback.sock"
+            with patch.object(socket.socket, "bind", flaky_bind), \
+                 patch.dict(os.environ, {"V4_SOCKET_PATH": str(fallback)}):
+                controller = ShutdownController()
+                server = ControlServer(controller, primary)
+                try:
+                    server.start()
+                    self.assertEqual(server.path, fallback)
+                    self.assertTrue(fallback.exists())
+                    response = send_shutdown_request("graceful", server.path)
+                    self.assertTrue(response["ok"])
+                finally:
+                    server.stop()
+        self.assertEqual(len(calls), 2)
+
+    def test_socket_bind_reraises_for_unrelated_errno(self):
+        calls: list = []
+
+        def failing_bind(sock_self, address):
+            calls.append(address)
+            raise OSError(errno.EACCES, "Permission denied")
+
+        Path("runtime").mkdir(exist_ok=True)
+        with patch.object(socket.socket, "bind", failing_bind):
+            controller = ShutdownController()
+            server = ControlServer(controller, Path("runtime") / "wont_bind.sock")
+            with self.assertRaises(OSError):
+                server.start()
+            self.assertIsNone(server._thread)
+        # Must not have attempted a fallback retry for an errno outside the
+        # documented exFAT/network-mount set -- only the original bind call.
+        self.assertEqual(len(calls), 1)
 
     def test_second_instance_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
