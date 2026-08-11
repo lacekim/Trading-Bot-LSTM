@@ -6,13 +6,14 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import errno
 import socket
 import threading
 
 from trading_bot_v4.shutdown_controller import ShutdownController
 
 
-RUNTIME_DIR = Path("runtime")
+RUNTIME_DIR = Path(os.getenv("V4_RUNTIME_DIR", "runtime"))
 SOCKET_PATH = RUNTIME_DIR / "trading_bot_v4.sock"
 PID_PATH = RUNTIME_DIR / "trading_bot_v4.pid"
 LOCK_PATH = RUNTIME_DIR / "trading_bot_v4.lock"
@@ -53,7 +54,25 @@ class ControlServer:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.unlink(missing_ok=True)
         self._socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        self._socket.bind(str(self.path)); os.chmod(self.path, 0o600); self._socket.listen(4)
+        try:
+            self._socket.bind(str(self.path)); os.chmod(self.path, 0o600); self._socket.listen(4)
+        except OSError as exc:
+            # Some filesystems (exFAT, network mounts) do not support AF_UNIX sockets.
+            # Fall back to a socket in /tmp or to an explicit V4_SOCKET_PATH if provided.
+            if exc.errno in (errno.EOPNOTSUPP, errno.ENOTSUP, errno.EINVAL):
+                fallback = Path(os.getenv("V4_SOCKET_PATH", f"/tmp/trading_bot_v4_{os.getuid()}.sock"))
+                try:
+                    # clean up and retry on fallback path
+                    fallback.parent.mkdir(parents=True, exist_ok=True)
+                    fallback.unlink(missing_ok=True)
+                    self.path = fallback
+                    self._socket.bind(str(self.path)); os.chmod(self.path, 0o600); self._socket.listen(4)
+                except Exception:
+                    self._socket.close()
+                    raise
+            else:
+                self._socket.close()
+                raise
         self._socket.settimeout(0.5)
         self._thread = threading.Thread(target=self._serve, name="v5-control-socket", daemon=True)
         self._thread.start()

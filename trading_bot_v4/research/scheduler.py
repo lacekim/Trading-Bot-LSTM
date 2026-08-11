@@ -56,6 +56,8 @@ from trading_bot_v4.utils.artifact_lineage import write_model_manifest
 
 SCHEDULER_LOG_PATH = Path("logs/v4_scheduler.log")
 RELOAD_MODEL_REQUEST_PATH = Path("logs/v4_reload_model.request")
+MODEL_BACKUP_ROOT = Path("models/backups")
+MODEL_BACKUP_RETENTION_COUNT = 14
 DAILY_RESEARCH_HOUR = 5
 DAILY_RESEARCH_MINUTE = 0
 TELEGRAM_EXECUTION_MODES = {"PAPER", "WEB3_READ_ONLY", "LIVE_SMALL", "LIVE"}
@@ -569,9 +571,36 @@ def _daily_artifact_paths() -> list[Path]:
     ]
 
 
+def _prune_daily_backups() -> None:
+    backups = sorted(
+        (entry for entry in MODEL_BACKUP_ROOT.glob("daily_*") if entry.is_dir()),
+        key=lambda entry: entry.name,
+    )
+    for stale in backups[:-MODEL_BACKUP_RETENTION_COUNT]:
+        shutil.rmtree(stale, ignore_errors=True)
+
+
+def _backup_daily_artifacts() -> Path:
+    MODEL_BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_dir = MODEL_BACKUP_ROOT / f"daily_{timestamp}"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    for path in _daily_artifact_paths():
+        if path.exists():
+            destination = backup_dir / path.name
+            shutil.copy2(path, destination)
+    _prune_daily_backups()
+    return backup_dir
+
+
 def _run_complete_daily_refresh(timeframe: str, top_validated: int) -> tuple[Any, SchedulerModelBundle]:
     """Retrain and revalidate every model before publishing daily qualification."""
     paths = _daily_artifact_paths()
+    try:
+        backup_dir = _backup_daily_artifacts()
+        _log(f"Daily artifact backup created: {backup_dir}")
+    except Exception as exc:
+        _log(f"WARNING daily artifact backup failed, continuing without it: {exc}")
     with tempfile.TemporaryDirectory(prefix="v5-daily-artifacts-") as directory:
         backup_root = Path(directory)
         existing: dict[Path, Path] = {}

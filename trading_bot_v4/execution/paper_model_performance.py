@@ -92,6 +92,36 @@ def _build_execution_frame(symbol: str, timeframe: str, timestamps: pd.Series) -
     return execution.replace([np.inf, -np.inf], np.nan)
 
 
+def _build_production_execution_frame(symbol: str, timeframe: str, timestamps: pd.Series) -> pd.DataFrame:
+    """Raw OHLC + ATR for simulate_production_symbol (persistent multi-bar positions),
+    as opposed to _build_execution_frame's single-next-candle columns."""
+    raw = load_gmx_ohlc(symbol, timeframe).copy()
+    handler = V4DataHandler()
+    raw["ATR"] = handler.calculate_atr(raw, Config.ATR_PERIOD)
+    execution = raw[["Open", "High", "Low", "Close", "ATR"]].copy()
+    execution = execution.reindex(pd.DatetimeIndex(timestamps))
+    return execution.replace([np.inf, -np.inf], np.nan)
+
+
+def _production_metrics(summary: dict[str, Any], trades: pd.DataFrame) -> dict[str, float | int]:
+    returns = trades["return_pct"].to_numpy(dtype=float) if not trades.empty else np.array([], dtype=float)
+    winning = returns[returns > 0]
+    losing = returns[returns < 0]
+    win_rate_decimal = float(summary["win_rate_pct"]) / 100.0
+    avg_win = float(winning.mean()) if len(winning) else 0.0
+    avg_loss = float(losing.mean()) if len(losing) else 0.0
+    return {
+        "return_pct": float(summary["return_pct"]),
+        "final_capital": float(summary["final_capital"]),
+        "max_drawdown_pct": float(summary["max_drawdown_pct"]),
+        "profit_factor": float(summary["profit_factor"]),
+        "win_rate_pct": float(summary["win_rate_pct"]),
+        "trade_count": int(summary["trades"]),
+        "average_trade_pct": float(returns.mean()) if len(returns) else 0.0,
+        "expectancy": float((win_rate_decimal * avg_win) + ((1.0 - win_rate_decimal) * avg_loss)),
+    }
+
+
 def _trade_result(direction: str, profit: float) -> str:
     if profit > 0:
         return f"{direction}_WIN"
@@ -344,36 +374,58 @@ def _build_debug_frame(
     merged: pd.DataFrame,
     starting_capital: float,
 ) -> tuple[dict[str, float | int], dict[str, float | int], pd.DataFrame]:
-    execution = _build_execution_frame(symbol, timeframe, merged["timestamp"]).reset_index(drop=True)
-    base = merged.reset_index(drop=True).join(execution)
-    original_metrics, original_debug = _simulate_prepared_signals(
-        base[["timestamp", "original_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
-        "original_direction",
-        starting_capital,
-    )
-    smc_metrics, smc_debug = _simulate_prepared_signals(
-        base[["timestamp", "smc_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
-        "smc_direction",
-        starting_capital,
-    )
+    """Trade-level trace built from the same production engine used for the
+    non-debug report, so --debug output matches the primary report's numbers
+    for the selected symbol."""
+    # Deferred import: production_backtest -> daily_research ->
+    # validated_whitelist_performance -> this module, so a top-level
+    # import here would be circular.
+    from trading_bot_v4.backtesting.production_backtest import simulate_production_symbol
 
-    debug = pd.DataFrame(
-        {
-            "timestamp": base["timestamp"],
-            "close": base["Close"],
-            "high_next": base["High_next"],
-            "low_next": base["Low_next"],
-            "close_next": base["Close_next"],
-            "ATR": base["ATR"],
-            "original_probability": base["original_probability"],
-            "smc_probability": base["smc_probability"],
-            "original_signal": base["original_direction"],
-            "smc_signal": base["smc_direction"],
-            "original_trade_result": original_debug["trade_result"].to_numpy(),
-            "smc_trade_result": smc_debug["trade_result"].to_numpy(),
-            "original_capital": original_debug["capital"].to_numpy(dtype=float),
-            "smc_capital": smc_debug["capital"].to_numpy(dtype=float),
-        }
+    execution = _build_production_execution_frame(symbol, timeframe, merged["timestamp"]).reset_index(drop=True)
+    base = merged.reset_index(drop=True).join(execution)
+
+    def _to_production_signals(direction_column: str) -> pd.DataFrame:
+        frame = base[["timestamp", direction_column, "Open", "High", "Low", "Close", "ATR"]].copy()
+        frame = frame.rename(columns={
+            direction_column: "model_direction", "Open": "open", "High": "high",
+            "Low": "low", "Close": "price", "ATR": "atr",
+        })
+        frame["symbol"] = symbol
+        return frame.dropna(subset=["open", "high", "low", "price", "atr"])
+
+    original_summary, original_trades = simulate_production_symbol(
+        _to_production_signals("original_direction"), symbol, starting_capital
+    )
+    smc_summary, smc_trades = simulate_production_symbol(
+        _to_production_signals("smc_direction"), symbol, starting_capital
+    )
+    original_metrics = _production_metrics(original_summary, original_trades)
+    smc_metrics = _production_metrics(smc_summary, smc_trades)
+
+    def _trade_trace(trades: pd.DataFrame, prefix: str) -> pd.DataFrame:
+        columns = [f"{prefix}_entry_time", f"{prefix}_exit_time", f"{prefix}_direction",
+                   f"{prefix}_trade_result", f"{prefix}_capital"]
+        if trades.empty:
+            return pd.DataFrame(columns=columns)
+        capital = float(starting_capital) + trades["net_pnl"].cumsum()
+        return pd.DataFrame({
+            f"{prefix}_entry_time": trades["entry_time"].to_numpy(),
+            f"{prefix}_exit_time": trades["exit_time"].to_numpy(),
+            f"{prefix}_direction": trades["direction"].to_numpy(),
+            f"{prefix}_trade_result": [
+                _trade_result(str(direction), float(profit))
+                for direction, profit in zip(trades["direction"], trades["net_pnl"])
+            ],
+            f"{prefix}_capital": capital.to_numpy(dtype=float),
+        })
+
+    debug = pd.concat(
+        [
+            _trade_trace(original_trades, "original").reset_index(drop=True),
+            _trade_trace(smc_trades, "smc").reset_index(drop=True),
+        ],
+        axis=1,
     )
     return original_metrics, smc_metrics, debug
 
@@ -403,18 +455,31 @@ def _build_symbol_performance(
     if debug:
         original_metrics, smc_metrics, debug_frame = _build_debug_frame(symbol, timeframe, merged, starting_capital)
     else:
-        execution = _build_execution_frame(symbol, timeframe, merged["timestamp"]).reset_index(drop=True)
+        # Deferred import: production_backtest -> daily_research ->
+        # validated_whitelist_performance -> this module, so a top-level
+        # import here would be circular.
+        from trading_bot_v4.backtesting.production_backtest import simulate_production_symbol
+
+        execution = _build_production_execution_frame(symbol, timeframe, merged["timestamp"]).reset_index(drop=True)
         base = merged.reset_index(drop=True).join(execution)
-        original_metrics, _ = _simulate_prepared_signals(
-            base[["timestamp", "original_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
-            "original_direction",
-            starting_capital,
+
+        def _to_production_signals(direction_column: str) -> pd.DataFrame:
+            frame = base[["timestamp", direction_column, "Open", "High", "Low", "Close", "ATR"]].copy()
+            frame = frame.rename(columns={
+                direction_column: "model_direction", "Open": "open", "High": "high",
+                "Low": "low", "Close": "price", "ATR": "atr",
+            })
+            frame["symbol"] = symbol
+            return frame.dropna(subset=["open", "high", "low", "price", "atr"])
+
+        original_summary, original_trades = simulate_production_symbol(
+            _to_production_signals("original_direction"), symbol, starting_capital
         )
-        smc_metrics, _ = _simulate_prepared_signals(
-            base[["timestamp", "smc_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
-            "smc_direction",
-            starting_capital,
+        smc_summary, smc_trades = simulate_production_symbol(
+            _to_production_signals("smc_direction"), symbol, starting_capital
         )
+        original_metrics = _production_metrics(original_summary, original_trades)
+        smc_metrics = _production_metrics(smc_summary, smc_trades)
 
     return_difference = float(smc_metrics["return_pct"] - original_metrics["return_pct"])
     drawdown_difference = float(smc_metrics["max_drawdown_pct"] - original_metrics["max_drawdown_pct"])

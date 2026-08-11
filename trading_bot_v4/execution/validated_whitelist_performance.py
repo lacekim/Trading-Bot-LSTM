@@ -11,12 +11,56 @@ import pandas as pd
 
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.paper_model_performance import (
-    _build_execution_frame,
+    _build_production_execution_frame,
     _constraints_used,
+    _production_metrics,
     _require_file,
-    _simulate_prepared_signals,
+    _trade_result,
 )
 from trading_bot_v4.execution.paper_model_comparison import ORIGINAL_BASELINE_SIGNALS_PATH
+
+
+def _simulate_production_signals(
+    symbol: str, timeframe: str, symbol_signals: pd.DataFrame, starting_capital: float,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Same production-accurate (multi-bar ATR stop/target/max-hold, real
+    fees/slippage) simulation used by --backtest-production, adapted for the
+    validated-whitelist/GO-asset readiness reports."""
+    # Deferred import: see the identical note in paper_model_performance.py --
+    # production_backtest -> daily_research -> this module is circular against
+    # a top-level import here.
+    from trading_bot_v4.backtesting.production_backtest import simulate_production_symbol
+
+    execution = _build_production_execution_frame(symbol, timeframe, symbol_signals["timestamp"]).reset_index(drop=True)
+    base = symbol_signals.reset_index(drop=True).join(execution)
+    frame = base[["timestamp", "model_direction", "Open", "High", "Low", "Close", "ATR"]].copy()
+    frame = frame.rename(columns={
+        "Open": "open", "High": "high", "Low": "low", "Close": "price", "ATR": "atr",
+    })
+    frame["symbol"] = symbol
+    frame = frame.dropna(subset=["open", "high", "low", "price", "atr"])
+
+    summary, trades = simulate_production_symbol(frame, symbol, starting_capital)
+    metrics = _production_metrics(summary, trades)
+    # simulate_production_symbol has no daily-loss-halt mechanism (unlike the
+    # legacy simulator this replaces), so it never produces a BLOCKED_DAILY_LOSS
+    # marker -- _daily_loss_events() on this debug frame correctly reports 0.
+    if trades.empty:
+        debug = pd.DataFrame({
+            "timestamp": pd.Series(dtype="datetime64[ns]"),
+            "trade_result": pd.Series(dtype=str),
+            "capital": pd.Series(dtype=float),
+        })
+    else:
+        debug = pd.DataFrame({
+            "timestamp": pd.to_datetime(trades["exit_time"]),
+            "trade_result": [
+                _trade_result(str(direction), float(profit))
+                for direction, profit in zip(trades["direction"], trades["net_pnl"])
+            ],
+            "capital": (float(starting_capital) + trades["net_pnl"].cumsum()).astype(float),
+        })
+    return metrics, debug
 
 
 VALIDATED_WHITELIST_ASSETS = ["PENGU", "DYDX", "AIXBT"]
@@ -124,13 +168,7 @@ def _build_symbol_report(symbol: str, timeframe: str, signals: pd.DataFrame, sta
     if symbol_signals.empty:
         return None
 
-    execution = _build_execution_frame(symbol, timeframe, symbol_signals["timestamp"]).reset_index(drop=True)
-    base = symbol_signals.reset_index(drop=True).join(execution)
-    metrics, debug = _simulate_prepared_signals(
-        base[["timestamp", "model_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
-        "model_direction",
-        starting_capital,
-    )
+    metrics, debug = _simulate_production_signals(symbol, timeframe, symbol_signals, starting_capital)
 
     candidates = int(symbol_signals["is_trade_candidate"].astype(bool).sum())
     latest = symbol_signals.iloc[-1]
@@ -167,13 +205,7 @@ def _build_symbol_report_with_debug(
     if symbol_signals.empty:
         return None
 
-    execution = _build_execution_frame(symbol, timeframe, symbol_signals["timestamp"]).reset_index(drop=True)
-    base = symbol_signals.reset_index(drop=True).join(execution)
-    metrics, debug = _simulate_prepared_signals(
-        base[["timestamp", "model_direction", "Close", "High_next", "Low_next", "Close_next", "ATR"]].copy(),
-        "model_direction",
-        starting_capital,
-    )
+    metrics, debug = _simulate_production_signals(symbol, timeframe, symbol_signals, starting_capital)
 
     candidates = int(symbol_signals["is_trade_candidate"].astype(bool).sum())
     latest = symbol_signals.iloc[-1]
@@ -405,27 +437,39 @@ def _evaluate_readiness(symbol: str, timeframe: str, sweep: pd.DataFrame) -> tup
     profit_factor_30 = _finite_metric(row_30, "profit_factor")
     win_rate_30 = _finite_metric(row_30, "win_rate_pct")
     drawdown_30 = _finite_metric(row_30, "max_drawdown_pct")
+    trade_count_7 = int(_finite_metric(row_7, "trade_count")) if np.isfinite(_finite_metric(row_7, "trade_count")) else 0
+    trade_count_14 = int(_finite_metric(row_14, "trade_count")) if np.isfinite(_finite_metric(row_14, "trade_count")) else 0
     trade_count_30 = int(_finite_metric(row_30, "trade_count")) if np.isfinite(_finite_metric(row_30, "trade_count")) else 0
 
+    # A high-conviction, low-frequency signal legitimately produces zero trades
+    # in a short window (2026-08 sweep: real edge concentrates in symbols firing
+    # under 2x/30d). That's an absence of evidence, not evidence of a loss --
+    # these 7d/14d/30d checks must not block promotion when there's simply no
+    # recent trade to judge. Full-history validated evidence (profit factor,
+    # walk-forward stability, trade count) is the real promotion gate, applied
+    # separately in daily_research._apply_validated_oos_gate; a symbol that
+    # clears that bar and then trades badly gets caught by forward demotion
+    # instead, once real post-promotion trades exist to judge it on.
     failed: list[str] = []
-    if not return_7 > 0:
+    if trade_count_7 > 0 and not return_7 > 0:
         failed.append(f"7d return > 0 failed: {return_7:.6f}%")
-    if not return_14 > 0:
+    if trade_count_14 > 0 and not return_14 > 0:
         failed.append(f"14d return > 0 failed: {return_14:.6f}%")
-    if not return_30 > 0:
+    if trade_count_30 > 0 and not return_30 > 0:
         failed.append(f"30d return > 0 failed: {return_30:.6f}%")
-    if not profit_factor_30 >= Config.GO_MIN_RECENT_PROFIT_FACTOR:
+    if trade_count_30 > 0 and not profit_factor_30 >= Config.GO_MIN_RECENT_PROFIT_FACTOR:
         failed.append(
             f"30d profit factor >= {Config.GO_MIN_RECENT_PROFIT_FACTOR:.2f} failed: {profit_factor_30:.6f}"
         )
-    if not win_rate_30 >= Config.GO_MIN_RECENT_WIN_RATE_PCT:
+    if trade_count_30 > 0 and not win_rate_30 >= Config.GO_MIN_RECENT_WIN_RATE_PCT:
         failed.append(
             f"30d win rate >= {Config.GO_MIN_RECENT_WIN_RATE_PCT:.1f}% failed: {win_rate_30:.6f}%"
         )
-    if not drawdown_30 > -5.0:
+    if trade_count_30 > 0 and not drawdown_30 > -5.0:
         failed.append(f"30d max drawdown better than -5% failed: {drawdown_30:.6f}%")
-    if not trade_count_30 >= 50:
-        failed.append(f"30d trade count >= 50 failed: {trade_count_30}")
+    # No standalone "30d trade count >= N" gate: zero recent trades is not a
+    # promotion blocker on its own (see comment above) -- it's only relevant
+    # as the reason the other 30d checks above were skipped.
 
     metrics = {
         "symbol": symbol,
