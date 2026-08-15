@@ -291,26 +291,58 @@ to directly test whether the model has any real edge on assets that could
 actually be traded — the only version of this question that actually
 matters going forward.
 
+### 3e. Done — and the answer is no, not yet
+
+Added `liquid_symbols()` (`risk/market_cap_tiers.py`) and a `--liquid-only`
+flag on `--train-per-asset`, computed separately per direction (the liquid
+set differs slightly between LONG's and SHORT's available-liquidity
+columns). Ran it against the already-trained horizon=12 sweep — no
+retraining needed, this just filters the existing corrected-methodology
+results down to the 48 LONG / 47 SHORT liquid symbols.
+
+**Result: 0 of 95 liquid symbol/direction combinations promoted.** Real
+economics were mostly negative across the entire tradeable universe — BTC
+long -4.78%/PF 0.69, ETH long -4.11%/PF 0.79, SOL long -7.89%/PF 0.65, INJ
+short -82.81%/PF 0.76, and so on. A handful showed small positive numbers
+(SEI short +11.05%/PF 1.34, FIL short +7.70%/PF 6.57 on only 8 trades) but
+none cleared the full 3-window bar.
+
+**This is the final, complete, honest answer for the whole per-asset
+investigation across both sessions**: once every validation bug is fixed —
+train/test leakage (the original single-model bug), calibration methodology
+matching real execution, threshold wiring, and now venue liquidity — the
+current 18-feature, single-candle-threshold (or 12-candle horizon) design
+has no demonstrated edge on any GMX asset that could actually be traded.
+Not a bug anywhere left to find; a genuine result about this feature/target
+design's lack of edge on the tradeable universe as it exists today. Any
+future work here should treat this as the honest baseline and change
+something real (features, target definition, a fundamentally different
+signal source) rather than re-deriving the same answer through more
+validation-methodology fixes.
+
 ---
 
 ## Future goals / where to pick this up
 
-**Done since Part 2** (both fixed, verified, committed, pushed):
+**Done since Part 2** (all fixed, verified, committed, pushed):
 1. ~~Fix the calibration/promotion methodology~~ — done, see 3a. Every
    promotion decision made by this system is now honest.
 2. ~~Fix the MEW-style LONG threshold wiring gap~~ — done, see 3b.
+3. ~~Check whether GMX liquidity is a one-off or systemic constraint~~ —
+   done, see 3d/3e. It's real but not universal (48/120 symbols are liquid);
+   restricting to that set and checking for edge there gave a clean 0/95
+   promoted. The full per-asset investigation now has a complete, honest
+   answer: no demonstrated edge on the tradeable universe with this design.
 
 **Still open:**
-3. **Systematically explore horizon** now that scoring can be trusted —
-   only 12 has been tested against the real engine. Worth mapping 4, 6, 8,
-   24 etc. properly, though expect a similarly small (or zero) promoted
-   count given how thin GMX liquidity turned out to be for even the one
-   symbol that cleared every other bar.
-4. **GMX liquidity may be the real, harder constraint** going forward, not
-   model quality — worth checking, before investing more in model/horizon
-   experiments, how many GMX-listed assets even have enough open interest to
-   clear MID/LARGE tier floors at all. If very few do, the ceiling on this
-   whole approach may be venue liquidity, not signal quality.
+4. **Change something real, not just fix more validation plumbing.**
+   Everything findable through "is this measuring the truth correctly" has
+   been found and fixed across both sessions. The honest result is that this
+   feature/target design doesn't have edge. Next steps here mean actually
+   different features, a different target definition, a different horizon
+   *and* re-checking against liquid symbols only from the start, or a
+   different signal source entirely — not another round of methodology
+   auditing.
 5. **Keep the market-cap snapshot fresh** — 48h gate, needs the live
    scheduler running continuously or a manual refresh step in any backtest
    workflow (`collect_market_caps()`).
