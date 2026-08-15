@@ -261,6 +261,36 @@ accounted for together. This is a complete, validated answer — not a dead
 end from a bug, but a genuine finding about what's currently tradeable on
 this venue with this feature/target design.
 
+### 3d. Liquidity check: is WLD a one-off, or systemic?
+
+Ran `evaluate_asset_risk` for all 120 GMX symbols directly (no training
+needed, just the already-cached market-cap/GMX-state data) to see whether
+WLD's liquidity failure was a one-off or the norm.
+
+**Liquidity is not a universal blocker**: 48/120 symbols clear the LONG
+liquidity floor (47/120 for SHORT), including solid majors — BTC, ETH, SOL,
+ADA, AVAX, LINK, XRP, DOGE, NEAR, ARB, and more. A meaningful ~40% of the
+universe is genuinely tradeable on GMX today.
+
+**But every symbol that ever got promoted tonight — WLD, MEW, ANIME, ORDI,
+SATS — is liquidity-blocked. All five, zero overlap** with the 48 tradeable
+symbols. That's a real pattern worth taking seriously, not a coincidence to
+shrug off: thin, illiquid markets are less efficiently priced, which is
+exactly where a technical-indicator model is more likely to find *apparent*
+statistical edge — precisely because there's less arbitrage keeping prices
+honest. Those are also, by definition, the markets GMX doesn't have the
+depth to actually let you trade. If this pattern holds, the current
+feature/model setup may be systematically finding "signal" in exactly the
+corners of the market that can never be traded at real size, which would
+make further horizon/model tuning across the full 120-symbol universe a
+trap — chasing edge that can never be realized.
+
+**Next step**: restrict training to the ~48 liquidity-cleared symbols from
+the start (a symbol allowlist before the sweep, not a methodology rewrite)
+to directly test whether the model has any real edge on assets that could
+actually be traded — the only version of this question that actually
+matters going forward.
+
 ---
 
 ## Future goals / where to pick this up
