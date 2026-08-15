@@ -15,7 +15,7 @@ from trading_bot_v4.execution.smc_model_paper import _predict_smc_model_signals
 from trading_bot_v4.execution.smc_model_paper import _timeframe_delta
 from trading_bot_v4.ml.smc_trainer import SMC_MODEL_PATH, SMC_SCALER_PATH
 from trading_bot_v4.utils.logger import build_logger
-from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.model_cache import ModelScalerCache, load_per_asset_calibration
 from trading_bot_v4.utils.artifact_lineage import artifact_version
 from trading_bot_v4.utils.signal_direction import binary_upside_direction
 from trading_bot_v4.utils.macd_confirmation import macd_components
@@ -36,7 +36,7 @@ def _direction_from_probability(probability: float, symbol: str = "") -> str:
 
 
 def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timeframe: str,
-                                    closed_only: bool = True) -> pd.DataFrame:
+                                    closed_only: bool = True, threshold: float | None = None) -> pd.DataFrame:
     raw = load_gmx_ohlc(symbol, timeframe)
     handler = V4DataHandler()
     features = handler.prepare_features(raw.copy())
@@ -74,13 +74,23 @@ def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timefr
         signal_frame = signal_frame.loc[closed_mask].copy()
         probabilities = probabilities[closed_mask]
 
+    if threshold is None:
+        original_direction = [_direction_from_probability(float(probability), symbol) for probability in probabilities]
+    else:
+        # An explicit (per-asset model's own calibrated) threshold overrides
+        # the generic policy_for()/MIN_SIGNAL_THRESHOLD default -- otherwise a
+        # promoted model's calibration would never actually change what the
+        # live/backtest signal does. LONG-only, matching how this model was
+        # calibrated (it has no downside/SHORT interpretation).
+        original_direction = np.where(probabilities > float(threshold), "LONG", "HOLD").tolist()
+
     signals = pd.DataFrame(
         {
             "timestamp": signal_frame.index,
             "symbol": symbol,
             "timeframe": timeframe,
             "original_probability": probabilities,
-            "original_direction": [_direction_from_probability(float(probability), symbol) for probability in probabilities],
+            "original_direction": original_direction,
             "original_price": signal_frame["price"].to_numpy(dtype=float),
             "open": signal_frame["open"].to_numpy(dtype=float),
             "high": signal_frame["high"].to_numpy(dtype=float),
@@ -100,19 +110,27 @@ def _predict_original_model_signals(model: Any, scaler: Any, symbol: str, timefr
 
 
 def predict_original_baseline_signals(model: Any, scaler: Any, symbol: str, timeframe: str,
-                                      closed_only: bool = True) -> pd.DataFrame:
-    """Return original-model inference in the scheduler's standard signal schema."""
+                                      closed_only: bool = True, threshold: float | None = None) -> pd.DataFrame:
+    """Return original-model inference in the scheduler's standard signal schema.
+
+    Pass threshold (a per-asset model's own calibrated promotion threshold)
+    to have it actually govern the LONG/HOLD decision, instead of silently
+    falling back to policy_for()'s generic MIN_SIGNAL_THRESHOLD default.
+    """
     signals = _predict_original_model_signals(
-        model, scaler, symbol, timeframe, closed_only=closed_only
+        model, scaler, symbol, timeframe, closed_only=closed_only, threshold=threshold
     ).rename(columns={
         "original_probability": "model_probability",
         "original_direction": "model_direction",
         "original_price": "price",
         "original_candidate": "is_trade_candidate",
     })
-    signals["threshold"] = float(policy_for(symbol).threshold)
+    signals["threshold"] = float(threshold) if threshold is not None else float(policy_for(symbol).threshold)
     signals["feature_count"] = len(Config.FEATURE_COLUMNS)
-    signals["model_side"] = "ORIGINAL_PERSISTENT" if policy_for(symbol).enabled else "ORIGINAL_UPSIDE"
+    signals["model_side"] = (
+        "ORIGINAL_PER_ASSET" if threshold is not None else
+        ("ORIGINAL_PERSISTENT" if policy_for(symbol).enabled else "ORIGINAL_UPSIDE")
+    )
     return signals
 
 
@@ -132,6 +150,12 @@ def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, mode
         "per-asset" if per_asset_cache is not None else
         artifact_version([Config.MODEL_DIR / Config.MODEL_NAME, Config.MODEL_DIR / Config.SCALER_NAME])
     )
+    long_promoted_thresholds: dict[str, float] = {}
+    if per_asset_cache is not None:
+        long_promoted_thresholds = {
+            str(k).upper(): float(v)
+            for k, v in load_per_asset_calibration("long", per_asset_cache.horizon).get("promoted_symbols", {}).items()
+        }
     for symbol in symbols:
         try:
             if per_asset_cache is not None:
@@ -139,9 +163,17 @@ def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, mode
                 if pair is None:
                     continue
                 symbol_model, symbol_scaler = pair
+                # Non-promoted symbols still get inference (for visibility/
+                # comparison) but at an unreachable threshold, matching how
+                # the SHORT side already treats non-promoted symbols -- actual
+                # trading eligibility is a separate gate (eligible_longs).
+                symbol_threshold = long_promoted_thresholds.get(str(symbol).upper(), 1.0)
+                signals = predict_original_baseline_signals(
+                    symbol_model, symbol_scaler, str(symbol).upper(), timeframe, threshold=symbol_threshold
+                )
             else:
                 symbol_model, symbol_scaler = model, scaler
-            signals = predict_original_baseline_signals(symbol_model, symbol_scaler, str(symbol).upper(), timeframe)
+                signals = predict_original_baseline_signals(symbol_model, symbol_scaler, str(symbol).upper(), timeframe)
         except Exception as exc:
             logger.warning("Skipping %s %s during original baseline inference: %s", symbol, timeframe, exc)
             continue

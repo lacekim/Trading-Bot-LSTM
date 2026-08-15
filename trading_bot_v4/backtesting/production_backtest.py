@@ -55,7 +55,7 @@ class SimulatedPosition:
 
 
 def _cached_directional_signals(symbol: str, timeframe: str, per_asset_cache: PerAssetModelCache,
-                                short_threshold: float, horizon: int = 1) -> pd.DataFrame:
+                                short_threshold: float, horizon: int = 1, long_threshold: float = 1.0) -> pd.DataFrame:
     """Persist expensive full-history inference for repeated exit research.
 
     Resolves each side's model from the per-symbol cache -- a symbol with no
@@ -75,6 +75,7 @@ def _cached_directional_signals(symbol: str, timeframe: str, per_asset_cache: Pe
     signature = "|".join(
         f"{path}:{path.stat().st_mtime_ns}:{path.stat().st_size}" for path in dependencies if path.exists()
     )
+    signature += f"|long_threshold={long_threshold}|short_threshold={short_threshold}"
     key = hashlib.sha256(signature.encode()).hexdigest()[:16]
     path = SIGNAL_CACHE_DIR / f"{symbol}_{timeframe}_{key}.pkl"
     if path.exists():
@@ -82,7 +83,9 @@ def _cached_directional_signals(symbol: str, timeframe: str, per_asset_cache: Pe
 
     long_pair = per_asset_cache.get("long", symbol)
     long_signals = (
-        predict_original_baseline_signals(long_pair[0], long_pair[1], symbol, timeframe, closed_only=False)
+        predict_original_baseline_signals(
+            long_pair[0], long_pair[1], symbol, timeframe, closed_only=False, threshold=long_threshold
+        )
         if long_pair is not None else pd.DataFrame()
     )
     short_pair = per_asset_cache.get("short", symbol)
@@ -285,6 +288,7 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
     horizon = int(getattr(args, "horizon", 1) or 1)
     per_asset_cache = PerAssetModelCache(horizon=horizon)
     short_calibration = load_per_asset_calibration("short", horizon)
+    long_calibration = load_per_asset_calibration("long", horizon)
     eligible_longs = _current_long_symbols()
     eligible_shorts = _current_short_symbols(short_calibration)
     ignore_qualification = bool(getattr(args, "ignore_qualification", False))
@@ -310,12 +314,17 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
                     ) for direction in ("LONG", "SHORT")
                 }
             short_threshold = float(short_calibration.get("promoted_symbols", {}).get(symbol, 1.0))
+            long_threshold = float(long_calibration.get("promoted_symbols", {}).get(symbol, 1.0))
             if model_sides == "both":
-                combined = _cached_directional_signals(symbol, timeframe, per_asset_cache, short_threshold, horizon)
+                combined = _cached_directional_signals(
+                    symbol, timeframe, per_asset_cache, short_threshold, horizon, long_threshold
+                )
             else:
                 long_pair = per_asset_cache.get("long", symbol) if model_sides == "long" else None
                 long_signals = (
-                    predict_original_baseline_signals(long_pair[0], long_pair[1], symbol, timeframe, closed_only=False)
+                    predict_original_baseline_signals(
+                        long_pair[0], long_pair[1], symbol, timeframe, closed_only=False, threshold=long_threshold
+                    )
                     if long_pair is not None else pd.DataFrame()
                 )
                 short_pair = per_asset_cache.get("short", symbol) if model_sides == "short" else None
