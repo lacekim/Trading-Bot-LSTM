@@ -224,7 +224,9 @@ def main():
                 print(
                     f"[{done}/{total}] {direction}/{symbol}: trained={result.trained} "
                     f"promoted={result.promoted} reason={result.reason} "
-                    f"holdout_auc={result.holdout_auc:.3f} holdout_precision={result.holdout_precision:.3f}"
+                    f"holdout_trades={result.holdout_trades} "
+                    f"holdout_return_pct={result.holdout_return_pct:.2f} "
+                    f"holdout_profit_factor={result.holdout_profit_factor:.2f}"
                 )
         return 0
     if args.train_cost_aware_long:

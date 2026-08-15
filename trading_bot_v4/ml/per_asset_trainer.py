@@ -21,9 +21,10 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
+from sklearn.metrics import roc_auc_score
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
+from trading_bot_v4.backtesting.production_backtest import simulate_production_symbol
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.gmx_adapter import load_gmx_ohlc
 from trading_bot_v4.ml.cnn_lstm_model import V4CNNLSTMClassifier
@@ -56,15 +57,12 @@ class PerAssetTrainingResult:
     threshold: float
     reason: str
     train_rows: int
-    holdout_signals: int
-    holdout_precision: float
+    holdout_trades: int
+    holdout_return_pct: float
+    holdout_profit_factor: float
+    holdout_win_rate_pct: float
     holdout_auc: float
     windows: list[dict[str, Any]]
-
-
-def _round_trip_cost() -> float:
-    one_way_bps = Config.PAPER_FEE_BPS + Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS
-    return 2.0 * one_way_bps / 10000.0
 
 
 def _target_for_direction(future_return: pd.Series, direction: Direction) -> pd.Series:
@@ -114,59 +112,94 @@ def _chronological_split(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, 
     )
 
 
+_ENDPOINT_COLUMNS = ["timestamp", "future_return", "target", "Open", "High", "Low", "Close", "ATR"]
+
+
 def _endpoints(segment: pd.DataFrame) -> pd.DataFrame:
     """Rows that align 1:1 with the sequences prepare_sequences() builds --
-    the first SEQUENCE_LENGTH rows of a segment have no sequence of their own."""
-    return segment.iloc[Config.SEQUENCE_LENGTH:][["timestamp", "future_return", "target"]].reset_index(drop=True)
+    the first SEQUENCE_LENGTH rows of a segment have no sequence of their own.
+    Carries OHLC/ATR (not just future_return/target) so candidate thresholds
+    can be scored by running them through the real execution engine."""
+    return segment.iloc[Config.SEQUENCE_LENGTH:][_ENDPOINT_COLUMNS].reset_index(drop=True)
 
 
-def _walk_forward_rows(endpoints: pd.DataFrame, probability: np.ndarray, threshold: float, direction: Direction) -> list[dict[str, Any]]:
-    evaluated = endpoints.copy()
-    evaluated["probability"] = probability
-    cost = _round_trip_cost()
-    sign = 1.0 if direction == "long" else -1.0
+MIN_CALIBRATION_TRADES = 10
+MIN_WINDOW_TRADES = 3
+SIMULATION_STARTING_CAPITAL = 100_000.0
+
+
+def _build_signals_frame(endpoints: pd.DataFrame, probability: np.ndarray, threshold: float,
+                         direction: Direction) -> pd.DataFrame:
+    """Builds the columns simulate_production_symbol expects, from raw OHLC/ATR
+    endpoints plus a model probability array -- so a candidate threshold can be
+    scored by the exact same entry/exit/sizing rules real trading uses (ATR
+    stop/target, max_hold_candles, signal-reversal exit, fees/slippage),
+    instead of a synthetic "hold exactly N candles" proxy."""
+    frame = endpoints.copy()
+    frame["probability"] = probability
+    label = "LONG" if direction == "long" else "SHORT"
+    frame["model_direction"] = np.where(frame["probability"] >= threshold, label, "HOLD")
+    frame["price"] = frame["Close"].astype(float)
+    frame["open"] = frame["Open"].astype(float)
+    frame["high"] = frame["High"].astype(float)
+    frame["low"] = frame["Low"].astype(float)
+    frame["close"] = frame["Close"].astype(float)
+    frame["atr"] = frame["ATR"].astype(float)
+    frame["_entry_eligible"] = True
+    frame["_risk_pct"] = float(Config.RISK_PERCENTAGE)
+    frame["_max_position_pct"] = float(Config.PAPER_MAX_POSITION_PCT)
+    return frame
+
+
+def _simulate_threshold(endpoints: pd.DataFrame, probability: np.ndarray, threshold: float,
+                        direction: Direction, symbol: str) -> dict[str, Any]:
+    signals = _build_signals_frame(endpoints, probability, threshold, direction)
+    summary, _ = simulate_production_symbol(
+        signals, symbol, SIMULATION_STARTING_CAPITAL, entry_eligible=True,
+        fee_bps=Config.PAPER_FEE_BPS,
+        slippage_bps=Config.PAPER_SLIPPAGE_BPS + Config.PAPER_PRICE_IMPACT_BPS,
+    )
+    return summary
+
+
+def _walk_forward_rows(endpoints: pd.DataFrame, probability: np.ndarray, threshold: float,
+                       direction: Direction, symbol: str) -> list[dict[str, Any]]:
     rows = []
-    for window, indices in enumerate(np.array_split(np.arange(len(evaluated)), 3), start=1):
-        frame = evaluated.iloc[indices]
-        y = frame["target"].to_numpy(int)
-        p = frame["probability"].to_numpy(float)
-        selected = frame.loc[frame["probability"] >= threshold]
-        returns = sign * selected["future_return"].to_numpy(float) - cost
-        gains = float(returns[returns > 0].sum())
-        losses = float(-returns[returns < 0].sum())
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            y, (p >= threshold).astype(int), average="binary", zero_division=0
-        )
+    for window, indices in enumerate(np.array_split(np.arange(len(endpoints)), 3), start=1):
+        frame = endpoints.iloc[indices].reset_index(drop=True)
+        frame_probability = probability[indices]
+        summary = _simulate_threshold(frame, frame_probability, threshold, direction, symbol)
         rows.append({
             "window": window,
             "start": str(frame["timestamp"].min()),
             "end": str(frame["timestamp"].max()),
             "samples": len(frame),
-            "signals": len(selected),
-            "precision": float(precision),
-            "recall": float(recall),
-            "f1": float(f1),
-            "auc": float(roc_auc_score(y, p)) if len(np.unique(y)) > 1 else float("nan"),
-            "return_pct": float(returns.sum() * 100.0),
-            "profit_factor": gains / losses if losses else (float("inf") if gains else 0.0),
+            "trades": summary["trades"],
+            "win_rate_pct": summary["win_rate_pct"],
+            "return_pct": summary["return_pct"],
+            "profit_factor": summary["profit_factor"],
+            "max_drawdown_pct": summary["max_drawdown_pct"],
         })
     return rows
 
 
-def _select_threshold(calibration_target: np.ndarray, calibration_probability: np.ndarray) -> tuple[float, dict[str, float]]:
+def _select_threshold(calibration_endpoints: pd.DataFrame, calibration_probability: np.ndarray,
+                      direction: Direction, symbol: str) -> tuple[float, dict[str, Any]]:
+    """Sweeps candidate thresholds, scoring each by real simulated economics
+    (via _simulate_threshold) on the calibration slice, instead of raw
+    classification precision/recall -- a threshold that classifies well but
+    gets stopped out under real ATR stop/target/max-hold rules is not useful."""
     candidates = []
-    for threshold in np.arange(0.50, 0.91, 0.01):
-        predicted = calibration_probability >= threshold
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            calibration_target, predicted.astype(int), average="binary", zero_division=0
-        )
-        if predicted.sum() >= 15:
-            candidates.append((float(threshold), float(precision), float(recall), float(f1)))
-    eligible = [row for row in candidates if row[1] >= 0.55 and row[2] >= 0.05]
-    selected = max(eligible, key=lambda row: (row[3], row[1])) if eligible else max(
-        candidates or [(0.90, 0.0, 0.0, 0.0)], key=lambda row: (row[1], row[3])
-    )
-    return selected[0], {"precision": selected[1], "recall": selected[2], "f1": selected[3]}
+    for threshold in np.arange(0.50, 0.91, 0.02):
+        summary = _simulate_threshold(calibration_endpoints, calibration_probability, float(threshold), direction, symbol)
+        if summary["trades"] >= MIN_CALIBRATION_TRADES:
+            candidates.append((float(threshold), summary))
+    viable = [c for c in candidates if c[1]["profit_factor"] >= 1.20 and c[1]["return_pct"] > 0]
+    pool = viable or candidates
+    if not pool:
+        return 0.90, {"trades": 0, "return_pct": 0.0, "profit_factor": 0.0, "win_rate_pct": 0.0}
+    selected = max(pool, key=lambda c: (c[1]["profit_factor"], c[1]["return_pct"]))
+    return selected[0], selected[1]
 
 
 def _update_direction_reports(direction: Direction, result: PerAssetTrainingResult, horizon: int = 1) -> None:
@@ -194,8 +227,10 @@ def _update_direction_reports(direction: Direction, result: PerAssetTrainingResu
         "reason": result.reason,
         "threshold": result.threshold,
         "train_rows": result.train_rows,
-        "holdout_signals": result.holdout_signals,
-        "holdout_precision": result.holdout_precision,
+        "holdout_trades": result.holdout_trades,
+        "holdout_return_pct": result.holdout_return_pct,
+        "holdout_profit_factor": result.holdout_profit_factor,
+        "holdout_win_rate_pct": result.holdout_win_rate_pct,
         "holdout_auc": result.holdout_auc,
         "windows": result.windows,
     }
@@ -220,7 +255,8 @@ def _update_direction_reports(direction: Direction, result: PerAssetTrainingResu
     validation_rows.append({
         "symbol": result.symbol, "threshold": result.threshold, "promoted": result.promoted,
         "reason": result.reason, "train_rows": result.train_rows,
-        "holdout_signals": result.holdout_signals, "holdout_precision": result.holdout_precision,
+        "holdout_trades": result.holdout_trades, "holdout_return_pct": result.holdout_return_pct,
+        "holdout_profit_factor": result.holdout_profit_factor, "holdout_win_rate_pct": result.holdout_win_rate_pct,
         "holdout_auc": result.holdout_auc,
     })
     pd.DataFrame(validation_rows).to_csv(validation_path, index=False)
@@ -249,7 +285,8 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
         cached = calibration["per_symbol"][symbol]
         return PerAssetTrainingResult(symbol=symbol, direction=direction, **{
             k: cached[k] for k in ("trained", "promoted", "reason", "threshold", "train_rows",
-                                    "holdout_signals", "holdout_precision", "holdout_auc", "windows")
+                                    "holdout_trades", "holdout_return_pct", "holdout_profit_factor",
+                                    "holdout_win_rate_pct", "holdout_auc", "windows")
         })
 
     try:
@@ -262,7 +299,8 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
         result = PerAssetTrainingResult(
             symbol=symbol, direction=direction, trained=False, promoted=False, threshold=1.0,
             reason=f"insufficient data: {rows} rows (< {MIN_TOTAL_ROWS})",
-            train_rows=rows, holdout_signals=0, holdout_precision=0.0, holdout_auc=float("nan"), windows=[],
+            train_rows=rows, holdout_trades=0, holdout_return_pct=0.0, holdout_profit_factor=0.0,
+            holdout_win_rate_pct=0.0, holdout_auc=float("nan"), windows=[],
         )
         _update_direction_reports(direction, result, horizon)
         return result
@@ -272,7 +310,8 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
         result = PerAssetTrainingResult(
             symbol=symbol, direction=direction, trained=False, promoted=False, threshold=1.0,
             reason="insufficient rows per split segment after accounting for sequence length",
-            train_rows=len(df), holdout_signals=0, holdout_precision=0.0, holdout_auc=float("nan"), windows=[],
+            train_rows=len(df), holdout_trades=0, holdout_return_pct=0.0, holdout_profit_factor=0.0,
+            holdout_win_rate_pct=0.0, holdout_auc=float("nan"), windows=[],
         )
         _update_direction_reports(direction, result, horizon)
         return result
@@ -293,7 +332,8 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
         result = PerAssetTrainingResult(
             symbol=symbol, direction=direction, trained=False, promoted=False, threshold=1.0,
             reason="too few sequences in one or more splits",
-            train_rows=len(df), holdout_signals=0, holdout_precision=0.0, holdout_auc=float("nan"), windows=[],
+            train_rows=len(df), holdout_trades=0, holdout_return_pct=0.0, holdout_profit_factor=0.0,
+            holdout_win_rate_pct=0.0, holdout_auc=float("nan"), windows=[],
         )
         _update_direction_reports(direction, result, horizon)
         return result
@@ -328,7 +368,7 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
             f"{symbol}/{direction}: calibration alignment mismatch "
             f"{len(calibration_endpoints)} != {len(calibration_probability)}"
         )
-    threshold, _ = _select_threshold(calibration_endpoints["target"].to_numpy(int), calibration_probability)
+    threshold, _ = _select_threshold(calibration_endpoints, calibration_probability, direction, symbol)
 
     holdout_probability = classifier.model.predict(X_hold, verbose=0).reshape(-1)
     holdout_endpoints = _endpoints(holdout)
@@ -337,22 +377,22 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
             f"{symbol}/{direction}: holdout alignment mismatch "
             f"{len(holdout_endpoints)} != {len(holdout_probability)}"
         )
-    holdout_predicted = holdout_probability >= threshold
-    holdout_precision, _, _, _ = precision_recall_fscore_support(
-        holdout_endpoints["target"].to_numpy(int), holdout_predicted.astype(int),
-        average="binary", zero_division=0,
-    )
     holdout_target = holdout_endpoints["target"].to_numpy(int)
     holdout_auc = (
         float(roc_auc_score(holdout_target, holdout_probability))
         if len(np.unique(holdout_target)) > 1 else float("nan")
     )
-    windows = _walk_forward_rows(holdout_endpoints, holdout_probability, threshold, direction)
+    # holdout_auc/target above are classification diagnostics only (kept for
+    # context); promotion is decided entirely from real simulated economics.
+    holdout_summary = _simulate_threshold(holdout_endpoints, holdout_probability, threshold, direction, symbol)
+    windows = _walk_forward_rows(holdout_endpoints, holdout_probability, threshold, direction, symbol)
 
     promoted = bool(
-        int(holdout_predicted.sum()) >= 15
-        and holdout_precision >= 0.55
-        and all(row["signals"] >= 3 and row["profit_factor"] >= 1.30 and row["return_pct"] > 0 for row in windows)
+        holdout_summary["trades"] >= MIN_CALIBRATION_TRADES
+        and all(
+            row["trades"] >= MIN_WINDOW_TRADES and row["profit_factor"] >= 1.30 and row["return_pct"] > 0
+            for row in windows
+        )
     )
 
     per_asset_model_path(direction, symbol, horizon).parent.mkdir(parents=True, exist_ok=True)
@@ -363,13 +403,17 @@ def train_one_asset(symbol: str, direction: Direction, timeframe: str = "1h", fo
     result = PerAssetTrainingResult(
         symbol=symbol, direction=direction, trained=True, promoted=promoted,
         threshold=float(threshold), reason="promoted" if promoted else "did not clear promotion gate",
-        train_rows=len(df), holdout_signals=int(holdout_predicted.sum()),
-        holdout_precision=float(holdout_precision), holdout_auc=holdout_auc, windows=windows,
+        train_rows=len(df), holdout_trades=int(holdout_summary["trades"]),
+        holdout_return_pct=float(holdout_summary["return_pct"]),
+        holdout_profit_factor=float(holdout_summary["profit_factor"]),
+        holdout_win_rate_pct=float(holdout_summary["win_rate_pct"]),
+        holdout_auc=holdout_auc, windows=windows,
     )
     _update_direction_reports(direction, result, horizon)
     logger.info(
         f"{direction}/{symbol}: trained={result.trained} promoted={result.promoted} "
-        f"threshold={result.threshold:.2f} holdout_auc={result.holdout_auc:.3f} "
-        f"holdout_precision={result.holdout_precision:.3f}"
+        f"threshold={result.threshold:.2f} holdout_trades={result.holdout_trades} "
+        f"holdout_return_pct={result.holdout_return_pct:.2f} "
+        f"holdout_profit_factor={result.holdout_profit_factor:.2f}"
     )
     return result
