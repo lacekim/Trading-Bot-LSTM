@@ -18,16 +18,17 @@ import pandas as pd
 
 from trading_bot import list_gmx_symbols
 from trading_bot_v4.config_v4 import V4Config as Config
-from trading_bot_v4.execution.bearish_model_paper import (
-    combine_directional_signals,
-    load_bearish_calibration,
-    predict_bearish_signals,
-)
+from trading_bot_v4.execution.bearish_model_paper import combine_directional_signals
 from trading_bot_v4.execution.paper_model_comparison import predict_original_baseline_signals
-from trading_bot_v4.ml.bearish_trainer import BEARISH_MODEL_PATH, BEARISH_SCALER_PATH
+from trading_bot_v4.execution.per_asset_model_paper import predict_per_asset_short_signals
 from trading_bot_v4.research.daily_research import DAILY_GO_STATUS_PATH
 from trading_bot_v4.utils.logger import build_logger
-from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.model_cache import (
+    PerAssetModelCache,
+    load_per_asset_calibration,
+    per_asset_model_path,
+    per_asset_scaler_path,
+)
 from trading_bot_v4.backtesting.baseline_contract import active_execution_parity_audit
 from trading_bot_v4.risk.market_cap_tiers import AssetRiskDecision, evaluate_asset_risk
 from trading_bot_v4.execution.persistent_policy import policy_for
@@ -53,14 +54,23 @@ class SimulatedPosition:
     entry_bar: int
 
 
-def _cached_directional_signals(symbol: str, timeframe: str, long_model: Any, long_scaler: Any,
-                                bearish_model: Any, bearish_scaler: Any,
-                                bearish_threshold: float) -> pd.DataFrame:
-    """Persist expensive full-history inference for repeated exit research."""
+def _cached_directional_signals(symbol: str, timeframe: str, per_asset_cache: PerAssetModelCache,
+                                short_threshold: float, horizon: int = 1) -> pd.DataFrame:
+    """Persist expensive full-history inference for repeated exit research.
+
+    Resolves each side's model from the per-symbol cache -- a symbol with no
+    trained/promoted model on a given side simply contributes no signals for
+    that side (empty frame), rather than falling back to some other symbol's
+    model the way the old single-shared-model code implicitly did.
+    """
     source = Path("data/GMX_OHLCVT") / f"gmx_arbitrum_{symbol}_{timeframe}.csv"
+    long_model_path = per_asset_model_path("long", symbol, horizon)
+    long_scaler_path = per_asset_scaler_path("long", symbol, horizon)
+    short_model_path = per_asset_model_path("short", symbol, horizon)
+    short_scaler_path = per_asset_scaler_path("short", symbol, horizon)
     dependencies = [
-        source, Config.MODEL_DIR / Config.MODEL_NAME, Config.MODEL_DIR / Config.SCALER_NAME,
-        BEARISH_MODEL_PATH, BEARISH_SCALER_PATH, Path(__file__).parents[1] / "utils/macd_confirmation.py",
+        source, long_model_path, long_scaler_path, short_model_path, short_scaler_path,
+        Path(__file__).parents[1] / "utils/macd_confirmation.py",
     ]
     signature = "|".join(
         f"{path}:{path.stat().st_mtime_ns}:{path.stat().st_size}" for path in dependencies if path.exists()
@@ -69,11 +79,16 @@ def _cached_directional_signals(symbol: str, timeframe: str, long_model: Any, lo
     path = SIGNAL_CACHE_DIR / f"{symbol}_{timeframe}_{key}.pkl"
     if path.exists():
         return pd.read_pickle(path)
-    long_signals = predict_original_baseline_signals(
-        long_model, long_scaler, symbol, timeframe, closed_only=False
+
+    long_pair = per_asset_cache.get("long", symbol)
+    long_signals = (
+        predict_original_baseline_signals(long_pair[0], long_pair[1], symbol, timeframe, closed_only=False)
+        if long_pair is not None else pd.DataFrame()
     )
-    short_signals = predict_bearish_signals(
-        bearish_model, bearish_scaler, symbol, timeframe, bearish_threshold
+    short_pair = per_asset_cache.get("short", symbol)
+    short_signals = (
+        predict_per_asset_short_signals(short_pair[0], short_pair[1], symbol, timeframe, short_threshold, closed_only=False)
+        if short_pair is not None else pd.DataFrame()
     )
     combined = combine_directional_signals(long_signals, short_signals)
     SIGNAL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -260,15 +275,18 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
     starting_capital = float(getattr(args, "capital", 100000.0))
     use_all = bool(getattr(args, "all_assets", False))
     model_sides = str(getattr(args, "model_sides", "both")).lower()
-    symbols = list_gmx_symbols(timeframe) if use_all else [str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()]
-    long_model, long_scaler = ModelScalerCache().load()
-    bearish_model = bearish_scaler = None
-    if model_sides in {"short", "both"}:
-        bearish_model, bearish_scaler = ModelScalerCache(BEARISH_MODEL_PATH, BEARISH_SCALER_PATH).load()
-    calibration = load_bearish_calibration()
-    bearish_threshold = float(calibration["threshold"])
+    explicit_symbols = getattr(args, "symbols", None)
+    if explicit_symbols:
+        symbols = [str(s).upper() for s in explicit_symbols]
+    elif use_all:
+        symbols = list_gmx_symbols(timeframe)
+    else:
+        symbols = [str(getattr(args, "symbol", Config.GMX_SYMBOL)).upper()]
+    horizon = int(getattr(args, "horizon", 1) or 1)
+    per_asset_cache = PerAssetModelCache(horizon=horizon)
+    short_calibration = load_per_asset_calibration("short", horizon)
     eligible_longs = _current_long_symbols()
-    eligible_shorts = _current_short_symbols(calibration)
+    eligible_shorts = _current_short_symbols(short_calibration)
     ignore_qualification = bool(getattr(args, "ignore_qualification", False))
     zero_costs = bool(getattr(args, "zero_costs", False))
     fee_bps = 0.0 if zero_costs else float(Config.PAPER_FEE_BPS)
@@ -291,21 +309,19 @@ def run_production_backtest(args: Any) -> pd.DataFrame:
                         Config.PAPER_MAX_POSITION_PCT,
                     ) for direction in ("LONG", "SHORT")
                 }
+            short_threshold = float(short_calibration.get("promoted_symbols", {}).get(symbol, 1.0))
             if model_sides == "both":
-                combined = _cached_directional_signals(
-                    symbol, timeframe, long_model, long_scaler, bearish_model, bearish_scaler,
-                    float(calibration.get("promoted_symbols", {}).get(symbol, bearish_threshold)),
-                )
+                combined = _cached_directional_signals(symbol, timeframe, per_asset_cache, short_threshold, horizon)
             else:
+                long_pair = per_asset_cache.get("long", symbol) if model_sides == "long" else None
                 long_signals = (
-                    predict_original_baseline_signals(long_model, long_scaler, symbol, timeframe, closed_only=False)
-                    if model_sides == "long" else pd.DataFrame()
+                    predict_original_baseline_signals(long_pair[0], long_pair[1], symbol, timeframe, closed_only=False)
+                    if long_pair is not None else pd.DataFrame()
                 )
+                short_pair = per_asset_cache.get("short", symbol) if model_sides == "short" else None
                 short_signals = (
-                    predict_bearish_signals(
-                        bearish_model, bearish_scaler, symbol, timeframe,
-                        float(calibration.get("promoted_symbols", {}).get(symbol, bearish_threshold)),
-                    ) if model_sides == "short" else pd.DataFrame()
+                    predict_per_asset_short_signals(short_pair[0], short_pair[1], symbol, timeframe, short_threshold)
+                    if short_pair is not None else pd.DataFrame()
                 )
                 combined = combine_directional_signals(long_signals, short_signals)
             qualification_eligible = ignore_qualification or symbol in eligible_longs or symbol in eligible_shorts

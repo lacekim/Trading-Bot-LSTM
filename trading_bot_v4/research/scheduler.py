@@ -20,9 +20,8 @@ import pandas as pd
 from trading_bot import load_gmx_ohlc
 from trading_bot_v4.config_v4 import V4Config as Config
 from trading_bot_v4.execution.smc_model_paper import run_smc_model_paper_trading
-from trading_bot_v4.execution.bearish_model_paper import (
-    combine_directional_signals, load_bearish_calibration, predict_bearish_signals,
-)
+from trading_bot_v4.execution.bearish_model_paper import combine_directional_signals
+from trading_bot_v4.execution.per_asset_model_paper import predict_per_asset_short_signals
 from trading_bot_v4.execution.paper_model_comparison import run_original_baseline_paper_signals
 from trading_bot_v4.execution.order_manager import OrderManager, PaperCycleSummary
 from trading_bot_v4.execution.web3_readonly import check_web3_readiness
@@ -50,7 +49,13 @@ from trading_bot_v4.research.daily_research import (
     DAILY_DASHBOARD_PATH, DAILY_GO_STATUS_PATH, DAILY_QUALIFICATION_AUDIT_PATH,
     _update_smc_features, run_daily_research,
 )
-from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.model_cache import (
+    ModelScalerCache,
+    PerAssetModelCache,
+    load_per_asset_calibration,
+    newest_per_asset_mtime,
+    per_asset_calibration_path,
+)
 from trading_bot_v4.utils.artifact_lineage import write_model_manifest
 
 
@@ -71,18 +76,13 @@ class SchedulerState:
 
 @dataclass
 class SchedulerModelBundle:
-    original_model: Any
-    original_scaler: Any
     smc_model: Any
     smc_scaler: Any
-    original_model_mtime: float
-    original_scaler_mtime: float
     smc_model_mtime: float
     smc_scaler_mtime: float
-    bearish_model: Any | None = None
-    bearish_scaler: Any | None = None
-    bearish_model_mtime: float = 0.0
-    bearish_scaler_mtime: float = 0.0
+    per_asset_cache: Any  # PerAssetModelCache; lazily resolves one model per (direction, symbol)
+    per_asset_long_mtime: float = 0.0
+    per_asset_short_mtime: float = 0.0
 
 
 def _scheduler_args(**kwargs: Any) -> Any:
@@ -168,64 +168,39 @@ def _mtime(path: Path) -> float:
 
 def _load_scheduler_models(reason: str) -> SchedulerModelBundle:
     _log(f"Loading scheduler models: {reason}")
-    original_cache = ModelScalerCache()
-    original_model, original_scaler = original_cache.load()
     smc_cache = ModelScalerCache(model_path=SMC_MODEL_PATH, scaler_path=SMC_SCALER_PATH)
     smc_model, smc_scaler = smc_cache.load()
-    bearish_model = bearish_scaler = None
-    if BEARISH_MODEL_PATH.exists() and BEARISH_SCALER_PATH.exists():
-        try:
-            calibration = load_bearish_calibration()
-            if calibration.get("promoted", False):
-                bearish_model, bearish_scaler = ModelScalerCache(
-                    model_path=BEARISH_MODEL_PATH, scaler_path=BEARISH_SCALER_PATH
-                ).load()
-                _log("Validated bearish model loaded")
-            else:
-                _log("Bearish model artifacts exist but validation promotion is false")
-        except Exception as exc:
-            _log(f"WARNING bearish model unavailable: {exc}")
-    _log("Scheduler models loaded")
+    per_asset_cache = PerAssetModelCache()
+    long_promoted = len(load_per_asset_calibration("long").get("promoted_symbols", {}))
+    short_promoted = len(load_per_asset_calibration("short").get("promoted_symbols", {}))
+    _log(f"Scheduler models loaded (per-asset: {long_promoted} LONG / {short_promoted} SHORT symbols promoted)")
     manifest_paths = [
-        original_cache.model_path, original_cache.scaler_path,
         SMC_MODEL_PATH, SMC_SCALER_PATH,
+        per_asset_calibration_path("long"), per_asset_calibration_path("short"),
     ]
-    if BEARISH_MODEL_PATH.exists() and BEARISH_SCALER_PATH.exists() and BEARISH_CALIBRATION_PATH.exists():
-        manifest_paths.extend([BEARISH_MODEL_PATH, BEARISH_SCALER_PATH, BEARISH_CALIBRATION_PATH])
-    manifest = write_model_manifest(manifest_paths, reason)
+    manifest = write_model_manifest([p for p in manifest_paths if p.exists()], reason)
     _log(f"Model lineage manifest: {manifest}")
     return SchedulerModelBundle(
-        original_model=original_model,
-        original_scaler=original_scaler,
         smc_model=smc_model,
         smc_scaler=smc_scaler,
-        original_model_mtime=_mtime(Path(original_cache.model_path)),
-        original_scaler_mtime=_mtime(Path(original_cache.scaler_path)),
         smc_model_mtime=_mtime(Path(SMC_MODEL_PATH)),
         smc_scaler_mtime=_mtime(Path(SMC_SCALER_PATH)),
-        bearish_model=bearish_model,
-        bearish_scaler=bearish_scaler,
-        bearish_model_mtime=_mtime(BEARISH_MODEL_PATH),
-        bearish_scaler_mtime=_mtime(BEARISH_SCALER_PATH),
+        per_asset_cache=per_asset_cache,
+        per_asset_long_mtime=newest_per_asset_mtime("long"),
+        per_asset_short_mtime=newest_per_asset_mtime("short"),
     )
 
 
 def _reload_reasons(bundle: SchedulerModelBundle) -> list[str]:
     reasons: list[str] = []
-    original_model_path = Path(Config.MODEL_DIR / Config.MODEL_NAME)
-    original_scaler_path = Path(Config.MODEL_DIR / Config.SCALER_NAME)
-    checks = [
-        ("original model timestamp changed", original_model_path, bundle.original_model_mtime),
-        ("original scaler timestamp changed", original_scaler_path, bundle.original_scaler_mtime),
-        ("SMC model timestamp changed", Path(SMC_MODEL_PATH), bundle.smc_model_mtime),
-        ("SMC scaler timestamp changed", Path(SMC_SCALER_PATH), bundle.smc_scaler_mtime),
-        ("bearish model timestamp changed", BEARISH_MODEL_PATH, bundle.bearish_model_mtime),
-        ("bearish scaler timestamp changed", BEARISH_SCALER_PATH, bundle.bearish_scaler_mtime),
-    ]
-    for reason, path, previous_mtime in checks:
-        current_mtime = _mtime(path)
-        if current_mtime and current_mtime != previous_mtime:
-            reasons.append(reason)
+    if _mtime(Path(SMC_MODEL_PATH)) not in (0.0, bundle.smc_model_mtime):
+        reasons.append("SMC model timestamp changed")
+    if _mtime(Path(SMC_SCALER_PATH)) not in (0.0, bundle.smc_scaler_mtime):
+        reasons.append("SMC scaler timestamp changed")
+    if newest_per_asset_mtime("long") not in (0.0, bundle.per_asset_long_mtime):
+        reasons.append("per-asset LONG models changed")
+    if newest_per_asset_mtime("short") not in (0.0, bundle.per_asset_short_mtime):
+        reasons.append("per-asset SHORT models changed")
     if RELOAD_MODEL_REQUEST_PATH.exists():
         reasons.append(f"reload requested via {RELOAD_MODEL_REQUEST_PATH}")
     return reasons
@@ -317,11 +292,8 @@ def _hourly_watch_symbols(timeframe: str) -> list[str]:
 
 
 def _qualified_short_symbols() -> list[str]:
-    """Return bearish promotions plus bidirectional forward-paper symbols."""
-    try:
-        calibration = load_bearish_calibration()
-    except (FileNotFoundError, ValueError, json.JSONDecodeError):
-        return []
+    """Return per-asset SHORT model promotions."""
+    calibration = load_per_asset_calibration("short")
     if not calibration.get("promoted", False):
         return []
     return sorted({
@@ -481,7 +453,7 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
 
     def update_active_paper_signals() -> dict[str, Any]:
         return run_original_baseline_paper_signals(
-            analysis_symbols, timeframe, models.original_model, models.original_scaler
+            analysis_symbols, timeframe, per_asset_cache=models.per_asset_cache
         )
 
     signal_result = _run_guarded("hourly.update_original_baseline_paper_signals", update_active_paper_signals)
@@ -491,19 +463,25 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
     signals_path = Path(signal_result["signals_path"])
     long_signals = pd.read_csv(signals_path) if signals_path.exists() else pd.DataFrame()
     short_signals = pd.DataFrame()
-    if models.bearish_model is not None and models.bearish_scaler is not None:
-        def update_bearish_signals() -> pd.DataFrame:
-            thresholds = {
-                str(key).upper(): float(value)
-                for key, value in load_bearish_calibration().get("promoted_symbols", {}).items()
-            }
-            return pd.concat([
-                predict_bearish_signals(models.bearish_model, models.bearish_scaler, symbol, timeframe, thresholds[symbol])
-                for symbol in analysis_symbols if symbol in thresholds
-            ], ignore_index=True) if any(symbol in thresholds for symbol in analysis_symbols) else pd.DataFrame()
-        bearish_result = _run_guarded("hourly.update_bearish_model_signals", update_bearish_signals)
-        if bearish_result is not None:
-            short_signals = bearish_result
+
+    def update_bearish_signals() -> pd.DataFrame:
+        thresholds = {
+            str(key).upper(): float(value)
+            for key, value in load_per_asset_calibration("short").get("promoted_symbols", {}).items()
+        }
+        frames = []
+        for symbol in analysis_symbols:
+            if symbol not in thresholds:
+                continue
+            pair = models.per_asset_cache.get("short", symbol)
+            if pair is None:
+                continue
+            frames.append(predict_per_asset_short_signals(pair[0], pair[1], symbol, timeframe, thresholds[symbol]))
+        return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+    bearish_result = _run_guarded("hourly.update_bearish_model_signals", update_bearish_signals)
+    if bearish_result is not None:
+        short_signals = bearish_result
     signals = combine_directional_signals(long_signals, short_signals)
     _run_guarded("hourly.shadow_challenger", lambda: orders.process_challenger_signals(signals))
     orders.set_new_entries(controller.entries_allowed())
@@ -544,14 +522,15 @@ def _run_hourly_update(timeframe: str, models: SchedulerModelBundle, orders: Ord
 
 
 def _run_daily_research(timeframe: str, top_validated: int, models: SchedulerModelBundle) -> Any | None:
+    # model/scaler intentionally omitted: daily_research.py still uses the
+    # single shared-model path (out of scope for the per-asset model rollout)
+    # and falls back to loading it itself when these are left unset.
     return _run_guarded(
         "daily.run_daily_research",
         lambda: run_daily_research(
             _scheduler_args(
                 timeframe=timeframe,
                 top_validated=top_validated,
-                model=models.original_model,
-                scaler=models.original_scaler,
                 smc_model=models.smc_model,
                 smc_scaler=models.smc_scaler,
             )

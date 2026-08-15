@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 from trading_bot_v4.config_v4 import V4Config as Config
-from trading_bot_v4.core.smc_swings import SMC_FEATURE_COLUMNS
+from trading_bot_v4.core.smc_swings import SMC_BINARY_FEATURE_COLUMNS, SMC_FEATURE_COLUMNS
 from trading_bot_v4.ml.cnn_lstm_model import V4CNNLSTMClassifier
 from trading_bot_v4.utils.logger import build_logger
 
@@ -92,6 +92,17 @@ def _split_and_scale_by_symbol(
 
     if not grouped_frames:
         raise ValueError("No assets have enough rows to train the SMC model")
+
+    # Leave sparse binary event flags (BOS/CHoCH/order blocks/FVG/sweeps/swings/regime)
+    # as raw 0/1 by neutralizing their fitted mean/scale post-fit, instead of letting
+    # StandardScaler turn a rare "fires" event into a multi-std-dev input spike.
+    passthrough_indices = [
+        index for index, column in enumerate(feature_columns) if column in SMC_BINARY_FEATURE_COLUMNS
+    ]
+    if passthrough_indices:
+        scaler.mean_[passthrough_indices] = 0.0
+        scaler.scale_[passthrough_indices] = 1.0
+        scaler.var_[passthrough_indices] = 1.0
 
     arrays: dict[str, dict[str, np.ndarray]] = {}
     train_sequences = 0
@@ -173,10 +184,15 @@ def _make_sequence_dataset(
     return dataset.batch(batch_size or Config.BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 
-def train_smc_model(timeframe: str) -> SmcModelTrainingResult:
-    """Train and save a separate SMC-enhanced CNN/LSTM model."""
+def train_smc_model(timeframe: str, feature_columns: list[str] | None = None) -> SmcModelTrainingResult:
+    """Train and save a separate SMC-enhanced CNN/LSTM model.
+
+    feature_columns defaults to Config.FEATURE_COLUMNS + every SMC_FEATURE_COLUMNS
+    entry; pass a smaller explicit list (e.g. Config.FEATURE_COLUMNS + REGIME_COLUMNS)
+    to train an ablation variant using a subset of the SMC feature groups.
+    """
     dataset = _load_smc_training_data(timeframe)
-    feature_columns = [*Config.FEATURE_COLUMNS, *SMC_FEATURE_COLUMNS]
+    feature_columns = feature_columns or [*Config.FEATURE_COLUMNS, *SMC_FEATURE_COLUMNS]
     arrays, scaler, stats = _split_and_scale_by_symbol(dataset, feature_columns)
 
     feature_count = len(feature_columns)

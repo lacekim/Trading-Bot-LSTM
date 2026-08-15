@@ -168,7 +168,8 @@ def _walk_forward_rows(endpoints: pd.DataFrame, probability: np.ndarray,
 
 
 def _calibrate_symbols(calibration_endpoints: pd.DataFrame, calibration_probability: np.ndarray,
-                       holdout_endpoints: pd.DataFrame, holdout_probability: np.ndarray) -> tuple[
+                       holdout_endpoints: pd.DataFrame, holdout_probability: np.ndarray,
+                       min_precision: float = 0.55) -> tuple[
     dict[str, float], list[dict[str, Any]], list[dict[str, Any]]
 ]:
     selected_data = calibration_endpoints.copy()
@@ -194,7 +195,7 @@ def _calibrate_symbols(calibration_endpoints: pd.DataFrame, calibration_probabil
             )
             if predicted.sum() >= 15:
                 candidates.append((float(threshold), float(precision), float(recall), float(f1)))
-        eligible = [row for row in candidates if row[1] >= 0.55 and row[2] >= 0.05]
+        eligible = [row for row in candidates if row[1] >= min_precision and row[2] >= 0.05]
         selected = max(eligible, key=lambda row: (row[3], row[1])) if eligible else max(
             candidates or [(0.90, 0.0, 0.0, 0.0)], key=lambda row: (row[1], row[3])
         )
@@ -204,7 +205,7 @@ def _calibrate_symbols(calibration_endpoints: pd.DataFrame, calibration_probabil
         )
         windows = _walk_forward_rows(final, final_p, selected[0])
         window_report.extend({"symbol": symbol, "threshold": selected[0], **row} for row in windows)
-        stable = bool(eligible) and final_predicted.sum() >= 15 and final_precision >= 0.55 and all(
+        stable = bool(eligible) and final_predicted.sum() >= 15 and final_precision >= min_precision and all(
             row["signals"] >= 3 and row["profit_factor"] >= 1.30 and row["return_pct"] > 0
             for row in windows
         )

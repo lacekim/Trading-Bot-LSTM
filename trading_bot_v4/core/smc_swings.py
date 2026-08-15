@@ -69,6 +69,31 @@ SMC_FEATURE_COLUMNS = [
     *FVG_COLUMNS,
     *REGIME_COLUMNS,
 ]
+# Sparse 0/1 event flags within SMC_FEATURE_COLUMNS. These fire on well under 15% of
+# bars (structure breaks/order blocks under 1%), so standardizing them like a
+# continuous feature turns a "fires" event into a 5-22 std-dev spike in the model's
+# input -- see SmcModelTrainingResult scaling in ml/smc_trainer.py, which excludes
+# these from StandardScaler and leaves them as raw 0/1 instead.
+SMC_BINARY_FEATURE_COLUMNS = [
+    "swing_high",
+    "swing_low",
+    "bullish_bos",
+    "bearish_bos",
+    "bullish_choch",
+    "bearish_choch",
+    "bullish_liquidity_sweep",
+    "bearish_liquidity_sweep",
+    "bullish_order_block",
+    "bearish_order_block",
+    "ob_mitigated",
+    "bullish_fvg",
+    "bearish_fvg",
+    "fvg_filled",
+    "regime_trending",
+    "regime_ranging",
+    "regime_high_volatility",
+    "regime_low_volatility",
+]
 
 
 @dataclass(frozen=True)

@@ -49,6 +49,8 @@ from trading_bot_v4.execution.validated_whitelist_performance import (
 from trading_bot_v4.features.smc_feature_builder import build_all_assets_smc_training_data, build_smc_training_data
 from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.ml.bearish_trainer import train_bearish_model
+from trading_bot_v4.ml.per_asset_trainer import train_one_asset
+from trading_bot_v4.execution.gmx_adapter import list_gmx_symbols
 from trading_bot_v4.ml.cost_aware_long_trainer import (
     train_cost_aware_long_model, run_cost_aware_long_walk_forward,
     run_cost_aware_directional_walk_forward,
@@ -105,6 +107,11 @@ def parse_args():
     parser.add_argument("--build-smc-training-data", action="store_true", help="Build an optional SMC-enhanced training dataset")
     parser.add_argument("--train-smc-model", action="store_true", help="Train a separate optional SMC-enhanced model")
     parser.add_argument("--train-bearish-model", action="store_true", help="Train and calibrate the independent downside SMC model")
+    parser.add_argument("--train-per-asset", action="store_true", help="Train one independent LONG/SHORT model per GMX asset instead of one shared model")
+    parser.add_argument("--direction", choices=["long", "short", "both"], default="both", help="Which side(s) --train-per-asset trains")
+    parser.add_argument("--force-retrain", action="store_true", help="With --train-per-asset, retrain assets that already have a model instead of skipping them")
+    parser.add_argument("--horizon", type=int, default=1, help="With --train-per-asset, candles ahead the target looks (1 = next single candle). Non-default horizons train into a separate models/{direction}_h{horizon}/ namespace.")
+    parser.add_argument("--symbols", nargs="*", default=None, help="With --train-per-asset, limit training to these GMX symbols instead of every listed asset")
     parser.add_argument("--train-cost-aware-long", action="store_true", help="Train and holdout-validate the all-asset cost-aware LONG challenger")
     parser.add_argument("--walk-forward-cost-aware-long", action="store_true", help="Run repeated expanding walk-forward validation for the cost-aware LONG challenger")
     parser.add_argument("--walk-forward-cost-aware-directional", action="store_true", help="Run causal LONG/SHORT return-regression walk-forward validation")
@@ -200,6 +207,25 @@ def main():
         print(f"validation recall: {result.validation_recall:.6f}")
         print(f"validation F1: {result.validation_f1:.6f}")
         print(f"calibrated threshold: {result.threshold:.2f}")
+        return 0
+    if args.train_per_asset:
+        timeframe = str(args.timeframe)
+        symbols = list(args.symbols) if args.symbols else list_gmx_symbols(timeframe)
+        directions = ["long", "short"] if args.direction == "both" else [args.direction]
+        total = len(symbols) * len(directions)
+        done = 0
+        for direction in directions:
+            for symbol in symbols:
+                done += 1
+                result = train_one_asset(
+                    symbol, direction, timeframe=timeframe, force=bool(args.force_retrain),
+                    horizon=int(args.horizon),
+                )
+                print(
+                    f"[{done}/{total}] {direction}/{symbol}: trained={result.trained} "
+                    f"promoted={result.promoted} reason={result.reason} "
+                    f"holdout_auc={result.holdout_auc:.3f} holdout_precision={result.holdout_precision:.3f}"
+                )
         return 0
     if args.train_cost_aware_long:
         train_cost_aware_long_model(str(args.timeframe))

@@ -116,15 +116,32 @@ def predict_original_baseline_signals(model: Any, scaler: Any, symbol: str, time
     return signals
 
 
-def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, model: Any,
-                                        scaler: Any, signals_path: Path | None = None,
-                                        summary_path: Path | None = None) -> dict[str, Any]:
-    """Generate the active baseline LONG signals and persist daily-analysis inputs."""
+def run_original_baseline_paper_signals(symbols: list[str], timeframe: str, model: Any = None,
+                                        scaler: Any = None, signals_path: Path | None = None,
+                                        summary_path: Path | None = None,
+                                        per_asset_cache: Any = None) -> dict[str, Any]:
+    """Generate the active baseline LONG signals and persist daily-analysis inputs.
+
+    Pass per_asset_cache (a PerAssetModelCache) to resolve one independently
+    trained model per symbol instead of reusing a single model/scaler for
+    every symbol -- symbols without a trained LONG model are skipped rather
+    than falling back to some other symbol's model.
+    """
     frames, summaries = [], []
-    version = artifact_version([Config.MODEL_DIR / Config.MODEL_NAME, Config.MODEL_DIR / Config.SCALER_NAME])
+    version = (
+        "per-asset" if per_asset_cache is not None else
+        artifact_version([Config.MODEL_DIR / Config.MODEL_NAME, Config.MODEL_DIR / Config.SCALER_NAME])
+    )
     for symbol in symbols:
         try:
-            signals = predict_original_baseline_signals(model, scaler, str(symbol).upper(), timeframe)
+            if per_asset_cache is not None:
+                pair = per_asset_cache.get("long", str(symbol).upper())
+                if pair is None:
+                    continue
+                symbol_model, symbol_scaler = pair
+            else:
+                symbol_model, symbol_scaler = model, scaler
+            signals = predict_original_baseline_signals(symbol_model, symbol_scaler, str(symbol).upper(), timeframe)
         except Exception as exc:
             logger.warning("Skipping %s %s during original baseline inference: %s", symbol, timeframe, exc)
             continue
