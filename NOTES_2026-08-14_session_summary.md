@@ -1,6 +1,6 @@
-# Session summary — 2026-08-13/14
+# Session summary — 2026-08-13/15
 
-Two separate trading bot projects were investigated tonight: the **freqtrade
+Two separate trading bot projects were investigated across this session: the **freqtrade
 bot** (`/Volumes/Extreme_SSD/freqtrade-develop`) and **trading_bot_v4**
 (`/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera`, this repo).
 Both turned out to have the same class of problem — backtest/validation
@@ -176,45 +176,128 @@ deeper, more important problem than "is horizon=1 or horizon=12 better."
 
 ---
 
+## Part 3 — closing the loop (2026-08-15): calibration fix, threshold wiring, and the real answer
+
+Picked back up on the single highest-priority item from Part 2: the
+calibration/promotion methodology never actually measured what the real
+engine would do. Fixed it properly, then followed the chain all the way
+through to a final, trustworthy answer.
+
+### 3a. Fixed the calibration methodology to match real execution
+
+`_walk_forward_rows`/`_select_threshold` in `per_asset_trainer.py` now build
+a `simulate_production_symbol`-compatible signals frame for every candidate
+threshold (new `_build_signals_frame`/`_simulate_threshold` helpers) and
+score it with the **real** engine — real ATR stop/target, real
+`max_hold_candles`, real fees/slippage — instead of the old "hold exactly N
+candles, take the raw return" proxy. Threshold selection now picks by real
+profit_factor/return_pct (≥10 real trades on the calibration slice);
+promotion requires ≥3 real trades per holdout window with profit_factor≥1.30
+and positive return in every window — same conceptual bar as before, now
+honest. `PerAssetTrainingResult`'s fields changed from classification
+precision/recall to real `holdout_trades`/`return_pct`/`profit_factor`/
+`win_rate_pct` (AUC kept as a diagnostic only, no longer gates promotion).
+
+**Verified directly against the 4 old "promotions"**: re-trained MEW, ANIME,
+ORDI, SATS individually under the new methodology — every one came back
+non-promoted with real numbers matching (and explaining) the earlier
+targeted-backtest failures: MEW -13.94%/PF 0.36, ANIME -24.56%/PF 0.69, ORDI
++3.71%/PF 1.05 (closest, still fails), SATS -27.80%/PF 0.59. The fix
+correctly rejects every one of the old false positives.
+
+**Re-ran the full 120-asset × 2-direction horizon=12 sweep** under the
+corrected methodology (`--force-retrain`, since all 120 symbols already had
+stale entries from the flawed run): **promoted count dropped from 4/240 to
+1/240** (short/WLD: 24 real trades, +13.35% return, profit factor 2.12, win
+rate 58.3%, positive in all 3 walk-forward windows — window 1's "infinite"
+PF is a 3-trade artifact, but windows 2-3 are a real, substantive sample).
+No errors across the sweep. Also much faster than expected (~23s/model vs
+~70-90s before), making a full resweep a ~1.5-2 hour job instead of 4-5.
+
+### 3b. Fixed the LONG threshold wiring gap
+
+Root cause: `predict_original_baseline_signals`/`_predict_original_model_signals`
+always derived `model_direction` via `direction_for_probability()`
+(`persistent_policy.py`), which uses `policy_for(symbol).threshold` — a flat
+global default (`Config.MIN_SIGNAL_THRESHOLD` = 0.70) for any
+non-persistent-policy symbol. The `threshold` column added afterward was
+display-only metadata; it never fed back into the direction decision. So
+even a correctly-promoted LONG model would never actually change live/backtest
+behavior. The SHORT side never had this problem (`predict_per_asset_short_signals`
+already took an explicit threshold param).
+
+Fix: both functions gained an optional `threshold` param that, when passed,
+directly drives the LONG/HOLD decision (LONG-only, no SHORT interpretation
+— matches how the model was actually calibrated). `research/scheduler.py`
+needed no changes — it already threads `per_asset_cache` through and picks
+up the fix automatically. `daily_research.py`'s callers (never pass
+`per_asset_cache`) are unaffected — `threshold=None` preserves the exact old
+behavior. **Verified concretely**: same BTC model, `threshold=None` → 692 of
+78,150 rows flagged LONG (the flat 0.70 default); explicit `threshold=0.3` →
+75,828 of 78,150 — proving the parameter was previously silently ignored and
+now genuinely drives the decision.
+
+### 3c. The final, complete answer: WLD through the real pipeline
+
+With both fixes in place, ran the one promoted symbol (short/WLD) through
+`--backtest-production` with **real** qualification (no
+`--ignore-qualification`) to check the last remaining link: does a
+correctly-promoted, correctly-wired signal actually clear risk/liquidity
+gating too? `qualified_short=True` confirmed the promotion and threshold
+wiring are both working. But `short_risk_allowed=False`:
+**"insufficient GMX liquidity/open interest for LARGE"**. WLD's ~$1.23B
+market cap puts it in the LARGE tier, which requires $100k liquidity /
+$25k open interest on GMX. Actual GMX state for WLD: $70,284 available
+liquidity (would clear MID's $50k floor, misses LARGE's $100k) and **$1,234
+total open interest** — roughly 20x short of the $25k LARGE floor. WLD is a
+large-cap token by market cap, but its GMX perpetual market is nearly
+dormant. Not a bug — the risk system correctly caught a real venue-liquidity
+constraint no amount of model-quality work can fix.
+
+**Final honest state of the entire per-asset investigation: 0 of 240
+trained models produce an actually-tradeable signal**, once calibration
+economics, threshold wiring, and real GMX liquidity are all correctly
+accounted for together. This is a complete, validated answer — not a dead
+end from a bug, but a genuine finding about what's currently tradeable on
+this venue with this feature/target design.
+
+---
+
 ## Future goals / where to pick this up
 
-1. **(Highest priority) Fix the calibration/promotion methodology to match
-   real execution.** `_walk_forward_rows`/`_select_threshold` in
-   `per_asset_trainer.py` (and the equivalent logic in `bearish_trainer.py`)
-   need to score candidates using the same exit rules
-   `simulate_production_symbol` actually uses (ATR stop/target,
-   `max_hold_candles`, real fees/slippage) instead of a naive
-   hold-to-horizon proxy. Until this is fixed, no promotion count from
-   tonight (0 at horizon=1, 4 at horizon=12) should be treated as validated,
-   including the ones that "looked" statistically clean like ANIME.
-2. **Fix the MEW-style wiring gap**: LONG signal generation
-   (`predict_original_baseline_signals` / `policy_for()`) doesn't consult
-   the per-asset model's own calibrated promotion threshold at all — it uses
-   a separate, mostly-flat default threshold system. Worth deciding whether
-   LONG should gate on promotion the same way SHORT already does.
-2b. **After the calibration fix, if it holds up, systematically explore
-   horizon** rather than assuming 12 is the right value — the pilot showed a
-   real precision/AUC tradeoff (higher horizon = higher precision, lower
-   ranking power) that's worth mapping properly (e.g. 4, 6, 8, 12, 24) once
-   the scoring itself can be trusted.
-3. **Keep the market-cap snapshot fresh** — it will go stale again (48h
-   gate) without the live scheduler running continuously; either keep the
-   scheduler running or add an explicit refresh step to any manual backtest
-   workflow.
-4. **The daily GO list is separately stale** in a different sense — it
-   reflects live paper-trading track record from the *old* single-shared
-   models. It can't be fast-forwarded; it needs the ranking/walk-forward
-   tools rewired to per-asset models (explicitly deferred tonight) *and*
-   real elapsed trading days under the new models before anything can
-   realistically show GO.
-5. **freqtrade project**: the long-only structural handicap is probably the
+**Done since Part 2** (both fixed, verified, committed, pushed):
+1. ~~Fix the calibration/promotion methodology~~ — done, see 3a. Every
+   promotion decision made by this system is now honest.
+2. ~~Fix the MEW-style LONG threshold wiring gap~~ — done, see 3b.
+
+**Still open:**
+3. **Systematically explore horizon** now that scoring can be trusted —
+   only 12 has been tested against the real engine. Worth mapping 4, 6, 8,
+   24 etc. properly, though expect a similarly small (or zero) promoted
+   count given how thin GMX liquidity turned out to be for even the one
+   symbol that cleared every other bar.
+4. **GMX liquidity may be the real, harder constraint** going forward, not
+   model quality — worth checking, before investing more in model/horizon
+   experiments, how many GMX-listed assets even have enough open interest to
+   clear MID/LARGE tier floors at all. If very few do, the ceiling on this
+   whole approach may be venue liquidity, not signal quality.
+5. **Keep the market-cap snapshot fresh** — 48h gate, needs the live
+   scheduler running continuously or a manual refresh step in any backtest
+   workflow (`collect_market_caps()`).
+6. **The daily GO list is separately stale** — reflects live paper-trading
+   track record from the *old* single-shared models, and needs the
+   ranking/walk-forward tools (`ranking_engine.py`/`walk_forward.py`,
+   explicitly out of scope both sessions) rewired to per-asset models *and*
+   real elapsed trading days before anything can realistically show GO.
+7. **freqtrade project**: the long-only structural handicap is probably the
    single biggest lever if that project continues — either accept it's
    long-only and only tradeable in bull regimes, or move to a venue with
    margin/futures support if a genuine long+short freqtrade bot is wanted
    (Kraken doesn't support it; Binance/Bybit do in freqtrade).
-6. **Both projects would benefit from the same discipline going forward**:
+8. **Both projects would benefit from the same discipline going forward**:
    any time a "backtest" or "promotion" number looks good, check (a) whether
-   the evaluation window was truly unseen by training, and (b) whether the
+   the evaluation window was truly unseen by training, (b) whether the
    number was computed by the same rules the live/execution engine actually
-   uses. Both bugs found tonight were exactly this class of mistake, just in
-   different places (data leakage vs. scoring-methodology mismatch).
+   uses, and (c) — the newest lesson — whether the venue can actually
+   support the size/liquidity the strategy assumes. All three classes of
+   mistake showed up across this session.
