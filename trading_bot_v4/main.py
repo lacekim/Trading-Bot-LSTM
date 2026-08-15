@@ -51,6 +51,7 @@ from trading_bot_v4.ml.smc_trainer import train_smc_model
 from trading_bot_v4.ml.bearish_trainer import train_bearish_model
 from trading_bot_v4.ml.per_asset_trainer import train_one_asset
 from trading_bot_v4.execution.gmx_adapter import list_gmx_symbols
+from trading_bot_v4.risk.market_cap_tiers import liquid_symbols
 from trading_bot_v4.ml.cost_aware_long_trainer import (
     train_cost_aware_long_model, run_cost_aware_long_walk_forward,
     run_cost_aware_directional_walk_forward,
@@ -112,6 +113,7 @@ def parse_args():
     parser.add_argument("--force-retrain", action="store_true", help="With --train-per-asset, retrain assets that already have a model instead of skipping them")
     parser.add_argument("--horizon", type=int, default=1, help="With --train-per-asset, candles ahead the target looks (1 = next single candle). Non-default horizons train into a separate models/{direction}_h{horizon}/ namespace.")
     parser.add_argument("--symbols", nargs="*", default=None, help="With --train-per-asset, limit training to these GMX symbols instead of every listed asset")
+    parser.add_argument("--liquid-only", action="store_true", help="With --train-per-asset, further restrict to symbols currently clearing the GMX liquidity/open-interest risk floor (evaluate_asset_risk) -- any promotion is then automatically tradeable")
     parser.add_argument("--train-cost-aware-long", action="store_true", help="Train and holdout-validate the all-asset cost-aware LONG challenger")
     parser.add_argument("--walk-forward-cost-aware-long", action="store_true", help="Run repeated expanding walk-forward validation for the cost-aware LONG challenger")
     parser.add_argument("--walk-forward-cost-aware-directional", action="store_true", help="Run causal LONG/SHORT return-regression walk-forward validation")
@@ -210,12 +212,27 @@ def main():
         return 0
     if args.train_per_asset:
         timeframe = str(args.timeframe)
-        symbols = list(args.symbols) if args.symbols else list_gmx_symbols(timeframe)
+        base_symbols = list(args.symbols) if args.symbols else list_gmx_symbols(timeframe)
         directions = ["long", "short"] if args.direction == "both" else [args.direction]
-        total = len(symbols) * len(directions)
+        # Liquid set differs slightly by direction (available_liquidity_long_usd
+        # vs available_liquidity_short_usd), so it's computed per direction
+        # rather than once -- see risk/market_cap_tiers.py's liquid_symbols().
+        symbols_by_direction = {
+            direction: (
+                liquid_symbols(direction.upper(), base_symbols) if args.liquid_only else base_symbols
+            )
+            for direction in directions
+        }
+        if args.liquid_only:
+            for direction in directions:
+                print(
+                    f"--liquid-only: {len(symbols_by_direction[direction])}/{len(base_symbols)} "
+                    f"{direction.upper()} symbols clear the GMX liquidity/open-interest floor"
+                )
+        total = sum(len(symbols_by_direction[direction]) for direction in directions)
         done = 0
         for direction in directions:
-            for symbol in symbols:
+            for symbol in symbols_by_direction[direction]:
                 done += 1
                 result = train_one_asset(
                     symbol, direction, timeframe=timeframe, force=bool(args.force_retrain),

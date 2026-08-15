@@ -138,3 +138,14 @@ def evaluate_asset_risk(symbol: str, direction: str,
         return AssetRiskDecision(False, decision.tier, decision.market_cap_usd, 0.0, 0.0,
                                  f"insufficient GMX liquidity/open interest for {decision.tier}")
     return decision
+
+
+def liquid_symbols(direction: str, symbols: list[str]) -> list[str]:
+    """Filters to symbols currently allowed to trade this direction under
+    evaluate_asset_risk's market-cap tier + GMX liquidity/open-interest
+    floors -- e.g. tonight's finding that every promoted per-asset symbol
+    (WLD, MEW, ANIME, ORDI, SATS) turned out to be liquidity-blocked despite
+    passing calibration. Restricting training to this set up front means any
+    future promotion is automatically tradeable, instead of discovering the
+    liquidity gap only after training on the full universe."""
+    return [symbol for symbol in symbols if evaluate_asset_risk(symbol, direction).allowed]
