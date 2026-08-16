@@ -1,5 +1,2 @@
 symbol,entry_eligible,candles,trades,long_trades,short_trades,starting_capital,final_capital,return_pct,win_rate_pct,max_drawdown_pct,profit_factor,qualified_long,qualified_short,long_risk_allowed,short_risk_allowed,market_cap_tier,market_cap_usd,tier_risk_pct,tier_max_position_pct,long_risk_reason,short_risk_reason
-MEW,True,5553,0,0,0,100000.0,100000.0,0.0,0.0,0.0,0.0,True,True,True,True,DISABLED,0.0,1.0,95.0,,
-ANIME,True,13086,1210,0,1210,100000.0,20619.159230893172,-79.38084076910683,35.9504132231405,-82.02954237734086,0.8297769162844821,True,True,True,True,DISABLED,0.0,1.0,95.0,,
-ORDI,True,23661,619,0,619,100000.0,35796.560949271414,-64.20343905072858,32.956381260096926,-68.3200756255786,0.7591890551174675,True,True,True,True,DISABLED,0.0,1.0,95.0,,
-SATS,True,5548,202,0,202,100000.0,92043.09869733737,-7.956901302662633,40.5940594059406,-20.778730315075766,0.9297159022453592,True,True,True,True,DISABLED,0.0,1.0,95.0,,
+WLD,False,26208,0,0,0,100000.0,100000.0,0.0,0.0,0.0,0.0,False,True,False,False,LARGE,1226221083.0,0.0,0.0,insufficient GMX liquidity/open interest for LARGE,insufficient GMX liquidity/open interest for LARGE
