@@ -1,0 +1,92 @@
+{
+  "K": 100,
+  "fit_events": 37035,
+  "test_events": 26738,
+  "phi": 0.9969003774928439,
+  "a": 0.00553142057405287,
+  "sigma_fit": 1.1108023495791621,
+  "half_life_bars": 223.2763427931545,
+  "forecast_level_sigma": 1.784546525030852,
+  "mesh_pt": [
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    3.5,
+    4.0,
+    4.5,
+    5.0,
+    5.5,
+    6.0,
+    6.5,
+    7.0,
+    7.5,
+    8.0,
+    8.5,
+    9.0,
+    9.5,
+    10.0
+  ],
+  "mesh_sl": [
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    3.5,
+    4.0,
+    4.5,
+    5.0,
+    5.5,
+    6.0,
+    6.5,
+    7.0,
+    7.5,
+    8.0,
+    8.5,
+    9.0,
+    9.5,
+    10.0
+  ],
+  "n_mesh_paths": 100000,
+  "chosen_pt": 3.5,
+  "chosen_sl": 10.0,
+  "simulated_sharpe_at_chosen": 0.06969590551714294,
+  "simulated_sharpe_median_over_mesh": 0.025366894744308602,
+  "verbatim_loop_check": [
+    {
+      "pt": 2.5,
+      "sl": 2.5,
+      "sharpe_verbatim_loop": 0.01494486501382773,
+      "sharpe_mesh": 0.011986466565944202
+    },
+    {
+      "pt": 2.5,
+      "sl": 10.0,
+      "sharpe_verbatim_loop": 0.10559595470260913,
+      "sharpe_mesh": 0.06579092715142457
+    },
+    {
+      "pt": 3.5,
+      "sl": 2.5,
+      "sharpe_verbatim_loop": 0.02271813469789691,
+      "sharpe_mesh": 0.014243466063676753
+    },
+    {
+      "pt": 3.5,
+      "sl": 10.0,
+      "sharpe_verbatim_loop": 0.03576785031935455,
+      "sharpe_mesh": 0.06969590551714294
+    }
+  ],
+  "verbatim_loop_paths": 3000,
+  "definition_2": {
+    "oos_sharpe_chosen": -0.03256556613169823,
+    "oos_sharpe_mesh_median": -0.017949051327163595,
+    "oos_sharpe_mesh_best_in_hindsight": 0.008024266020705178,
+    "overfit": true
+  }
+}

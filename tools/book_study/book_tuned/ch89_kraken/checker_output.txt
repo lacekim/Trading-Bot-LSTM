@@ -1,0 +1,2 @@
+kraken: ch8/ch9 structure checks (28,279 events, 3- and 5-fold purging rebuilt, 11 candidates); 0 problems
+

@@ -1,0 +1,114 @@
+{
+  "venue": "kraken",
+  "source_run": "/home/claude/work/proj/runtime/book_meta_kraken_bars/20261014T052224Z",
+  "bar_dir": "runtime/dollar_bars/kraken",
+  "ports_run": "/home/claude/work/proj/runtime/book_ports_kraken_bars/20261014T130136Z",
+  "bookfeat_run": "runtime/book_final/kraken_20261014T173331Z",
+  "seed": 20261022,
+  "step": 0.1,
+  "cost_frac_round_trip": 0.0024,
+  "cost_bp_per_side": 11.999999999999998,
+  "cutoff": "2024-01-01",
+  "forest": {
+    "n_estimators": 100,
+    "bootstrap": "sequential",
+    "max_draws": 10000,
+    "min_weight_fraction_leaf": 0.16544787290051172,
+    "max_features": 1
+  },
+  "features": [
+    "ffd",
+    "log_trgt",
+    "sadf",
+    "ent_plugin",
+    "ent_konto",
+    "cs_spread"
+  ],
+  "events": 50968,
+  "otr": {
+    "pt": 7.0,
+    "sl": 7.0,
+    "K": 100
+  },
+  "cpcv": {
+    "n_paths": 5,
+    "auc_by_path": [
+      0.5295256447391106,
+      0.5066653700674669,
+      0.5055701271193394,
+      0.4990021662296,
+      0.5002049818191742
+    ],
+    "side_accuracy_by_path": [
+      0.4872665201695181,
+      0.4985284884633496,
+      0.48773740386124625,
+      0.4800659237168419,
+      0.483695652173913
+    ],
+    "auc_mean": 0.5081936579949382
+  },
+  "walk_forward": {
+    "auc": 0.508486899028567,
+    "side_accuracy": 0.49769992922859163,
+    "up_share_test": 0.5072098372257607,
+    "n_test": 22608
+  },
+  "exit_stats_wf": {
+    "truncated_share": 0.001459660297239915,
+    "mean_bars_held": 53.318780962491154
+  },
+  "hrp_rebalances": 51,
+  "reb_window": 252,
+  "last_day": "2026-10-12",
+  "first_day": "2013-10-14",
+  "integrity_unchanged": true,
+  "tuned_forest_json": "runtime/book_ch89/kraken_20261014T161520Z/tuned_forest.json",
+  "n_trials_candidates": 11,
+  "dsr": {
+    "last_365_days": {
+      "n_days": 365,
+      "sr_daily": 0.044818802807715885,
+      "skew": 0.41154813835989074,
+      "kurt": 5.310841389358363,
+      "var_across_cpcv_paths": 0.001524682408164814,
+      "var_asymptotic": 0.0027025267278850454,
+      "var_sr_used": 0.0027025267278850454,
+      "psr_vs_0": 0.8056933703676648,
+      "by_trials": {
+        "11": {
+          "sr_star": 0.08433143482337442,
+          "dsr": 0.2236077476543064
+        }
+      }
+    },
+    "whole_walk_forward_span": {
+      "n_days": 1016,
+      "sr_daily": -0.026459228318310404,
+      "skew": 0.09802972186695867,
+      "kurt": 7.273105379538341,
+      "var_across_cpcv_paths": NaN,
+      "var_asymptotic": 0.0009888588439172985,
+      "var_sr_used": 0.0009888588439172985,
+      "psr_vs_0": 0.20005786576808254,
+      "by_trials": {
+        "11": {
+          "sr_star": 0.051011916676413194,
+          "dsr": 0.006877189948235551
+        }
+      }
+    }
+  },
+  "quick": false,
+  "seconds": 13,
+  "predictions_from": "/home/claude/work/proj/runtime/book_full_tuned/kraken_20261014T162910Z",
+  "script_md5": {
+    "book_final.py": "b305dd667ab9e33bd3f769a7fe00a239",
+    "book_otr_exit.py": "fba2274963836ab6ec616d5ec9ce4c73",
+    "book_port_d.py": "afc406edcd8563213df2bc63dfe6ed7a",
+    "bet_averaging.py": "2afbdf6dde35972daf09b8e03327eaa2",
+    "meta_model.py": "0f467b9f97d7592742add55fea471271",
+    "meta_eval.py": "898b28eb970a82f89a46cfa9b510bf0c",
+    "meta_events.py": "a1bf9c143dd3e0f74a5788efe3803561"
+  }
+}

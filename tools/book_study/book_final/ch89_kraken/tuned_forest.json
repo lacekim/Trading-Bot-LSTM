@@ -1,0 +1,14 @@
+{
+  "venue": "kraken",
+  "forest": {
+    "n_estimators": 100,
+    "bootstrap": "sequential",
+    "max_draws": 10000,
+    "min_weight_fraction_leaf": 0.16544787290051172,
+    "max_features": 1
+  },
+  "chosen_candidate": 7,
+  "n_candidates": 11,
+  "baseline_neg_log_loss": -0.699824337209316,
+  "best_neg_log_loss": -0.6980122858688519
+}

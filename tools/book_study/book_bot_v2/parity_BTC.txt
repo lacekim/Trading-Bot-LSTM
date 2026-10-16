@@ -1,0 +1,21 @@
+events compared: 1500 (BTC); bars 89219
+Snippet 3.1 daily vol  : verbatim vs bot  max|diff| 2.180e-02  events differing >1e-9: 1500
+events the verbatim snippets keep: 1500 of 1500
+Snippets 3.3/3.4 exit time: identical for 1469 of 1500  (97.93%)
+Snippets 3.5-3.7 label (sign of return): identical for 1498 of 1500  (99.87%)
+return at exit: max|diff| 2.985e-01; differing >1e-9: 722
+first 10 exit-time disagreements (verbatim t1 / bot t1):
+   2014-09-16 19:03:00  2014-09-17 13:30:00  /  2014-09-18 12:34:00
+   2014-09-16 19:52:00  2014-09-18 12:34:00  /  2014-09-18 19:13:00
+   2014-11-09 16:24:00  2014-11-12 13:07:00  /  2014-11-12 10:42:00
+   2014-11-11 01:36:00  2014-11-12 15:32:00  /  2014-11-12 13:07:00
+   2014-11-12 11:08:00  2014-11-13 04:19:00  /  2014-11-12 17:56:00
+   2014-11-12 15:32:00  2014-11-16 15:52:00  /  2014-11-13 06:38:00
+   2014-11-12 17:56:00  2014-11-17 00:36:00  /  2014-11-13 18:58:00
+   2014-12-16 14:59:00  2014-12-17 08:55:00  /  2014-12-17 04:09:00
+   2015-01-03 06:43:00  2015-01-04 13:44:00  /  2015-01-04 20:28:00
+   2015-06-16 06:09:00  2015-06-16 15:41:00  /  2015-06-16 15:43:00
+--- same snippets, given the bot's own target (trgt) ---
+exit time identical: 1500 of 1500; label identical: 1500 of 1500; return at exit max|diff| 1.296e-08
+Snippet 4.2 average uniqueness: verbatim vs bot max|diff| 1.793e-01; events differing >1e-9: 56 of 1200
+Snippet 4.10 attribution weight: verbatim / bot ratio min 0.942071 max 374.204913 (a constant ratio = the same weights up to the scaling to the sum)

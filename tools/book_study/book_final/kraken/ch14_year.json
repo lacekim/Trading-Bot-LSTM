@@ -1,0 +1,37 @@
+{
+  "venue": "kraken",
+  "start": "2025-10-13",
+  "end": "2026-10-12",
+  "days": 365,
+  "gain_pct": 0.4957681827039595,
+  "days_with_nonzero_position": 364,
+  "max_abs_position": 0.051363929354327695,
+  "mean_abs_position": 0.013076587030460203,
+  "bets_14_1": 4,
+  "bet_end_dates": [
+    "2026-02-06",
+    "2026-02-10",
+    "2026-10-10",
+    "2026-10-12"
+  ],
+  "avg_holding_period_days_14_2": 16.155315554621566,
+  "bet_returns_pct": [
+    0.525121,
+    0.0053,
+    -0.034497,
+    0.0
+  ],
+  "hhi_positive_returns_14_3": 0.9703233617715639,
+  "hhi_negative_returns_14_3": null,
+  "hhi_bets_per_month_14_3": 0.43750000000000006,
+  "drawdowns_14_4": {
+    "count": 24,
+    "max_pct": 0.5953972075866343,
+    "p95_pct": 0.24688580997466722
+  },
+  "time_under_water_years_14_4": {
+    "count": 23,
+    "max": 0.17796030116358658,
+    "p95": 0.11882272416153308
+  }
+}

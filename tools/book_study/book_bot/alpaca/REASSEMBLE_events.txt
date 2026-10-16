@@ -1,0 +1,1 @@
+cat events.csv.gz.part* | gunzip > events.csv

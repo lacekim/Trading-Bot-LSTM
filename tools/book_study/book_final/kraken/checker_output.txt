@@ -1,0 +1,2 @@
+kraken: 451 numbers re-derived independently (400 HRP weights among them); 0 problems
+

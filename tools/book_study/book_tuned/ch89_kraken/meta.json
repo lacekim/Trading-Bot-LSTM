@@ -1,0 +1,20 @@
+{
+  "venue": "kraken",
+  "source_run": "/home/claude/work/proj/runtime/book_meta_kraken_bars/20261014T052224Z",
+  "bar_dir": "runtime/dollar_bars/kraken",
+  "seed": 20261022,
+  "cutoff": "2024-01-01",
+  "events_used": 28279,
+  "embargo_pct": 0.01,
+  "n_trees_importance": 50,
+  "n_trees_search": 30,
+  "mda_baseline_neg_log_loss": -0.6963325395267025,
+  "integrity_unchanged": true,
+  "quick": false,
+  "seconds": 539,
+  "script_md5": {
+    "book_ch8_ch9.py": "7e891e9a572441fa23df34f5cbf56f4e",
+    "meta_model.py": "0f467b9f97d7592742add55fea471271",
+    "book_port_b.py": "8244a1f9636314b6002f6ab4aed6c1a0"
+  }
+}

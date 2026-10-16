@@ -1,0 +1,2 @@
+alpaca: ch8/ch9 structure checks (252,460 events, 3- and 5-fold purging rebuilt, 11 candidates); 0 problems
+

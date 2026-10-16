@@ -1,0 +1,57 @@
+{
+  "venue": "alpaca",
+  "source_run": "/home/claude/work/proj/runtime/book_meta_alpaca_bars/20261014T055028Z",
+  "bar_dir": "/home/claude/work/proj/runtime/dollar_bars/alpaca",
+  "seed": 20261022,
+  "step": 0.1,
+  "cost_frac_round_trip": 0.002,
+  "cost_bp_per_side": 10.0,
+  "n_ref_slots": 194,
+  "events": 350337,
+  "events_dropped_zero_return": 703,
+  "features": [
+    "ffd",
+    "log_trgt",
+    "sadf",
+    "ent_plugin",
+    "ent_konto",
+    "cs_spread"
+  ],
+  "forest": {
+    "n_estimators": 100,
+    "bootstrap": "sequential",
+    "max_draws": 10000
+  },
+  "quick": false,
+  "cutoff": "2024-01-01",
+  "walk_forward": {
+    "cutoff": "2024-01-01 00:00:00",
+    "n_train": 252460,
+    "n_test": 97650,
+    "avg_uniqueness": 0.5151370389003261,
+    "draws_per_tree": 10000,
+    "bootstrap": "sequential",
+    "sample_avg_uniqueness_first5": 0.9721060626002815,
+    "auc": 0.5126276721899141,
+    "log_loss_w": 0.6946325845519415,
+    "base_rate": 0.5304454685099846,
+    "share_p_gt_half": 0.32231438812083973,
+    "acc": 0.4969380440348182,
+    "side_accuracy": 0.4969380440348182,
+    "share_p_eq_half": 0.0,
+    "up_share_test": 0.5304454685099846
+  },
+  "walk_forward_rows": 97650,
+  "first_day": "2024-01-03",
+  "last_day": "2026-10-06",
+  "seconds": 117,
+  "script_md5": {
+    "book_side_free_bookfeat.py": "e281cc20944be9e391624a5b3a14a4f8",
+    "backtest_one_year.py": "3f853f4b363f6b1a693a31d37468aacd",
+    "meta_model.py": "0f467b9f97d7592742add55fea471271",
+    "meta_eval.py": "898b28eb970a82f89a46cfa9b510bf0c",
+    "bet_averaging.py": "2afbdf6dde35972daf09b8e03327eaa2",
+    "run_bet_averaging.py": "344435ed57cc2a2d93618e2db7b513f8",
+    "meta_events.py": "a1bf9c143dd3e0f74a5788efe3803561"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "n_bets": 36447,
+  "observed_precision": 0.49460860976212034,
+  "t_value_of_precision_eq54": -2.058670805848071,
+  "mean_positive_return": 0.0785951988374995,
+  "mean_nonpositive_return": -0.0794754367293087,
+  "targets": {
+    "1.0": {
+      "implied_precision_15_3": 0.5054031870490515,
+      "implied_frequency_15_4_at_observed_precision": null,
+      "sharpe_of_observed_precision_eq56": -3.121846409712855,
+      "prob_failure_15_5": 0.5172223032883944
+    },
+    "2.0": {
+      "implied_precision_15_3": 0.5080216876074054,
+      "implied_frequency_15_4_at_observed_precision": null,
+      "sharpe_of_observed_precision_eq56": -3.121846409712855,
+      "prob_failure_15_5": 0.521396396316461
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "forest": {
+    "n_estimators": 100,
+    "bootstrap": "sequential",
+    "max_draws": 10000,
+    "min_weight_fraction_leaf": 0.05,
+    "max_features": "sqrt"
+  },
+  "chosen_candidate": 0,
+  "n_candidates": 11,
+  "baseline_neg_log_loss": -0.6847918615055836,
+  "best_neg_log_loss": -0.6847918615055836,
+  "mda_baseline_neg_log_loss": -0.6896719125273751,
+  "ortho_components": 10,
+  "weighted_tau_mdi_vs_inverse_pca_rank": -0.3614686356862216
+}

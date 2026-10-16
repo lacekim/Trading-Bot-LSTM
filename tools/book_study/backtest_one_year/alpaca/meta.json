@@ -1,0 +1,21 @@
+{
+  "venue": "alpaca",
+  "source_run": "/home/claude/work/proj/runtime/book_meta_alpaca_bars/20261014T055028Z",
+  "bar_dir": "/home/claude/work/proj/runtime/dollar_bars/alpaca",
+  "seed": 20261022,
+  "step": 0.1,
+  "cost_frac_round_trip": 0.002,
+  "cost_bp_per_side": 10.0,
+  "n_ref_slots": 194,
+  "events": 351040,
+  "symbols": 494,
+  "walk_forward_rows": 97768,
+  "first_day": "2024-01-03",
+  "last_day": "2026-10-06",
+  "script_md5": {
+    "backtest_one_year.py": "3f853f4b363f6b1a693a31d37468aacd",
+    "bet_averaging.py": "2afbdf6dde35972daf09b8e03327eaa2",
+    "run_bet_averaging.py": "344435ed57cc2a2d93618e2db7b513f8",
+    "ports_common.py": "402adbf97792aa8c2b8b570d94911b77"
+  }
+}

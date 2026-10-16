@@ -1,0 +1,43 @@
+MATCH   Snippet 10.4 order size (f=115,p=100,maxPos=100)
+    book: 97
+    ours: 97
+MATCH   Snippet 10.4 limit price
+    book: 112.3657
+    ours: 112.3657
+MATCH   Snippet 10.4 order size for f=110
+    book: 95
+    ours: 95
+DIFFERS Equation 37, S=16 combinations
+    book: 12780
+    ours: 12870
+    note: the book's own Equation 37 (S choose S/2) gives 12,870; 12,780 as printed is a transposition of its own formula
+MATCH   Figure 12.1 number of splits for N=6,k=2
+    book: 15
+    ours: 15
+MATCH   Figure 12.1 paths phi[6,2]
+    book: 5
+    ours: 5
+MATCH   Figure 12.1 test-group marks, all 6 rows
+    book: {1: [1, 2, 3, 4, 5], 2: [1, 6, 7, 8, 9], 3: [2, 6, 10, 11, 12], 4: [3, 7, 10, 13, 14], 5: [4, 8, 11, 13, 15], 6: [5, 9, 12, 14, 15]}
+    ours: {1: [1, 2, 3, 4, 5], 2: [1, 6, 7, 8, 9], 3: [2, 6, 10, 11, 12], 4: [3, 7, 10, 13, 14], 5: [4, 8, 11, 13, 15], 6: [5, 9, 12, 14, 15]}
+MATCH   Figure 16.5 clustered order
+    book: [9, 2, 10, 1, 7, 3, 6, 4, 5, 8]
+    ours: [9, 2, 10, 1, 7, 3, 6, 4, 5, 8]
+MATCH   Table 16.1 CLA (10 weights, %)
+    book: [14.44, 19.93, 19.73, 19.87, 18.68, 0.0, 5.86, 1.49, 0.0, 0.0]
+    ours: [14.44, 19.93, 19.73, 19.87, 18.68, 0.0, 5.86, 1.49, 0.0, 0.0]
+    note: max abs diff 0.000
+MATCH   Table 16.1 HRP (10 weights, %)
+    book: [7.0, 7.59, 10.84, 19.03, 9.72, 10.19, 6.62, 9.1, 7.12, 12.79]
+    ours: [7.0, 7.59, 10.84, 19.03, 9.72, 10.19, 6.62, 9.1, 7.12, 12.79]
+    note: max abs diff 0.000
+MATCH   Table 16.1 IVP (10 weights, %)
+    book: [10.36, 10.28, 10.36, 10.25, 10.31, 9.74, 9.8, 9.65, 9.64, 9.61]
+    ours: [10.36, 10.28, 10.36, 10.25, 10.31, 9.74, 9.8, 9.65, 9.64, 9.61]
+    note: max abs diff 0.000
+DIFFERS Table 16.1 HRP on the default Python-3 draw (columns [3, 0, 2, 2, 1])
+    book: [7.0, 7.59, 10.84, 19.03, 9.72, 10.19, 6.62, 9.1, 7.12, 12.79]
+    ours: [10.99, 6.76, 7.6, 9.75, 19.34, 9.17, 10.4, 7.14, 12.53, 6.32]
+    note: expected NOT to match: the data differs because random.randint gives other columns in Python 3; this is the data effect, not a code effect
+
+NOT REPRODUCIBLE FROM THE PROJECT (book data / unseeded randomness not supplied): Table 5.1, Figures 13.1-13.25, Figure 18.1, Figures 11.1-11.2, Figures 14.1-14.3, Figure 15.1 (curve), Figure 12.2 values.

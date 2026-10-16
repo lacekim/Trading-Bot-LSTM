@@ -1,0 +1,107 @@
+# Book coverage ledger: AFML extract, every numbered snippet (Ch.2-21)
+
+Source: the 218-page extract the user supplied. Statuses come from the project record (tools/book_study/*.py and BOOK_NOTES.md); 'built in bar runs' means it is part of run_meta_bars.py / run_three_algos_bars.py on dollar bars for Kraken and Alpaca.
+
+Counts: 49 NOT built, 2 not applicable to these data, 35 built, in bar runs, 11 built earlier (hourly/daily), NOT run on dollar bars (of 97 snippets).
+
+Not a snippet but in the text and not built: Ch.19 Kyle / Amihud / Hasbrouck lambdas, VPIN, PIN (need trade-level data), Ch.16 CLA, Ch.22.
+
+| Snippet | Page | Title | Status | Action / where |
+|---|---|---|---|---|
+| 2.1 | 21 | Pca Weights From A Risk Distribution R | NOT built | build as a function; apply to the cross-section of bar returns |
+| 2.2 | 22 | Form A Gaps Series, Detract It From Prices | not applicable to these data | futures roll gaps; no futures on Kraken spot or Alpaca equities. Port + test only |
+| 2.3 | 22 | Non-Negative Rolled Price Series | not applicable to these data | futures rolled price series; same. Port + test only |
+| 2.4 | 23 | The Symmetric Cusum Filter | built, in bar runs | book_stats.cusum_events; bar_events.py |
+| 3.1 | 26 | Daily Volatility Estimates | built, in bar runs | bar_events.daily_vol_time |
+| 3.2 | 27 | Triple-Barrier Labeling Method | built, in bar runs | meta_events.triple_barrier / bar_events.triple_barrier_var |
+| 3.3 | 29 | Getting The Time Of First Touch | built, in bar runs | first touch inside triple_barrier_var |
+| 3.4 | 30 | Adding A Vertical Barrier | built, in bar runs | vertical barrier, time limit (bar_events.forward_window) |
+| 3.5 | 30 | Labeling For Side And Size | built, in bar runs | labels with no side given: three_algo y_dir (learned side) |
+| 3.6 | 31 | Expanding Getevents To Incorporate Meta-Labeling | built, in bar runs | meta-label events (primary side given) |
+| 3.7 | 32 | Expanding Getbins To Incorporate Meta-Labeling | built, in bar runs | meta_eval / bar_events bin |
+| 3.8 | 34 | Dropping Under-Populated Labels | NOT built | drop under-populated labels: build and apply to both venues' labels |
+| 4.1 | 35 | Estimating The Uniqueness Of A Label | built, in bar runs | book_stats.average_uniqueness |
+| 4.2 | 37 | Estimating The Average Uniqueness Of A Label | built, in bar runs | book_stats.average_uniqueness |
+| 4.3 | 38 | Build An Indicator Matrix | built, in bar runs | meta_model indicator matrix |
+| 4.4 | 39 | Compute Average Uniqueness | built, in bar runs | meta_model |
+| 4.5 | 39 | Return Sample From Sequential Bootstrap | built, in bar runs | meta_model sequential bootstrap |
+| 4.6 | 40 | Example Of Sequential Bootstrap | NOT built | experiment: sequential bootstrap example. Build |
+| 4.7 | 40 | Generating A Random T1 Series | NOT built | random t1 series. Build |
+| 4.8 | 41 | Uniqueness From Standard And Sequential Bootstraps | NOT built | uniqueness standard vs sequential bootstrap: build; run on the real bar events of both venues |
+| 4.9 | 41 | Multi-Threaded Monte Carlo | NOT built | multi-threaded Monte Carlo. Build with 20.x |
+| 4.10 | 43 | Determination Of Sample Weight By Absolute Return Attribution | built, in bar runs | return attribution weights |
+| 4.11 | 44 | Implementation Of Time-Decay Factors | built earlier (hourly/daily), NOT run on dollar bars | time_decay.py; run on bars |
+| 5.1 | 48 | Weighting Function | built, in bar runs | fracdiff_core |
+| 5.2 | 50 | Standard Fracdiff (Expanding Window) | NOT built | expanding-window fracdiff. Build; compare with FFD on real bar series |
+| 5.3 | 51 | The New Fixed-Width Window Fracdiff Method | built, in bar runs | FFD, fracdiff_core |
+| 5.4 | 53 | Finding The Minimum D Value That Passes The Adf Test | built, in bar runs | min d passing ADF |
+| 6.1 | 58 | Accuracy Of The Bagging Classifier | NOT built | bagging accuracy formula. Build |
+| 6.2 | 60 | Three Ways Of Setting Up An Rf | built, in bar runs | bagged forest, three RF setups: only the sequential-bootstrap variant is used; build the other two for comparison |
+| 7.1 | 63 | Purging Observation In The Training Set | built, in bar runs | purge (book_stats.train_mask) |
+| 7.2 | 65 | Embargo On Training Observations | built, in bar runs | embargo |
+| 7.3 | 66 | Cross-Validation Class When Observations Overlap | built, in bar runs | PurgedKFold (meta_model.purged_kfold) |
+| 7.4 | 67 | Using The Purgedkfold Class | built, in bar runs | used in MDA/SFI |
+| 8.2 | 68 | Mdi Feature Importance | NOT built | MDI importance. Build and run on both venues |
+| 8.3 | 69 | Mda Feature Importance | built, in bar runs | MDA in run_meta_bars |
+| 8.4 | 70 | Implementation Of Sfi | built, in bar runs | SFI in run_meta_bars |
+| 8.5 | 71 | Computation Of Orthogonal Features | NOT built | orthogonal features (PCA). Build and run |
+| 8.6 | 73 | Computation Of Weighted Kendall’S Tau Between Feature Importance And I | NOT built | weighted Kendall tau importance vs PCA ranking. Build and run |
+| 8.7 | 74 | Creating A Synthetic Dataset | NOT built | synthetic dataset. Build |
+| 8.8 | 75 | Calling Feature Importance For Any Method | NOT built | importance for any method. Build |
+| 8.9 | 75 | Calling All Components | NOT built | all components. Build |
+| 8.10 | 76 | Feature Importance Plotting Function | NOT built | importance plot. Build |
+| 9.1 | 79 | Grid Search With Purged K-Fold Cross-Validation | built earlier (hourly/daily), NOT run on dollar bars | grid search with purged k-fold (run_hp_search.py, Kraken hourly); run on bars |
+| 9.2 | 80 | An Enhanced Pipeline Class | NOT built | enhanced pipeline class. Build |
+| 9.3 | 80 | Randomized Search With Purged K-Fold Cv | NOT built | randomized search. Build |
+| 9.4 | 82 | The Loguniform_Gen Class | NOT built | logUniform_gen. Build |
+| 10.1 | 87 | From Probabilities To Bet Size | built, in bar runs | probabilities to bet size |
+| 10.2 | 88 | Bets Are Averaged As Long As They Are Still Active | built earlier (hourly/daily), NOT run on dollar bars | bet_averaging.py; run on bars |
+| 10.3 | 89 | Size Discretization To Prevent Overtrading | built, in bar runs | size discretisation, step 0.1 |
+| 10.4 | 91 | Dynamic Position Size And Limit Price | NOT built | dynamic position size and limit price. Build |
+| 13.1 | 103 | Python Code For The Determination Of Optimal Trading Rules | built earlier (hourly/daily), NOT run on dollar bars | O-U fit and mesh: book_stats / book_study_core on GMX and hourly; run on bars |
+| 13.2 | 103 | Python Code For The Determination Of Optimal Trading Rules | built earlier (hourly/daily), NOT run on dollar bars | same |
+| 14.1 | 120 | Deriving The Timing Of Bets From A Series Of Target Positions | NOT built | timing of bets from target positions. Build |
+| 14.2 | 120 | Implementation Of A Holding Period Estimator | NOT built | holding period estimator. Build |
+| 14.3 | 124 | Algorithm For Deriving Hhi Concentration | NOT built | HHI concentration. Build |
+| 14.4 | 124 | Deriving The Sequence Of Dd And Tuw | NOT built | drawdown and time under water. Build |
+| 15.1 | 131 | Targeting A Sharpe Ratio As A Function Of The Number Of Bets | NOT built | targeting a Sharpe ratio. Build |
+| 15.2 | 132 | Using The Sympy Library For Symbolic Operations | NOT built | symbolic ops (SymPy). Build |
+| 15.3 | 132 | Computing The Implied Precision | built earlier (hourly/daily), NOT run on dollar bars | implied precision (book_stats.bin_hr) |
+| 15.4 | 133 | Computing The Implied Betting Frequency | built earlier (hourly/daily), NOT run on dollar bars | implied betting frequency (book_stats.bin_freq) |
+| 15.5 | 135 | Calculating The Strategy Risk In Practice | NOT built | strategy risk in practice. Build and run on both venues' bet streams |
+| 16.1 | 141 | Tree Clustering Using Scipy Functionality | built earlier (hourly/daily), NOT run on dollar bars | hrp_alloc.py (Kraken hourly); run on bars |
+| 16.2 | 142 | Quasi-Diagonalization | built earlier (hourly/daily), NOT run on dollar bars | quasi-diagonalisation |
+| 16.3 | 143 | Recursive Bisection | built earlier (hourly/daily), NOT run on dollar bars | recursive bisection |
+| 16.4 | 151 | Full Implementation Of The Hrp Algorithm | built earlier (hourly/daily), NOT run on dollar bars | full HRP |
+| 16.5 | 153 | Monte Carlo Experiment On Hrp Out-Of-Sample Performance | NOT built | Monte Carlo of HRP vs other allocators; needs CLA, which is not built (min-variance was substituted) |
+| 17.1 | 164 | Sadf’S Inner Loop | built, in bar runs | SADF inner loop (micro_features) |
+| 17.2 | 164 | Preparing The Datasets | built, in bar runs | inside the SADF implementation |
+| 17.3 | 165 | Apply Lags To Dataframe | built, in bar runs | lags, inside the SADF implementation |
+| 17.4 | 165 | Fitting The Adf Specification | built, in bar runs | ADF fit |
+| 18.1 | 168 | Plug-In Entropy Estimator | built, in bar runs | plug-in entropy |
+| 18.2 | 169 | A Library Built Using The Lz Algorithm | NOT built | LZ library. Build (konto uses its own match search) |
+| 18.3 | 170 | Function That Computes The Length Of The Longest Match | built, in bar runs | longest match |
+| 18.4 | 172 | Implementation Of Algorithms Discussed In Gao Et Al. [2008] | built, in bar runs | Kontoyiannis |
+| 19.1 | 180 | Implementation Of The Corwin-Schultz Algorithm | built, in bar runs | Corwin-Schultz |
+| 19.2 | 181 | Estimating Volatility For High-Low Prices | built, in bar runs | high-low volatility |
+| 20.1 | 187 | Un-Vectorized Cartesian Product | NOT built | Cartesian product; build |
+| 20.2 | 187 | Vectorized Cartesian Product | NOT built | Cartesian product, vectorised; build |
+| 20.3 | 188 | Single-Thread Implementation Of A One-Touch Double Barrier | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.4 | 188 | Multiprocessing Implementation Of A One-Touch Double Barrier | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.5 | 189 | The Linpartsfunction | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.6 | 191 | The Nestedpartsfunction | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.7 | 193 | The Mppandasobj, Used At Various Points In The Book | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.8 | 194 | Single-Thread Execution, For Debugging | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.9 | 195 | Example Of Asynchronous Call To Python | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.10 | 195 | Passing The Job (Molecule) To The Callback Function | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.11 | 196 | Place This Code At The Beginning Of Your Engine | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.12 | 197 | Enhancing Processjobsto Perform On-The-Fly Output Reduction | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.13 | 198 | Enhancing Mppandasobj To Perform On-The-Fly Output Reduction | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 20.14 | 199 | Principal Components For A Subset Of The Columns | NOT built | multiprocessing infrastructure from the book. Build, test against single-thread results |
+| 21.1 | 201 | Partitions Of K Objects Into N Slots | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |
+| 21.2 | 202 | Set 𝛀 Of All Vectors Associated With All Partitions | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |
+| 21.3 | 203 | Evaluating All Trajectories | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |
+| 21.4 | 204 | Produce A Random Matrix Of A Given Rank | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |
+| 21.5 | 205 | Generate The Problem’S Parameters | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |
+| 21.6 | 205 | Compute And Evaluate The Static Solution | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |
+| 21.7 | 206 | Compute And Evaluate The Dynamic Solution | NOT built | Ch.21 brute-force trajectories. Build, test on the book's small example |

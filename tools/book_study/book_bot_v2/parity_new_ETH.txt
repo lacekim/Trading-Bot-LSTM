@@ -1,0 +1,10 @@
+events compared: 1500 (ETH); bars 87542
+Snippet 3.1 daily vol  : verbatim vs bot  max|diff| 4.990e-13  events differing >1e-9: 0
+events the verbatim snippets keep: 1500 of 1500
+Snippets 3.3/3.4 exit time: identical for 1500 of 1500  (100.00%)
+Snippets 3.5-3.7 label (sign of return): identical for 1500 of 1500  (100.00%)
+return at exit: max|diff| 7.931e-08; differing >1e-9: 922
+--- same snippets, given the bot's own target (trgt) ---
+exit time identical: 1500 of 1500; label identical: 1500 of 1500; return at exit max|diff| 7.931e-08
+Snippet 4.2 average uniqueness: verbatim vs bot max|diff| 5.000e-01; events differing >1e-9: 6 of 1200
+Snippet 4.10 attribution weight: verbatim / bot ratio min 24.765412 max 63.492124 (a constant ratio = the same weights up to the scaling to the sum)

@@ -1,0 +1,22 @@
+
+## Ch.16 allocation across symbols (hrp_alloc.py, run_hrp.py, verify_hrp.py, test_hrp.py)
+
+Declared before any result. Read-only diagnostic: no model is fitted, no run folder, threshold, calibration file or execution code is touched.
+
+Design:
+- What is allocated: the daily result stream of the strategy per symbol (bet_averaging.symbol_daily: position = mean signal of the active events, zero when none, 12 bp per side on position changes), as a share of capital placed in that symbol. It is the strategy stream, not the asset's own return.
+- Estimation: only the 730 UTC days before the 2024-01-01 cutoff, primary stream (side, size 1) of events whose labels end before the cutoff. A symbol is eligible only with candles on or before the first and on or after the last day of the window and at least 100 active days in it. Covariance = sample covariance (ddof 1) in bp of the eligible symbols, zeros on days without activity or without a bar. Weights are fitted once and held fixed.
+- Schemes on the same eligible set: equal weight; inverse variance; HRP; long-only minimum variance (SLSQP, first-order optimality check, stops if it fails).
+- HRP written from the idea, not the book snippets: d = sqrt((1 - rho) / 2); second distance = Euclidean distance between columns of d; single linkage (own implementation); leaf order of the dendrogram; recursive bisection, a list is cut into floor(n / 2) first items and the rest; part variance with inverse-variance weights; first part gets 1 - V1 / (V1 + V2).
+- Deviations from the book, stated in advance: (1) minimum variance replaces the book's CLA (not built), so the book's HRP-vs-CLA Monte Carlo is not reproduced; (2) the left/right order of merged clusters changes the HRP weights, so it is fixed by rule: lower cluster id first; at each step the smallest linkage distance merges, ties by the smaller lower id then the smaller higher id; (3) a symbol whose candle data has ended (no bar that UTC day) is left out that day and the other weights are rescaled to sum to 1, for all schemes alike.
+- Scoring: events starting on or after the cutoff of eligible symbols; daily portfolio result in bp of capital; primary stream and the meta stream of each seed (walk-forward bet sizes). Out-of-sample daily sd, mean, annualised Sharpe, in-sample vs out-of-sample sd, effective number of names, by calendar year, and the June 2026 AI-correction and the sell-off (2026-09-27 to 2026-10-08) windows separately. Windows entirely before the cutoff are not scored. There is no bootstrap: the primary comparison is a single deterministic number with no spread; the spread across seeds exists only for the meta stream and covers forest randomness only.
+- Trial count: no model fitted; choosing among four schemes on post-cutoff data is three new comparisons after look 108. The post-cutoff period was seen in every earlier run, so it is not a pristine holdout. Ineligible symbols' post-cutoff events are dropped and their number is reported.
+
+Tests: 25 tests in test_hrp.py (24 unit and synthetic end-to-end tests; the 25th, on a real run, needs HRP_TEST_RUN). Code mutation: 19 planted bugs caught of 19 effective (a 20th mutant is equivalent); three were missed by the first suite and caught after adding a three-asset hand case, a cutoff-straddling event and symbols with exactly 100 and 99 active days to the fixture. Checker: 79 planted errors in the output files caught of 79 (first pass 64 of 69; the five not caught were three harness slips and two mutations that hit a table the checker did not yet read; the checker was extended to read the eligibility table and the summary sentences and those were re-run, 15 of 15). The full 69 were run on the checker before that extension, the 15 on the final version. Minimum-variance weights are checked by the first-order optimality conditions (sufficient for a convex problem), not recomputed.
+
+Commands (project root, conda env javier), one --run per seed of the volume_vs_14 control:
+    python tools/book_study/test_hrp.py
+    python tools/book_study/run_hrp.py --run runtime/book_seed_pairs/volume_vs_14/ctrl_20261017/20261013T050219Z runtime/book_seed_pairs/volume_vs_14/ctrl_20261101/20261013T050847Z runtime/book_seed_pairs/volume_vs_14/ctrl_20261102/20261013T051507Z runtime/book_seed_pairs/volume_vs_14/ctrl_20261103/20261013T052117Z runtime/book_seed_pairs/volume_vs_14/ctrl_20261104/20261013T052725Z
+    python tools/book_study/verify_hrp.py "$(ls -d runtime/book_hrp/*/ | tail -1)"
+
+Results: not run yet on the Mac.

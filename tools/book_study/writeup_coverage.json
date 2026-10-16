@@ -1,0 +1,22 @@
+{
+ "contents_entries": 316,
+ "with_item": 316,
+ "missing": [],
+ "extra_items": [
+  "Table 5.1 (Alpaca)",
+  "Snippet 7.4 (our splits)",
+  "Figure 10.1 (ours)",
+  "Equation 40 (our paths)",
+  "Figure 13.26 (ours, in-sample simulation)",
+  "Figure 13.27 (ours, out-of-sample)"
+ ],
+ "orphan_extras": [],
+ "by_basis": {
+  "text": 11,
+  "data": 82,
+  "formula": 128,
+  "code": 84,
+  "diagram": 11
+ },
+ "built_utc": "2026-10-15T12:55:37+00:00"
+}

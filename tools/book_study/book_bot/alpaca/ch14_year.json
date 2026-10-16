@@ -1,0 +1,26 @@
+{
+  "start": "2025-10-10",
+  "end": "2026-10-09",
+  "days": 365,
+  "gain_pct": -0.661976408978493,
+  "annualised_return_pct_eq49": -0.6624283123987551,
+  "years_elapsed": 0.999315537303217,
+  "days_with_nonzero_position": 364,
+  "max_abs_position": 0.08226130213433042,
+  "mean_abs_position": 0.022342027068950457,
+  "bets_14_1": 29,
+  "avg_holding_period_days_14_2": 9.928907037111301,
+  "hhi_positive_returns_14_3": 0.0326097708118014,
+  "hhi_negative_returns_14_3": 0.0213957529870824,
+  "hhi_bets_per_month_14_3": 0.07253269916765755,
+  "drawdowns_14_4": {
+    "count": 1,
+    "max_pct": 0.6945852434031008,
+    "p95_pct": 0.6945852434031008
+  },
+  "time_under_water_years_14_4": {
+    "count": 0,
+    "max": null,
+    "p95": null
+  }
+}

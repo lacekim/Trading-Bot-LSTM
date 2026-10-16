@@ -1,0 +1,39 @@
+{
+  "venue": "kraken",
+  "source_run": "/home/claude/work/proj/runtime/book_meta_kraken_bars/20261014T052224Z",
+  "bar_dir": "/home/claude/work/proj/runtime/dollar_bars/kraken",
+  "side_free_run": "/home/claude/work/proj/runtime/book_side_free/bookfeat_kraken_20261014T145234Z",
+  "ports_run": "/home/claude/work/proj/runtime/book_ports_kraken_bars/20261014T130136Z",
+  "seed": 20261022,
+  "step": 0.1,
+  "cost_frac_round_trip": 0.0024,
+  "cost_bp_per_side": 11.999999999999998,
+  "n_ref_slots": 25,
+  "otr": {
+    "pt": 7.0,
+    "sl": 7.0,
+    "K": 100,
+    "phi": 0.9971857966431031,
+    "half_life_bars": 245.95642393626008,
+    "simulated_sharpe_at_chosen": 0.11657963855218778,
+    "realised_sharpe_at_chosen_test": 0.03395040796568638
+  },
+  "exit_stats": {
+    "mean_bars_held_model": 53.318780962491154,
+    "median_bars_held_model": 47.0,
+    "truncated_share": 0.001459660297239915
+  },
+  "events": 50968,
+  "walk_forward_rows": 22608,
+  "first_day": "2024-01-01",
+  "last_day": "2026-10-12",
+  "cutoff": "2024-01-01",
+  "seconds": 13,
+  "script_md5": {
+    "book_otr_exit.py": "fba2274963836ab6ec616d5ec9ce4c73",
+    "backtest_one_year.py": "3f853f4b363f6b1a693a31d37468aacd",
+    "meta_model.py": "0f467b9f97d7592742add55fea471271",
+    "bet_averaging.py": "2afbdf6dde35972daf09b8e03327eaa2",
+    "run_bet_averaging.py": "344435ed57cc2a2d93618e2db7b513f8"
+  }
+}
