@@ -116,7 +116,7 @@ def _split_and_scale_by_symbol(
         train_target = train_group["target"].to_numpy(dtype=np.float32)
         validation_target = validation_group["target"].to_numpy(dtype=np.float32)
 
-        train_y = train_target[Config.SEQUENCE_LENGTH:]
+        train_y = train_target[Config.SEQUENCE_LENGTH - 1: -1]  # matches _sequence_generator's target[end - 1] alignment
         train_positive += int(train_y.sum())
         train_negative += int(len(train_y) - train_y.sum())
         train_sequences += max(0, len(train_features) - Config.SEQUENCE_LENGTH)
@@ -151,7 +151,7 @@ def _sequence_generator(
         target = arrays[symbol][target_key]
         for start in range(0, len(features) - seq_len):
             end = start + seq_len
-            y_value = target[end]
+            y_value = target[end - 1]  # target anchored on the sequence's last observed row, not one candle past it
             if sample_weights is None:
                 yield features[start:end], y_value
             else:

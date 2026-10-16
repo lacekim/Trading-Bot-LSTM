@@ -1,0 +1,1597 @@
+Cookie/crumb fetch failed (SSLError), continuing without crumb
+universe: 60 robust non-crypto instruments (same as live)
+usable OHLCV history for 60 of 60 instruments
+
+==========================================================================================
+10 DEEPEST-HISTORY SYMBOLS (sorted by first_date ascending)
+==========================================================================================
+  BA       first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  24.3%  longest_flat_run=   4d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  CAT      first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  21.6%  longest_flat_run=   7d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  CVX      first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  22.7%  longest_flat_run=   4d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  DIS      first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  29.1%  longest_flat_run=   4d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  GE       first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  19.7%  longest_flat_run=   4d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  HON      first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  31.2%  longest_flat_run=   4d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  JNJ      first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  18.4%  longest_flat_run=   3d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  KO       first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  24.7%  longest_flat_run=   4d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  LMT      first=1962-01-02  last=2026-09-25  n_rows= 16291  coverage=0.96  max_abs_ret=  26.8%  longest_flat_run=   6d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+  MRK      first=1962-01-02  last=2026-09-25  n_rows= 16292  coverage=0.96  max_abs_ret=  26.8%  longest_flat_run=   3d  n_zero/neg=0  n_nan=0  n_dupe_idx=0
+
+flagged (first_date < 1990-01-01): ['AAPL', 'ABT', 'AMD', 'AXP', 'BA', 'BAC', 'CAT', 'CMCSA', 'COST', 'CVX', 'DIS', 'DUK', 'GE', 'HD', 'HON', 'JNJ', 'JPM', 'KO', 'LLY', 'LMT', 'MCD', 'MRK', 'MSFT', 'NEE', 'NKE', 'ORCL', 'PEP', 'PFE', 'PG', 'RTX', 'SHW', 'SO', 'T', 'TMO', 'UNH', 'VZ', 'WFC', 'WMT', 'XOM']
+
+==========================================================================================
+PER-FLAGGED-SYMBOL DETAIL
+==========================================================================================
+  AAPL: {"first_date": "1980-12-12", "last_date": "2026-09-25", "n_rows": 11539, "expected_bdays": 11946, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 51.9, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  ABT: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 16.1, "longest_flat_run_days": 2, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  AMD: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 52.3, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  AXP: {"first_date": "1972-06-01", "last_date": "2026-09-25", "n_rows": 13693, "expected_bdays": 14172, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 26.2, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  BA: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 24.3, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  BAC: {"first_date": "1973-02-21", "last_date": "2026-09-25", "n_rows": 13513, "expected_bdays": 13983, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 35.3, "longest_flat_run_days": 12, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  CAT: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 21.6, "longest_flat_run_days": 7, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  CMCSA: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 24.5, "longest_flat_run_days": 10, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  COST: {"first_date": "1986-07-09", "last_date": "2026-09-25", "n_rows": 10132, "expected_bdays": 10493, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 23.5, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  CVX: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 22.7, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  DIS: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 29.1, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  DUK: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 16.5, "longest_flat_run_days": 6, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  GE: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 19.7, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  HD: {"first_date": "1981-09-22", "last_date": "2026-09-25", "n_rows": 11344, "expected_bdays": 11744, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 32.9, "longest_flat_run_days": 21, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  HON: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 31.2, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  JNJ: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 18.4, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  JPM: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 27.7, "longest_flat_run_days": 5, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  KO: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 24.7, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  LLY: {"first_date": "1972-06-01", "last_date": "2026-09-25", "n_rows": 13693, "expected_bdays": 14172, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 29.2, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  LMT: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16291, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 26.8, "longest_flat_run_days": 6, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  MCD: {"first_date": "1966-07-05", "last_date": "2026-09-25", "n_rows": 15157, "expected_bdays": 15714, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 50.7, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  MRK: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 26.8, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  MSFT: {"first_date": "1986-03-13", "last_date": "2026-09-25", "n_rows": 10213, "expected_bdays": 10577, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 30.1, "longest_flat_run_days": 2, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  NEE: {"first_date": "1973-02-21", "last_date": "2026-09-25", "n_rows": 13513, "expected_bdays": 13983, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 16.9, "longest_flat_run_days": 7, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  NKE: {"first_date": "1980-12-02", "last_date": "2026-09-25", "n_rows": 11547, "expected_bdays": 11954, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 20.0, "longest_flat_run_days": 7, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  ORCL: {"first_date": "1986-03-12", "last_date": "2026-09-25", "n_rows": 10214, "expected_bdays": 10578, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 43.9, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  PEP: {"first_date": "1972-06-01", "last_date": "2026-09-25", "n_rows": 13693, "expected_bdays": 14172, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 16.1, "longest_flat_run_days": 7, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  PFE: {"first_date": "1972-06-01", "last_date": "2026-09-25", "n_rows": 13693, "expected_bdays": 14172, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 17.3, "longest_flat_run_days": 17, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  PG: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 30.2, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  RTX: {"first_date": "1962-04-02", "last_date": "2026-09-25", "n_rows": 16229, "expected_bdays": 16825, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 26.1, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  SHW: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 20.8, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  SO: {"first_date": "1981-12-31", "last_date": "2026-09-25", "n_rows": 11274, "expected_bdays": 11672, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 18.8, "longest_flat_run_days": 5, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  T: {"first_date": "1983-11-21", "last_date": "2026-09-25", "n_rows": 10795, "expected_bdays": 11180, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 16.3, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  TMO: {"first_date": "1980-03-17", "last_date": "2026-09-25", "n_rows": 11727, "expected_bdays": 12140, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 18.6, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  UNH: {"first_date": "1984-10-17", "last_date": "2026-09-25", "n_rows": 10566, "expected_bdays": 10943, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 34.8, "longest_flat_run_days": 16, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  VZ: {"first_date": "1983-11-21", "last_date": "2026-09-25", "n_rows": 10795, "expected_bdays": 11180, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 17.5, "longest_flat_run_days": 3, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  WFC: {"first_date": "1972-06-01", "last_date": "2026-09-25", "n_rows": 13693, "expected_bdays": 14172, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 32.8, "longest_flat_run_days": 8, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  WMT: {"first_date": "1972-08-25", "last_date": "2026-09-25", "n_rows": 13633, "expected_bdays": 14111, "coverage_ratio": 0.966, "max_abs_daily_ret_pct": 16.8, "longest_flat_run_days": 5, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+  XOM: {"first_date": "1962-01-02", "last_date": "2026-09-25", "n_rows": 16292, "expected_bdays": 16889, "coverage_ratio": 0.965, "max_abs_daily_ret_pct": 23.4, "longest_flat_run_days": 4, "n_zero_or_negative_close": 0, "n_nan_cells": 0, "n_duplicate_index_entries": 0}
+
+==========================================================================================
+QUESTION 1 -- BREADTH: does removing the flagged symbol(s) change golden-cross breadth,
+and if so, does the change reach into the recent/OOS-relevant window?
+==========================================================================================
+  days where breadth_without is UNDEFINED (flagged symbol is the sole/only contributor that day): 199, spanning 1992-06-17 -> 1993-03-30
+  does that solo-contributor period overlap the recent window (2015-01-01+)? no
+  [on days where both are defined] max |breadth_with - breadth_without| over full history: 0.5273
+  [on days where both are defined] max diff from 2015-01-01 onward: 0.2452
+  [on days where both are defined] max diff from 2023-01-01 (OOS window) onward: 0.2452
+  MATERIAL (diff > 0.02 in recent window, OR solo-contributor period reaches recent window)? YES
+
+==========================================================================================
+QUESTION 2 -- CALIBRATION: does removing the flagged symbol(s) change the sizing
+calibration medians used by compute_calibration_before (split=2023-01-01)?
+==========================================================================================
+  median_atr_pct   with=2.0071%  without=2.0160%  rel_diff=0.44%
+  median_vol20     with=1.4098%  without=1.4539%  rel_diff=3.03%
+  MATERIAL (> 5% relative)? no
+
+==========================================================================================
+QUESTION 3 -- PORTFOLIO AVAILABILITY: flagged symbol's own isolated trade history
+(BASELINE entries, EQUAL-DOLLAR sizing, run on that symbol alone)
+==========================================================================================
+  AAPL: 29 isolated trade(s)
+    entry=1982-10-07  exit=1983-08-25  hold=  322d  ret= 39.09%  reason=signal
+    entry=1984-05-02  exit=1984-05-17  hold=   15d  ret=-12.11%  reason=stop
+    entry=1985-01-30  exit=1985-02-27  hold=   28d  ret=-12.11%  reason=stop
+    entry=1985-12-11  exit=1987-12-08  hold=  727d  ret=250.27%  reason=signal
+    entry=1988-06-29  exit=1988-08-15  hold=   47d  ret=-12.11%  reason=stop
+    entry=1989-05-24  exit=1989-06-22  hold=   29d  ret=-12.11%  reason=stop
+    entry=1990-05-18  exit=1990-08-23  hold=   97d  ret=-12.11%  reason=stop
+    entry=1991-01-08  exit=1991-07-03  hold=  176d  ret= -0.06%  reason=signal
+    entry=1991-12-31  exit=1992-06-16  hold=  168d  ret=-12.11%  reason=stop
+    entry=1992-12-11  exit=1993-03-30  hold=  109d  ret=-12.11%  reason=stop
+    entry=1994-03-01  exit=1994-03-30  hold=   29d  ret=-12.11%  reason=stop
+    entry=1994-09-07  exit=1995-05-01  hold=  236d  ret=  6.24%  reason=signal
+    entry=1995-05-26  exit=1995-09-15  hold=  112d  ret=-12.11%  reason=stop
+    entry=1996-11-22  exit=1996-12-20  hold=   28d  ret=-12.11%  reason=stop
+    entry=1997-08-29  exit=1997-10-20  hold=   52d  ret=-12.11%  reason=stop
+    entry=1998-03-05  exit=1999-04-07  hold=  398d  ret= 53.92%  reason=signal
+    entry=1999-05-11  exit=2000-07-06  hold=  422d  ret=131.01%  reason=signal
+    entry=2001-06-26  exit=2001-07-10  hold=   14d  ret=-12.11%  reason=stop
+    entry=2002-01-04  exit=2002-01-10  hold=    6d  ret=-12.11%  reason=stop
+    entry=2003-05-15  exit=2006-06-21  hold= 1133d  ret=516.35%  reason=signal
+    entry=2006-09-25  exit=2008-03-06  hold=  528d  ret= 59.26%  reason=signal
+    entry=2008-05-16  exit=2008-06-27  hold=   42d  ret=-12.11%  reason=stop
+    entry=2009-05-13  exit=2012-12-10  hold= 1307d  ret=346.27%  reason=signal
+    entry=2013-09-10  exit=2015-08-28  hold=  717d  ret= 66.35%  reason=signal
+    entry=2016-08-30  exit=2018-12-21  hold=  843d  ret= 47.05%  reason=signal
+    entry=2019-05-06  exit=2019-05-13  hold=    7d  ret=-12.11%  reason=stop
+    entry=2022-09-26  exit=2022-10-07  hold=   11d  ret= -7.31%  reason=signal
+    entry=2023-03-22  exit=2024-03-14  hold=  358d  ret=  9.93%  reason=signal
+    entry=2024-06-13  exit=2025-04-04  hold=  295d  ret=-12.11%  reason=stop
+  ABT: 27 isolated trade(s)
+    entry=1980-12-30  exit=1981-08-31  hold=  244d  ret= -4.79%  reason=signal
+    entry=1981-12-30  exit=1982-01-21  hold=   22d  ret= -2.97%  reason=signal
+    entry=1982-03-04  exit=1984-01-11  hold=  678d  ret= 66.81%  reason=signal
+    entry=1984-08-13  exit=1984-09-28  hold=   46d  ret=-12.11%  reason=stop
+    entry=1985-02-08  exit=1986-11-12  hold=  642d  ret=105.18%  reason=signal
+    entry=1986-12-10  exit=1987-10-19  hold=  313d  ret=-12.11%  reason=stop
+    entry=1988-09-29  exit=1992-07-17  hold= 1387d  ret=166.31%  reason=signal
+    entry=1992-12-22  exit=1993-01-06  hold=   15d  ret=-12.11%  reason=stop
+    entry=1993-10-15  exit=1999-06-30  hold= 2084d  ret=271.83%  reason=signal  <-- LONG HOLD FLAG
+    entry=2000-05-23  exit=2001-05-03  hold=  345d  ret=  8.74%  reason=signal
+    entry=2001-05-29  exit=2002-05-14  hold=  350d  ret=  2.19%  reason=signal
+    entry=2003-05-19  exit=2004-04-13  hold=  330d  ret= -0.34%  reason=signal
+    entry=2004-05-04  exit=2005-09-13  hold=  497d  ret=  9.84%  reason=signal
+    entry=2006-03-30  exit=2007-09-05  hold=  524d  ret= 25.66%  reason=signal
+    entry=2007-11-27  exit=2008-04-16  hold=  141d  ret= -7.26%  reason=signal
+    entry=2008-07-16  exit=2008-10-10  hold=   86d  ret=-12.11%  reason=stop
+    entry=2009-10-15  exit=2010-05-27  hold=  224d  ret= -6.55%  reason=signal
+    entry=2010-10-05  exit=2010-11-29  hold=   55d  ret=-12.11%  reason=stop
+    entry=2011-04-25  exit=2013-10-03  hold=  892d  ret= 43.55%  reason=signal
+    entry=2013-11-14  exit=2015-09-29  hold=  684d  ret=  8.33%  reason=signal
+    entry=2016-08-12  exit=2016-10-31  hold=   80d  ret=-12.11%  reason=stop
+    entry=2017-02-16  exit=2020-03-25  hold= 1133d  ret= 68.77%  reason=signal
+    entry=2020-05-12  exit=2022-03-23  hold=  680d  ret= 27.63%  reason=signal
+    entry=2023-01-20  exit=2023-03-08  hold=   47d  ret=-12.11%  reason=stop
+    entry=2023-05-18  exit=2023-09-25  hold=  130d  ret= -9.93%  reason=signal
+    entry=2024-01-10  exit=2024-06-20  hold=  162d  ret= -6.16%  reason=signal
+    entry=2024-09-12  exit=2025-11-14  hold=  428d  ret= 14.16%  reason=signal
+  AMD: 35 isolated trade(s)
+    entry=1980-12-30  exit=1981-01-07  hold=    8d  ret=-12.11%  reason=stop
+    entry=1982-03-30  exit=1982-08-13  hold=  136d  ret=-12.11%  reason=stop
+    entry=1984-05-21  exit=1984-07-19  hold=   59d  ret=-12.11%  reason=stop
+    entry=1984-08-17  exit=1984-10-01  hold=   45d  ret=-12.11%  reason=stop
+    entry=1985-03-06  exit=1985-04-16  hold=   41d  ret= -2.61%  reason=signal
+    entry=1986-01-13  exit=1986-06-09  hold=  147d  ret=-10.96%  reason=signal
+    entry=1987-02-26  exit=1987-03-30  hold=   32d  ret=-12.11%  reason=stop
+    entry=1987-08-27  exit=1987-09-03  hold=    7d  ret=-12.11%  reason=stop
+    entry=1988-06-06  exit=1988-07-18  hold=   42d  ret=-12.11%  reason=stop
+    entry=1989-06-07  exit=1989-07-20  hold=   43d  ret=-12.11%  reason=stop
+    entry=1990-04-05  exit=1990-07-20  hold=  106d  ret=-12.11%  reason=stop
+    entry=1991-03-01  exit=1991-10-28  hold=  241d  ret= 32.49%  reason=signal
+    entry=1991-12-02  exit=1992-06-18  hold=  199d  ret=-12.11%  reason=stop
+    entry=1992-11-23  exit=1992-12-03  hold=   10d  ret=-12.11%  reason=stop
+    entry=1994-03-25  exit=1994-04-12  hold=   18d  ret=-12.11%  reason=stop
+    entry=1995-01-30  exit=1995-10-05  hold=  248d  ret= -8.62%  reason=signal
+    entry=1996-11-14  exit=1997-09-24  hold=  314d  ret= 25.96%  reason=signal
+    entry=1998-05-19  exit=1998-05-27  hold=    8d  ret=-12.11%  reason=stop
+    entry=1998-11-24  exit=1999-01-14  hold=   51d  ret=-12.11%  reason=stop
+    entry=1999-10-07  exit=1999-10-19  hold=   12d  ret=-12.11%  reason=stop
+    entry=2001-05-01  exit=2001-05-09  hold=    8d  ret=-12.11%  reason=stop
+    entry=2003-05-07  exit=2003-06-09  hold=   33d  ret=-12.11%  reason=stop
+    entry=2004-11-15  exit=2005-01-11  hold=   57d  ret=-12.11%  reason=stop
+    entry=2005-07-22  exit=2006-06-22  hold=  335d  ret= 23.52%  reason=signal
+    entry=2009-05-19  exit=2009-06-17  hold=   29d  ret=-12.11%  reason=stop
+    entry=2011-01-05  exit=2011-01-20  hold=   15d  ret=-12.11%  reason=stop
+    entry=2012-03-01  exit=2012-05-10  hold=   70d  ret=-12.11%  reason=stop
+    entry=2013-05-17  exit=2013-07-24  hold=   68d  ret=-12.11%  reason=stop
+    entry=2014-01-13  exit=2014-01-23  hold=   10d  ret=-12.11%  reason=stop
+    entry=2014-02-27  exit=2014-03-28  hold=   29d  ret=  4.33%  reason=signal
+    entry=2014-04-07  exit=2014-09-30  hold=  176d  ret=-12.11%  reason=stop
+    entry=2015-12-22  exit=2016-01-07  hold=   16d  ret=-12.11%  reason=stop
+    entry=2018-06-12  exit=2021-04-21  hold= 1044d  ret=413.66%  reason=signal
+    entry=2021-07-28  exit=2022-03-28  hold=  243d  ret= 22.49%  reason=signal
+    entry=2023-03-16  exit=2023-04-25  hold=   40d  ret=-12.11%  reason=stop
+  AXP: 44 isolated trade(s)
+    entry=1973-03-20  exit=1973-04-04  hold=   15d  ret=-12.11%  reason=stop
+    entry=1973-09-10  exit=1973-11-14  hold=   65d  ret=-12.11%  reason=stop
+    entry=1975-02-21  exit=1975-08-19  hold=  179d  ret=-12.11%  reason=stop
+    entry=1976-01-16  exit=1976-02-27  hold=   42d  ret=-12.11%  reason=stop
+    entry=1976-08-02  exit=1977-02-15  hold=  197d  ret= -3.79%  reason=signal
+    entry=1977-07-07  exit=1977-11-14  hold=  130d  ret= -1.24%  reason=signal
+    entry=1978-06-02  exit=1978-10-20  hold=  140d  ret=-12.11%  reason=stop
+    entry=1979-06-05  exit=1979-10-15  hold=  132d  ret=-12.11%  reason=stop
+    entry=1980-05-22  exit=1981-09-24  hold=  490d  ret= 26.62%  reason=signal
+    entry=1981-12-03  exit=1982-01-25  hold=   53d  ret= -8.84%  reason=signal
+    entry=1982-03-29  exit=1982-06-09  hold=   72d  ret=-12.11%  reason=stop
+    entry=1982-10-01  exit=1983-10-11  hold=  375d  ret= 65.32%  reason=signal
+    entry=1984-08-31  exit=1985-10-04  hold=  399d  ret= 31.62%  reason=signal
+    entry=1985-11-14  exit=1986-10-10  hold=  330d  ret= 20.99%  reason=signal
+    entry=1987-01-22  exit=1987-05-18  hold=  116d  ret=-12.11%  reason=stop
+    entry=1988-07-11  exit=1990-01-04  hold=  542d  ret= 32.89%  reason=signal
+    entry=1991-03-20  exit=1991-05-13  hold=   54d  ret=-12.11%  reason=stop
+    entry=1992-04-20  exit=1992-10-02  hold=  165d  ret= -4.73%  reason=signal
+    entry=1992-12-22  exit=1994-01-07  hold=  381d  ret= 23.10%  reason=signal
+    entry=1994-07-26  exit=1996-08-01  hold=  737d  ret= 78.61%  reason=signal
+    entry=1996-10-07  exit=1998-09-24  hold=  717d  ret= 69.75%  reason=signal
+    entry=1999-01-07  exit=2000-04-11  hold=  460d  ret= 39.03%  reason=signal
+    entry=2000-05-23  exit=2001-01-12  hold=  234d  ret= -5.36%  reason=signal
+    entry=2002-03-06  exit=2002-06-14  hold=  100d  ret=-12.11%  reason=stop
+    entry=2003-01-07  exit=2003-01-27  hold=   20d  ret=-12.11%  reason=stop
+    entry=2003-04-29  exit=2004-09-08  hold=  498d  ret= 36.12%  reason=signal
+    entry=2004-10-05  exit=2005-04-26  hold=  203d  ret= -1.86%  reason=signal
+    entry=2005-07-05  exit=2006-08-17  hold=  408d  ret= 14.15%  reason=signal
+    entry=2006-09-26  exit=2007-09-27  hold=  366d  ret=  7.29%  reason=signal
+    entry=2009-06-09  exit=2009-06-17  hold=    8d  ret=-12.11%  reason=stop
+    entry=2010-12-06  exit=2010-12-07  hold=    1d  ret= -0.73%  reason=signal
+    entry=2010-12-09  exit=2011-10-07  hold=  302d  ret= -3.91%  reason=signal
+    entry=2011-10-27  exit=2011-11-21  hold=   25d  ret=-12.11%  reason=stop
+    entry=2011-12-12  exit=2012-01-12  hold=   31d  ret=  3.81%  reason=signal
+    entry=2012-02-06  exit=2012-12-04  hold=  302d  ret=  8.64%  reason=signal
+    entry=2013-01-16  exit=2014-09-24  hold=  616d  ret= 48.16%  reason=signal
+    entry=2014-12-22  exit=2015-01-27  hold=   36d  ret=-12.11%  reason=stop
+    entry=2016-08-17  exit=2019-01-31  hold=  897d  ret= 62.28%  reason=signal
+    entry=2019-03-12  exit=2020-03-11  hold=  365d  ret=-12.11%  reason=stop
+    entry=2020-10-16  exit=2020-10-28  hold=   12d  ret=-12.11%  reason=stop
+    entry=2023-01-31  exit=2023-05-02  hold=   91d  ret=-12.11%  reason=stop
+    entry=2023-12-22  exit=2025-04-22  hold=  487d  ret= 38.10%  reason=signal
+    entry=2025-06-25  exit=2026-03-24  hold=  272d  ret= -1.66%  reason=signal
+    entry=2026-08-12  exit=2026-09-23  hold=   42d  ret=-12.11%  reason=stop
+  BA: 41 isolated trade(s)
+    entry=1963-12-06  exit=1966-07-13  hold=  950d  ret=295.02%  reason=signal
+    entry=1967-01-18  exit=1967-10-27  hold=  282d  ret= 18.17%  reason=signal
+    entry=1971-02-01  exit=1971-07-13  hold=  162d  ret=-12.11%  reason=stop
+    entry=1972-01-21  exit=1972-03-21  hold=   60d  ret=-12.11%  reason=stop
+    entry=1972-11-28  exit=1973-01-24  hold=   57d  ret=-12.11%  reason=stop
+    entry=1974-06-05  exit=1974-07-10  hold=   35d  ret=-12.11%  reason=stop
+    entry=1975-03-10  exit=1975-12-17  hold=  282d  ret= 14.68%  reason=signal
+    entry=1976-03-04  exit=1979-04-17  hold= 1139d  ret=424.68%  reason=signal
+    entry=1979-09-12  exit=1979-10-19  hold=   37d  ret=-12.11%  reason=stop
+    entry=1982-09-14  exit=1982-09-30  hold=   16d  ret=-12.11%  reason=stop
+    entry=1984-07-13  exit=1986-10-31  hold=  840d  ret= 87.62%  reason=signal
+    entry=1987-08-25  exit=1987-10-16  hold=   52d  ret=-12.11%  reason=stop
+    entry=1988-03-10  exit=1990-10-05  hold=  939d  ret=115.97%  reason=signal
+    entry=1991-03-28  exit=1991-07-25  hold=  119d  ret= -6.11%  reason=signal
+    entry=1991-09-12  exit=1991-11-21  hold=   70d  ret=-12.11%  reason=stop
+    entry=1992-02-06  exit=1992-03-23  hold=   46d  ret=-12.11%  reason=stop
+    entry=1993-05-12  exit=1994-09-30  hold=  506d  ret= 12.94%  reason=signal
+    entry=1994-12-27  exit=1997-10-30  hold= 1038d  ret=105.80%  reason=signal
+    entry=1998-04-16  exit=1998-05-27  hold=   41d  ret=-12.11%  reason=stop
+    entry=1999-04-30  exit=1999-12-16  hold=  230d  ret= -1.62%  reason=signal
+    entry=2000-07-18  exit=2001-07-24  hold=  371d  ret= 23.48%  reason=signal
+    entry=2002-03-28  exit=2002-04-18  hold=   21d  ret=-12.11%  reason=stop
+    entry=2003-06-26  exit=2006-09-25  hold= 1187d  ret=137.84%  reason=signal
+    entry=2006-10-24  exit=2006-10-27  hold=    3d  ret= -4.83%  reason=signal
+    entry=2006-11-03  exit=2007-12-07  hold=  399d  ret= 18.34%  reason=signal
+    entry=2009-06-16  exit=2009-06-23  hold=    7d  ret=-12.11%  reason=stop
+    entry=2010-10-27  exit=2010-11-16  hold=   20d  ret=-12.11%  reason=stop
+    entry=2011-01-26  exit=2011-08-08  hold=  194d  ret=-12.11%  reason=stop
+    entry=2012-01-06  exit=2012-09-17  hold=  255d  ret= -4.03%  reason=signal
+    entry=2012-12-10  exit=2014-08-04  hold=  602d  ret= 63.38%  reason=signal
+    entry=2014-12-05  exit=2014-12-12  hold=    7d  ret= -8.87%  reason=signal
+    entry=2014-12-18  exit=2015-09-02  hold=  258d  ret=  5.68%  reason=signal
+    entry=2015-12-07  exit=2016-01-08  hold=   32d  ret=-12.11%  reason=stop
+    entry=2016-08-12  exit=2018-12-20  hold=  860d  ret=147.80%  reason=signal
+    entry=2019-02-13  exit=2019-03-22  hold=   37d  ret=-12.11%  reason=stop
+    entry=2020-12-01  exit=2021-08-31  hold=  273d  ret=  2.80%  reason=signal
+    entry=2022-12-12  exit=2023-10-18  hold=  310d  ret= -0.55%  reason=signal
+    entry=2023-12-20  exit=2024-01-08  hold=   19d  ret=-12.11%  reason=stop
+    entry=2025-02-05  exit=2025-03-04  hold=   27d  ret=-12.11%  reason=stop
+    entry=2026-01-21  exit=2026-03-05  hold=   43d  ret=-12.11%  reason=stop
+    entry=2026-06-01  exit=2026-09-01  hold=   92d  ret= -8.53%  reason=signal
+  BAC: 48 isolated trade(s)
+    entry=1973-12-04  exit=1974-01-09  hold=   36d  ret=  9.66%  reason=signal
+    entry=1975-04-04  exit=1975-08-26  hold=  144d  ret=-12.11%  reason=stop
+    entry=1976-02-27  exit=1976-05-27  hold=   90d  ret=-12.11%  reason=stop
+    entry=1977-01-07  exit=1977-02-08  hold=   32d  ret=-12.11%  reason=stop
+    entry=1978-01-30  exit=1978-12-07  hold=  311d  ret=  6.13%  reason=signal
+    entry=1979-07-12  exit=1979-10-10  hold=   90d  ret=-12.11%  reason=stop
+    entry=1980-01-14  exit=1980-02-21  hold=   38d  ret=-12.11%  reason=stop
+    entry=1980-06-05  exit=1980-10-20  hold=  137d  ret=-12.11%  reason=stop
+    entry=1981-03-17  exit=1981-08-25  hold=  161d  ret=-12.11%  reason=stop
+    entry=1981-12-24  exit=1982-02-22  hold=   60d  ret= -4.40%  reason=signal
+    entry=1982-10-14  exit=1983-11-14  hold=  396d  ret= 42.41%  reason=signal
+    entry=1984-01-25  exit=1984-03-12  hold=   47d  ret=-12.11%  reason=stop
+    entry=1984-08-27  exit=1985-09-30  hold=  399d  ret= 24.59%  reason=signal
+    entry=1985-12-09  exit=1986-09-18  hold=  283d  ret=  3.01%  reason=signal
+    entry=1987-02-20  exit=1987-04-14  hold=   53d  ret=-12.11%  reason=stop
+    entry=1988-06-02  exit=1990-01-08  hold=  585d  ret=111.94%  reason=signal
+    entry=1991-03-18  exit=1992-09-29  hold=  561d  ret= 48.49%  reason=signal
+    entry=1992-11-24  exit=1993-06-17  hold=  205d  ret= -3.97%  reason=signal
+    entry=1993-09-14  exit=1993-09-20  hold=    6d  ret= -2.92%  reason=signal
+    entry=1993-09-30  exit=1993-10-26  hold=   26d  ret= -7.75%  reason=signal
+    entry=1994-02-01  exit=1994-03-15  hold=   42d  ret= -6.50%  reason=signal
+    entry=1994-03-16  exit=1994-03-17  hold=    1d  ret= -1.01%  reason=signal
+    entry=1994-05-02  exit=1994-10-31  hold=  182d  ret= -4.36%  reason=signal
+    entry=1995-04-04  exit=1997-11-07  hold=  948d  ret=157.55%  reason=signal
+    entry=1997-11-20  exit=1997-12-12  hold=   22d  ret=  1.40%  reason=signal
+    entry=1998-03-05  exit=1998-08-31  hold=  179d  ret=-12.11%  reason=stop
+    entry=1999-03-16  exit=1999-05-25  hold=   70d  ret=-12.11%  reason=stop
+    entry=2000-06-12  exit=2000-06-16  hold=    4d  ret=-12.11%  reason=stop
+    entry=2000-09-05  exit=2000-10-11  hold=   36d  ret=-12.11%  reason=stop
+    entry=2001-02-21  exit=2002-09-20  hold=  576d  ret= 40.78%  reason=signal
+    entry=2002-12-18  exit=2005-08-17  hold=  973d  ret= 40.43%  reason=signal
+    entry=2005-12-08  exit=2007-04-16  hold=  494d  ret= 17.77%  reason=signal
+    entry=2007-10-10  exit=2007-11-01  hold=   22d  ret=-12.11%  reason=stop
+    entry=2009-07-17  exit=2010-06-29  hold=  347d  ret= 13.04%  reason=signal
+    entry=2011-02-16  exit=2011-04-15  hold=   58d  ret=-12.11%  reason=stop
+    entry=2012-03-16  exit=2012-04-10  hold=   25d  ret=-12.11%  reason=stop
+    entry=2014-10-01  exit=2015-03-12  hold=  162d  ret= -3.99%  reason=signal
+    entry=2015-06-22  exit=2015-08-24  hold=   63d  ret=-12.11%  reason=stop
+    entry=2015-11-27  exit=2016-01-08  hold=   42d  ret=-12.11%  reason=stop
+    entry=2016-09-06  exit=2018-07-26  hold=  688d  ret=100.99%  reason=signal
+    entry=2018-08-15  exit=2018-08-20  hold=    5d  ret=  1.44%  reason=signal
+    entry=2018-08-21  exit=2018-10-19  hold=   59d  ret= -8.48%  reason=signal
+    entry=2019-03-19  exit=2019-10-09  hold=  204d  ret= -5.03%  reason=signal
+    entry=2019-10-23  exit=2020-03-02  hold=  131d  ret=-12.11%  reason=stop
+    entry=2020-11-17  exit=2022-04-18  hold=  517d  ret= 44.99%  reason=signal
+    entry=2022-12-21  exit=2023-03-13  hold=   82d  ret=-12.11%  reason=stop
+    entry=2023-12-18  exit=2025-04-16  hold=  485d  ret= 14.95%  reason=signal
+    entry=2025-06-27  exit=2026-04-13  hold=  290d  ret= 14.81%  reason=signal
+  CAT: 47 isolated trade(s)
+    entry=1962-12-19  exit=1965-09-01  hold=  987d  ret=157.70%  reason=signal
+    entry=1965-09-08  exit=1966-04-11  hold=  215d  ret=  7.74%  reason=signal
+    entry=1967-02-17  exit=1967-11-30  hold=  286d  ret= 10.33%  reason=signal
+    entry=1968-09-20  exit=1969-09-05  hold=  350d  ret= -5.38%  reason=signal
+    entry=1970-12-10  exit=1971-11-10  hold=  335d  ret=  8.17%  reason=signal
+    entry=1972-03-03  exit=1973-04-02  hold=  395d  ret= 24.58%  reason=signal
+    entry=1973-09-21  exit=1973-12-18  hold=   88d  ret=-12.11%  reason=stop
+    entry=1975-02-26  exit=1976-10-19  hold=  601d  ret= 31.65%  reason=signal
+    entry=1977-05-18  exit=1977-08-08  hold=   82d  ret=-12.11%  reason=stop
+    entry=1978-05-30  exit=1979-01-02  hold=  217d  ret=  6.34%  reason=signal
+    entry=1979-01-08  exit=1979-04-20  hold=  102d  ret= -6.23%  reason=signal
+    entry=1980-02-05  exit=1980-03-07  hold=   31d  ret=-12.11%  reason=stop
+    entry=1980-07-24  exit=1981-08-28  hold=  400d  ret=  2.17%  reason=signal
+    entry=1982-12-22  exit=1983-09-01  hold=  253d  ret=  8.40%  reason=signal
+    entry=1983-12-13  exit=1984-05-24  hold=  163d  ret=-12.11%  reason=stop
+    entry=1985-06-03  exit=1986-08-28  hold=  451d  ret= 43.81%  reason=signal
+    entry=1987-03-09  exit=1987-12-17  hold=  283d  ret= 33.97%  reason=signal
+    entry=1988-01-11  exit=1988-09-02  hold=  235d  ret= -7.89%  reason=signal
+    entry=1988-12-14  exit=1989-03-20  hold=   96d  ret= -8.41%  reason=signal
+    entry=1989-05-31  exit=1989-07-25  hold=   55d  ret=-10.53%  reason=signal
+    entry=1989-08-29  exit=1989-10-19  hold=   51d  ret=-12.11%  reason=stop
+    entry=1990-04-09  exit=1990-06-26  hold=   78d  ret=-12.11%  reason=stop
+    entry=1991-03-04  exit=1991-03-22  hold=   18d  ret=-12.11%  reason=stop
+    entry=1992-03-02  exit=1992-10-01  hold=  213d  ret=  1.34%  reason=signal
+    entry=1992-12-03  exit=1995-01-27  hold=  785d  ret=102.47%  reason=signal
+    entry=1995-05-12  exit=1995-10-02  hold=  143d  ret=-12.11%  reason=stop
+    entry=1996-02-13  exit=1997-12-24  hold=  680d  ret= 42.56%  reason=signal
+    entry=1998-04-07  exit=1998-08-04  hold=  119d  ret=-12.11%  reason=stop
+    entry=1999-04-14  exit=1999-09-28  hold=  167d  ret=-12.11%  reason=stop
+    entry=2000-12-21  exit=2001-10-30  hold=  313d  ret=  3.03%  reason=signal
+    entry=2002-01-11  exit=2002-07-11  hold=  181d  ret=-12.11%  reason=stop
+    entry=2003-01-15  exit=2003-02-13  hold=   29d  ret=-12.11%  reason=stop
+    entry=2004-10-28  exit=2006-09-14  hold=  686d  ret= 69.31%  reason=signal
+    entry=2007-04-05  exit=2007-12-11  hold=  250d  ret= 10.19%  reason=signal
+    entry=2008-04-18  exit=2008-06-26  hold=   69d  ret=-12.11%  reason=stop
+    entry=2009-07-14  exit=2011-08-24  hold=  771d  ret=182.73%  reason=signal
+    entry=2012-01-25  exit=2012-05-08  hold=  104d  ret=-12.11%  reason=stop
+    entry=2013-01-22  exit=2013-03-25  hold=   62d  ret=-12.11%  reason=stop
+    entry=2013-12-10  exit=2014-10-31  hold=  325d  ret= 20.18%  reason=signal
+    entry=2016-04-13  exit=2016-05-19  hold=   36d  ret=-12.11%  reason=stop
+    entry=2019-04-04  exit=2019-05-17  hold=   43d  ret=-12.11%  reason=stop
+    entry=2019-07-30  exit=2019-08-12  hold=   13d  ret=-12.11%  reason=stop
+    entry=2019-11-07  exit=2020-02-25  hold=  110d  ret=-12.11%  reason=stop
+    entry=2020-07-30  exit=2021-09-14  hold=  411d  ret= 50.79%  reason=signal
+    entry=2022-03-11  exit=2022-06-22  hold=  103d  ret=-12.11%  reason=stop
+    entry=2022-11-25  exit=2023-04-27  hold=  153d  ret=-12.11%  reason=stop
+    entry=2023-06-16  exit=2025-03-19  hold=  642d  ret= 41.88%  reason=signal
+  CMCSA: 33 isolated trade(s)
+    entry=1980-12-30  exit=1981-10-21  hold=  295d  ret=  5.26%  reason=signal
+    entry=1982-10-21  exit=1983-11-09  hold=  384d  ret= 24.41%  reason=signal
+    entry=1984-01-20  exit=1984-02-06  hold=   17d  ret=-12.11%  reason=stop
+    entry=1984-07-03  exit=1986-10-23  hold=  842d  ret=145.29%  reason=signal
+    entry=1986-12-04  exit=1987-11-05  hold=  336d  ret= 13.88%  reason=signal
+    entry=1988-02-17  exit=1988-05-10  hold=   83d  ret=-12.11%  reason=stop
+    entry=1988-07-15  exit=1988-07-28  hold=   13d  ret=-12.11%  reason=stop
+    entry=1989-01-17  exit=1990-01-08  hold=  356d  ret= 46.57%  reason=signal
+    entry=1991-01-24  exit=1991-08-19  hold=  207d  ret=-12.11%  reason=stop
+    entry=1991-10-25  exit=1992-03-30  hold=  157d  ret=-12.11%  reason=stop
+    entry=1992-06-12  exit=1992-10-06  hold=  116d  ret= -6.99%  reason=signal
+    entry=1992-12-16  exit=1994-03-18  hold=  457d  ret= 66.68%  reason=signal
+    entry=1995-06-19  exit=1995-11-08  hold=  142d  ret=-12.11%  reason=stop
+    entry=1996-01-18  exit=1996-01-26  hold=    8d  ret=-12.11%  reason=stop
+    entry=1996-03-06  exit=1996-03-15  hold=    9d  ret=-12.11%  reason=stop
+    entry=1997-01-03  exit=1997-04-02  hold=   89d  ret=-12.11%  reason=stop
+    entry=1997-06-13  exit=1999-09-24  hold=  833d  ret=184.38%  reason=signal
+    entry=1999-11-09  exit=2000-03-13  hold=  125d  ret=-12.11%  reason=stop
+    entry=2000-10-24  exit=2000-11-07  hold=   14d  ret=-12.11%  reason=stop
+    entry=2003-01-24  exit=2004-03-26  hold=  427d  ret= 11.76%  reason=signal
+    entry=2004-11-19  exit=2005-07-15  hold=  238d  ret=  0.02%  reason=signal
+    entry=2006-05-15  exit=2007-08-14  hold=  456d  ret= 18.47%  reason=signal
+    entry=2008-05-29  exit=2008-06-23  hold=   25d  ret=-12.11%  reason=stop
+    entry=2009-09-01  exit=2011-08-23  hold=  721d  ret= 37.37%  reason=signal
+    entry=2012-01-20  exit=2015-10-01  hold= 1350d  ret=133.87%  reason=signal
+    entry=2015-11-04  exit=2016-01-07  hold=   64d  ret=-12.11%  reason=stop
+    entry=2016-04-11  exit=2017-10-26  hold=  563d  ret= 20.74%  reason=signal
+    entry=2018-01-18  exit=2018-02-27  hold=   40d  ret=-12.11%  reason=stop
+    entry=2018-09-21  exit=2018-12-24  hold=   94d  ret=-12.11%  reason=stop
+    entry=2020-08-10  exit=2021-11-10  hold=  457d  ret= 28.52%  reason=signal
+    entry=2023-02-06  exit=2023-03-15  hold=   37d  ret=-12.11%  reason=stop
+    entry=2024-10-17  exit=2024-12-30  hold=   74d  ret=-12.11%  reason=stop
+    entry=2026-03-02  exit=2026-04-29  hold=   58d  ret=-12.11%  reason=stop
+  COST: 32 isolated trade(s)
+    entry=1987-04-22  exit=1987-10-14  hold=  175d  ret=-12.11%  reason=stop
+    entry=1988-05-12  exit=1988-09-13  hold=  124d  ret= -0.24%  reason=signal
+    entry=1988-10-06  exit=1989-02-22  hold=  139d  ret= -7.19%  reason=signal
+    entry=1989-05-05  exit=1990-01-24  hold=  264d  ret=-12.11%  reason=stop
+    entry=1990-12-28  exit=1991-12-30  hold=  367d  ret= 25.02%  reason=signal
+    entry=1992-12-03  exit=1992-12-22  hold=   19d  ret=-12.11%  reason=stop
+    entry=1993-09-07  exit=1994-04-13  hold=  218d  ret=-12.11%  reason=stop
+    entry=1995-06-19  exit=1995-12-19  hold=  183d  ret=-12.11%  reason=stop
+    entry=1996-03-19  exit=1998-10-06  hold=  931d  ret=136.85%  reason=signal
+    entry=1998-12-10  exit=1999-09-09  hold=  273d  ret=  7.76%  reason=signal
+    entry=1999-12-01  exit=2000-01-04  hold=   34d  ret=-12.11%  reason=stop
+    entry=2001-01-25  exit=2001-03-05  hold=   39d  ret=-12.11%  reason=stop
+    entry=2001-06-21  exit=2001-08-21  hold=   61d  ret=-12.11%  reason=stop
+    entry=2001-12-03  exit=2002-05-06  hold=  154d  ret= -0.26%  reason=signal
+    entry=2003-05-08  exit=2003-08-05  hold=   89d  ret=-12.11%  reason=stop
+    entry=2003-11-18  exit=2005-04-27  hold=  526d  ret= 24.01%  reason=signal
+    entry=2005-11-07  exit=2006-09-08  hold=  305d  ret= -2.41%  reason=signal
+    entry=2006-12-19  exit=2008-09-16  hold=  637d  ret= 31.12%  reason=signal
+    entry=2009-08-19  exit=2010-06-16  hold=  301d  ret= 22.57%  reason=signal
+    entry=2010-10-01  exit=2014-02-26  hold= 1244d  ret= 98.07%  reason=signal
+    entry=2014-07-16  exit=2015-08-13  hold=  393d  ret= 28.38%  reason=signal
+    entry=2015-08-14  exit=2015-08-24  hold=   10d  ret=-12.11%  reason=stop
+    entry=2015-09-11  exit=2015-10-01  hold=   20d  ret=  2.24%  reason=signal
+    entry=2015-10-08  exit=2016-05-23  hold=  228d  ret= -5.81%  reason=signal
+    entry=2016-07-19  exit=2016-09-29  hold=   72d  ret=-12.11%  reason=stop
+    entry=2017-01-12  exit=2017-08-17  hold=  217d  ret=  2.57%  reason=signal
+    entry=2017-11-17  exit=2019-01-28  hold=  437d  ret= 24.27%  reason=signal
+    entry=2019-03-29  exit=2021-04-01  hold=  734d  ret= 52.71%  reason=signal
+    entry=2021-05-11  exit=2022-06-17  hold=  402d  ret= 18.62%  reason=signal
+    entry=2022-09-02  exit=2022-10-12  hold=   40d  ret=-10.37%  reason=signal
+    entry=2023-05-26  exit=2025-08-20  hold=  817d  ret=102.73%  reason=signal
+    entry=2026-03-04  exit=2026-08-04  hold=  153d  ret= -5.79%  reason=signal
+  CVX: 45 isolated trade(s)
+    entry=1962-10-15  exit=1962-10-24  hold=    9d  ret=-12.11%  reason=stop
+    entry=1964-05-18  exit=1966-04-12  hold=  694d  ret= 26.35%  reason=signal
+    entry=1967-10-05  exit=1969-07-25  hold=  659d  ret=  5.04%  reason=signal
+    entry=1970-09-14  exit=1971-09-29  hold=  380d  ret= 26.05%  reason=signal
+    entry=1972-01-24  exit=1973-07-05  hold=  528d  ret= 36.87%  reason=signal
+    entry=1975-02-26  exit=1977-10-07  hold=  954d  ret= 83.98%  reason=signal
+    entry=1978-05-04  exit=1978-07-03  hold=   60d  ret=-12.11%  reason=stop
+    entry=1981-10-19  exit=1981-10-23  hold=    4d  ret= -0.24%  reason=signal
+    entry=1981-11-04  exit=1982-01-11  hold=   68d  ret=-12.11%  reason=stop
+    entry=1982-11-01  exit=1983-10-28  hold=  361d  ret= 12.23%  reason=signal
+    entry=1984-04-23  exit=1984-07-12  hold=   80d  ret=-12.11%  reason=stop
+    entry=1984-10-03  exit=1984-10-18  hold=   15d  ret=-12.11%  reason=stop
+    entry=1985-03-15  exit=1986-02-19  hold=  341d  ret= 12.90%  reason=signal
+    entry=1986-02-24  exit=1986-03-05  hold=    9d  ret= -0.58%  reason=signal
+    entry=1986-04-10  exit=1987-10-16  hold=  554d  ret= 40.33%  reason=signal
+    entry=1988-05-04  exit=1988-10-04  hold=  153d  ret= -8.72%  reason=signal
+    entry=1989-01-16  exit=1990-12-03  hold=  686d  ret= 58.23%  reason=signal
+    entry=1991-02-07  exit=1991-07-31  hold=  174d  ret= -1.54%  reason=signal
+    entry=1991-10-17  exit=1991-11-25  hold=   39d  ret=-12.11%  reason=stop
+    entry=1992-06-04  exit=1993-01-11  hold=  221d  ret= -2.66%  reason=signal
+    entry=1993-02-03  exit=1994-04-13  hold=  434d  ret= 20.98%  reason=signal
+    entry=1994-12-06  exit=1998-02-03  hold= 1155d  ret= 95.23%  reason=signal
+    entry=1998-03-23  exit=1998-08-10  hold=  140d  ret=-12.11%  reason=stop
+    entry=1999-04-05  exit=1999-11-12  hold=  221d  ret=  1.88%  reason=signal
+    entry=2000-05-17  exit=2000-07-20  hold=   64d  ret=-12.11%  reason=stop
+    entry=2000-10-03  exit=2000-11-21  hold=   49d  ret= -1.63%  reason=signal
+    entry=2001-03-08  exit=2001-09-24  hold=  200d  ret=-12.11%  reason=stop
+    entry=2002-04-23  exit=2002-07-19  hold=   87d  ret=-12.11%  reason=stop
+    entry=2003-06-11  exit=2005-06-13  hold=  733d  ret= 58.14%  reason=signal
+    entry=2005-06-27  exit=2006-03-09  hold=  255d  ret= -2.88%  reason=signal
+    entry=2006-05-11  exit=2008-03-05  hold=  664d  ret= 49.85%  reason=signal
+    entry=2008-04-25  exit=2008-08-05  hold=  102d  ret=-12.11%  reason=stop
+    entry=2009-09-14  exit=2010-07-07  hold=  296d  ret=  0.25%  reason=signal
+    entry=2010-09-10  exit=2011-09-26  hold=  381d  ret= 19.53%  reason=signal
+    entry=2011-12-07  exit=2012-06-12  hold=  188d  ret= -2.24%  reason=signal
+    entry=2012-08-02  exit=2014-02-07  hold=  554d  ret=  7.45%  reason=signal
+    entry=2014-05-07  exit=2014-10-14  hold=  160d  ret=-12.11%  reason=stop
+    entry=2016-03-23  exit=2017-05-25  hold=  428d  ret= 17.86%  reason=signal
+    entry=2017-09-19  exit=2018-10-15  hold=  391d  ret=  4.10%  reason=signal
+    entry=2019-03-18  exit=2019-10-17  hold=  213d  ret= -6.74%  reason=signal
+    entry=2020-01-02  exit=2020-01-24  hold=   22d  ret= -8.11%  reason=signal
+    entry=2020-12-28  exit=2023-04-25  hold=  848d  ret=118.42%  reason=signal
+    entry=2023-09-26  exit=2023-10-27  hold=   31d  ret=-12.11%  reason=stop
+    entry=2024-04-03  exit=2024-08-12  hold=  131d  ret=-12.11%  reason=stop
+    entry=2024-11-26  exit=2024-12-19  hold=   23d  ret=-12.11%  reason=stop
+  DIS: 47 isolated trade(s)
+    entry=1963-01-16  exit=1964-01-30  hold=  379d  ret= 19.14%  reason=signal
+    entry=1964-03-31  exit=1964-06-09  hold=   70d  ret=-12.11%  reason=stop
+    entry=1964-09-11  exit=1965-08-05  hold=  328d  ret= 13.03%  reason=signal
+    entry=1965-12-10  exit=1966-05-17  hold=  158d  ret=-12.11%  reason=stop
+    entry=1966-11-30  exit=1968-03-28  hold=  484d  ret= 31.75%  reason=signal
+    entry=1968-05-27  exit=1969-07-03  hold=  402d  ret= 30.19%  reason=signal
+    entry=1969-09-10  exit=1970-06-12  hold=  275d  ret= 35.66%  reason=signal
+    entry=1970-11-25  exit=1971-11-12  hold=  352d  ret= 44.64%  reason=signal
+    entry=1971-12-22  exit=1973-04-09  hold=  474d  ret= 45.19%  reason=signal
+    entry=1975-03-07  exit=1975-08-20  hold=  166d  ret=-12.11%  reason=stop
+    entry=1975-10-29  exit=1976-07-15  hold=  260d  ret= 10.10%  reason=signal
+    entry=1977-09-27  exit=1977-10-19  hold=   22d  ret=-12.11%  reason=stop
+    entry=1978-06-05  exit=1978-10-26  hold=  143d  ret=-12.11%  reason=stop
+    entry=1979-09-07  exit=1979-11-07  hold=   61d  ret=-12.11%  reason=stop
+    entry=1981-01-12  exit=1981-09-01  hold=  232d  ret= -3.08%  reason=signal
+    entry=1982-04-15  exit=1982-07-29  hold=  105d  ret=-12.11%  reason=stop
+    entry=1984-04-17  exit=1984-06-12  hold=   56d  ret=-12.11%  reason=stop
+    entry=1984-09-19  exit=1984-10-04  hold=   15d  ret=-12.11%  reason=stop
+    entry=1987-01-20  exit=1987-10-19  hold=  272d  ret=-12.11%  reason=stop
+    entry=1988-07-06  exit=1990-02-22  hold=  596d  ret= 67.70%  reason=signal
+    entry=1990-06-18  exit=1990-08-02  hold=   45d  ret=-12.11%  reason=stop
+    entry=1991-03-01  exit=1991-10-14  hold=  227d  ret= -6.57%  reason=signal
+    entry=1992-01-30  exit=1992-09-28  hold=  242d  ret=  5.26%  reason=signal
+    entry=1992-11-09  exit=1993-07-08  hold=  241d  ret= -5.03%  reason=signal
+    entry=1993-12-10  exit=1994-06-02  hold=  174d  ret=  4.55%  reason=signal
+    entry=1994-12-28  exit=1996-07-09  hold=  559d  ret= 24.24%  reason=signal
+    entry=1996-10-25  exit=1998-08-28  hold=  672d  ret= 39.85%  reason=signal
+    entry=1999-02-11  exit=1999-04-01  hold=   49d  ret=-12.11%  reason=stop
+    entry=2000-01-14  exit=2000-10-24  hold=  284d  ret=  7.56%  reason=signal
+    entry=2002-04-01  exit=2002-06-12  hold=   72d  ret=-12.11%  reason=stop
+    entry=2003-04-04  exit=2004-08-06  hold=  490d  ret= 26.98%  reason=signal
+    entry=2004-11-12  exit=2005-06-30  hold=  230d  ret= -5.43%  reason=signal
+    entry=2006-02-15  exit=2007-08-16  hold=  547d  ret= 23.68%  reason=signal
+    entry=2007-11-01  exit=2007-11-14  hold=   13d  ret= -5.97%  reason=signal
+    entry=2008-05-29  exit=2008-07-07  hold=   39d  ret=-12.11%  reason=stop
+    entry=2008-09-25  exit=2008-10-06  hold=   11d  ret=-12.11%  reason=stop
+    entry=2009-06-16  exit=2011-07-27  hold=  771d  ret= 71.63%  reason=signal
+    entry=2012-01-23  exit=2015-10-06  hold= 1352d  ret=176.15%  reason=signal
+    entry=2015-11-19  exit=2016-01-04  hold=   46d  ret=-12.11%  reason=stop
+    entry=2016-12-21  exit=2017-08-08  hold=  230d  ret=  1.85%  reason=signal
+    entry=2018-01-05  exit=2018-03-28  hold=   82d  ret=-12.11%  reason=stop
+    entry=2018-07-11  exit=2020-03-09  hold=  607d  ret= -1.71%  reason=signal
+    entry=2020-09-09  exit=2020-10-29  hold=   50d  ret=-12.11%  reason=stop
+    entry=2023-03-10  exit=2023-04-12  hold=   33d  ret=  4.42%  reason=signal
+    entry=2024-01-03  exit=2024-07-25  hold=  204d  ret= -2.45%  reason=signal
+    entry=2024-12-06  exit=2025-03-10  hold=   94d  ret=-12.11%  reason=stop
+    entry=2025-06-20  exit=2025-11-20  hold=  153d  ret=-12.11%  reason=stop
+  DUK: 26 isolated trade(s)
+    entry=1981-02-24  exit=1981-03-03  hold=    7d  ret= -1.00%  reason=signal
+    entry=1981-04-27  exit=1982-07-23  hold=  452d  ret= 14.49%  reason=signal
+    entry=1982-09-13  exit=1982-11-05  hold=   53d  ret= -2.44%  reason=signal
+    entry=1983-01-20  exit=1987-04-21  hold= 1552d  ret=165.00%  reason=signal  <-- LONG HOLD FLAG
+    entry=1987-09-17  exit=1987-10-19  hold=   32d  ret=-12.11%  reason=stop
+    entry=1988-02-01  exit=1988-05-09  hold=   98d  ret=-10.08%  reason=signal
+    entry=1988-06-24  exit=1989-04-10  hold=  290d  ret=  0.54%  reason=signal
+    entry=1989-05-04  exit=1991-03-14  hold=  679d  ret= 38.67%  reason=signal
+    entry=1991-08-14  exit=1994-03-03  hold=  932d  ret= 46.32%  reason=signal
+    entry=1994-09-14  exit=1996-09-23  hold=  740d  ret= 39.48%  reason=signal
+    entry=1997-06-30  exit=1999-03-11  hold=  619d  ret= 31.90%  reason=signal
+    entry=2000-05-08  exit=2001-08-01  hold=  450d  ret= 38.02%  reason=signal
+    entry=2002-05-06  exit=2002-05-30  hold=   24d  ret=-12.11%  reason=stop
+    entry=2003-06-20  exit=2003-07-16  hold=   26d  ret=-12.11%  reason=stop
+    entry=2006-01-27  exit=2007-07-20  hold=  539d  ret= 14.71%  reason=signal
+    entry=2007-11-20  exit=2008-03-06  hold=  107d  ret=-12.11%  reason=stop
+    entry=2009-07-23  exit=2012-11-16  hold= 1212d  ret= 61.00%  reason=signal
+    entry=2013-01-29  exit=2013-10-01  hold=  245d  ret=  2.01%  reason=signal
+    entry=2013-11-12  exit=2015-04-23  hold=  527d  ret= 16.85%  reason=signal
+    entry=2016-02-09  exit=2016-11-09  hold=  274d  ret=  0.84%  reason=signal
+    entry=2017-03-14  exit=2018-01-30  hold=  322d  ret= -1.23%  reason=signal
+    entry=2018-08-16  exit=2020-03-23  hold=  585d  ret=-12.11%  reason=stop
+    entry=2020-10-22  exit=2022-10-12  hold=  720d  ret= -1.35%  reason=signal
+    entry=2023-02-16  exit=2023-02-27  hold=   11d  ret= -2.76%  reason=signal
+    entry=2023-12-26  exit=2026-01-22  hold=  758d  ret= 30.92%  reason=signal
+    entry=2026-02-23  exit=2026-09-23  hold=  212d  ret= -9.31%  reason=signal
+  GE: 45 isolated trade(s)
+    entry=1962-11-29  exit=1964-06-15  hold=  564d  ret= 11.30%  reason=signal
+    entry=1964-09-16  exit=1966-04-15  hold=  576d  ret= 30.56%  reason=signal
+    entry=1967-05-08  exit=1967-07-03  hold=   56d  ret= -5.07%  reason=signal
+    entry=1967-07-26  exit=1968-01-23  hold=  181d  ret=-10.57%  reason=signal
+    entry=1968-11-12  exit=1969-07-24  hold=  254d  ret= -8.73%  reason=signal
+    entry=1970-08-21  exit=1972-11-08  hold=  810d  ret= 75.46%  reason=signal
+    entry=1972-12-06  exit=1973-04-04  hold=  119d  ret=-12.11%  reason=stop
+    entry=1973-10-26  exit=1973-12-03  hold=   38d  ret=-12.11%  reason=stop
+    entry=1975-03-11  exit=1975-08-20  hold=  162d  ret=-12.11%  reason=stop
+    entry=1977-05-18  exit=1977-10-21  hold=  156d  ret= -6.95%  reason=signal
+    entry=1978-05-18  exit=1978-11-30  hold=  196d  ret= -8.09%  reason=signal
+    entry=1979-05-29  exit=1979-11-26  hold=  181d  ret= -1.31%  reason=signal
+    entry=1980-01-18  exit=1980-03-20  hold=   62d  ret=-12.11%  reason=stop
+    entry=1980-06-30  exit=1981-08-19  hold=  415d  ret= 16.59%  reason=signal
+    entry=1982-02-01  exit=1983-09-02  hold=  578d  ret= 76.18%  reason=signal
+    entry=1983-11-03  exit=1984-04-12  hold=  161d  ret=  4.79%  reason=signal
+    entry=1984-04-18  exit=1984-07-09  hold=   82d  ret= -3.68%  reason=signal
+    entry=1984-08-28  exit=1985-10-09  hold=  407d  ret=  4.91%  reason=signal
+    entry=1985-11-27  exit=1986-09-23  hold=  300d  ret= 12.32%  reason=signal
+    entry=1986-12-02  exit=1987-11-13  hold=  346d  ret= 10.06%  reason=signal
+    entry=1988-08-04  exit=1988-08-19  hold=   15d  ret= -5.58%  reason=signal
+    entry=1988-10-20  exit=1990-09-25  hold=  705d  ret= 31.19%  reason=signal
+    entry=1991-03-01  exit=1991-11-01  hold=  245d  ret=  0.44%  reason=signal
+    entry=1992-01-27  exit=1992-09-25  hold=  242d  ret=  1.45%  reason=signal
+    entry=1992-11-03  exit=1994-05-16  hold=  559d  ret= 26.15%  reason=signal
+    entry=1994-12-21  exit=1998-10-13  hold= 1392d  ret=231.61%  reason=signal
+    entry=1998-12-01  exit=2000-12-19  hold=  749d  ret= 68.55%  reason=signal
+    entry=2001-06-25  exit=2001-07-24  hold=   29d  ret=-12.11%  reason=stop
+    entry=2003-04-29  exit=2005-08-05  hold=  829d  ret= 21.28%  reason=signal
+    entry=2005-12-21  exit=2006-02-16  hold=   57d  ret= -5.13%  reason=signal
+    entry=2006-04-27  exit=2006-07-17  hold=   81d  ret= -5.54%  reason=signal
+    entry=2006-09-28  exit=2008-01-08  hold=  467d  ret=  3.35%  reason=signal
+    entry=2009-08-28  exit=2010-07-09  hold=  315d  ret=  8.60%  reason=signal
+    entry=2010-11-12  exit=2010-11-30  hold=   18d  ret= -2.82%  reason=signal
+    entry=2010-12-08  exit=2011-08-02  hold=  237d  ret=  3.09%  reason=signal
+    entry=2012-01-30  exit=2014-09-12  hold=  956d  ret= 48.74%  reason=signal
+    entry=2014-12-24  exit=2015-01-12  hold=   19d  ret= -7.38%  reason=signal
+    entry=2015-04-10  exit=2015-08-21  hold=  133d  ret=-12.11%  reason=stop
+    entry=2015-10-21  exit=2016-10-26  hold=  371d  ret=  2.95%  reason=signal
+    entry=2016-12-23  exit=2017-03-17  hold=   84d  ret= -5.75%  reason=signal
+    entry=2019-05-22  exit=2019-06-03  hold=   12d  ret= -3.97%  reason=signal
+    entry=2019-06-04  exit=2019-08-15  hold=   72d  ret=-12.11%  reason=stop
+    entry=2019-11-25  exit=2020-02-28  hold=   95d  ret=-12.11%  reason=stop
+    entry=2020-11-23  exit=2021-11-18  hold=  360d  ret= 25.06%  reason=signal
+    entry=2022-12-08  exit=2026-05-13  hold= 1252d  ret=474.35%  reason=signal
+  HD: 27 isolated trade(s)
+    entry=1982-07-07  exit=1983-12-23  hold=  534d  ret=457.57%  reason=signal
+    entry=1984-07-24  exit=1984-08-17  hold=   24d  ret=-12.11%  reason=stop
+    entry=1985-03-18  exit=1985-04-02  hold=   15d  ret=-12.11%  reason=stop
+    entry=1986-03-04  exit=1986-11-20  hold=  261d  ret= 21.93%  reason=signal
+    entry=1986-12-16  exit=1987-11-13  hold=  332d  ret= 37.83%  reason=signal
+    entry=1988-03-25  exit=1990-10-17  hold=  936d  ret=160.31%  reason=signal
+    entry=1990-12-28  exit=1993-05-19  hold=  873d  ret=262.70%  reason=signal
+    entry=1994-04-07  exit=1995-04-25  hold=  383d  ret= -4.85%  reason=signal
+    entry=1995-12-20  exit=1997-01-07  hold=  384d  ret=  9.52%  reason=signal
+    entry=1997-04-01  exit=2000-06-15  hold= 1171d  ret=333.25%  reason=signal
+    entry=2001-05-23  exit=2001-07-05  hold=   43d  ret=-12.11%  reason=stop
+    entry=2002-01-03  exit=2002-05-22  hold=  139d  ret=-12.11%  reason=stop
+    entry=2003-05-16  exit=2004-06-18  hold=  399d  ret= 22.12%  reason=signal
+    entry=2004-09-23  exit=2005-04-22  hold=  211d  ret= -5.41%  reason=signal
+    entry=2005-07-26  exit=2005-09-21  hold=   57d  ret=-12.11%  reason=stop
+    entry=2005-11-07  exit=2006-06-02  hold=  207d  ret= -8.10%  reason=signal
+    entry=2006-12-12  exit=2007-08-14  hold=  245d  ret=-12.11%  reason=stop
+    entry=2009-05-05  exit=2009-05-21  hold=   16d  ret=-12.11%  reason=stop
+    entry=2010-11-08  exit=2011-08-08  hold=  273d  ret= -6.31%  reason=signal
+    entry=2011-11-21  exit=2016-10-28  hold= 1803d  ret=270.26%  reason=signal  <-- LONG HOLD FLAG
+    entry=2017-01-11  exit=2018-11-27  hold=  685d  ret= 32.43%  reason=signal
+    entry=2019-04-08  exit=2020-03-16  hold=  343d  ret=-12.11%  reason=stop
+    entry=2020-06-09  exit=2022-03-21  hold=  650d  ret= 32.85%  reason=signal
+    entry=2022-12-07  exit=2023-03-28  hold=  111d  ret=-12.11%  reason=stop
+    entry=2023-07-19  exit=2023-10-25  hold=   98d  ret=-12.11%  reason=stop
+    entry=2023-12-14  exit=2025-04-08  hold=  481d  ret= -1.99%  reason=signal
+    entry=2025-09-02  exit=2025-11-18  hold=   77d  ret=-12.11%  reason=stop
+  HON: 50 isolated trade(s)
+    entry=1962-12-19  exit=1964-06-22  hold=  551d  ret= 30.57%  reason=signal
+    entry=1964-11-23  exit=1964-12-18  hold=   25d  ret= -0.95%  reason=signal
+    entry=1965-01-05  exit=1965-06-23  hold=  169d  ret= -1.53%  reason=signal
+    entry=1966-01-31  exit=1966-03-30  hold=   58d  ret= -6.98%  reason=signal
+    entry=1967-02-10  exit=1967-12-15  hold=  308d  ret=  1.66%  reason=signal
+    entry=1968-11-25  exit=1969-02-25  hold=   92d  ret=-12.11%  reason=stop
+    entry=1970-12-28  exit=1971-11-23  hold=  330d  ret= 14.86%  reason=signal
+    entry=1972-03-24  exit=1972-07-18  hold=  116d  ret=-12.11%  reason=stop
+    entry=1973-01-08  exit=1974-06-05  hold=  513d  ret= 46.15%  reason=signal
+    entry=1975-03-14  exit=1975-09-30  hold=  200d  ret=-12.11%  reason=stop
+    entry=1976-02-02  exit=1976-05-19  hold=  107d  ret=-12.11%  reason=stop
+    entry=1977-01-14  exit=1977-10-03  hold=  262d  ret= -1.69%  reason=signal
+    entry=1978-05-25  exit=1978-06-28  hold=   34d  ret=-12.11%  reason=stop
+    entry=1979-04-23  exit=1980-05-27  hold=  400d  ret= 59.94%  reason=signal
+    entry=1980-06-12  exit=1981-02-18  hold=  251d  ret=  0.36%  reason=signal
+    entry=1981-05-15  exit=1981-08-25  hold=  102d  ret=-12.11%  reason=stop
+    entry=1982-10-22  exit=1982-12-16  hold=   55d  ret=-12.11%  reason=stop
+    entry=1984-10-01  exit=1986-07-09  hold=  646d  ret= 24.86%  reason=signal
+    entry=1987-01-27  exit=1987-05-18  hold=  111d  ret=-12.11%  reason=stop
+    entry=1987-08-04  exit=1987-10-16  hold=   73d  ret=-12.11%  reason=stop
+    entry=1988-06-27  exit=1989-05-08  hold=  315d  ret= -0.23%  reason=signal
+    entry=1989-05-31  exit=1990-02-13  hold=  258d  ret=  3.32%  reason=signal
+    entry=1990-04-19  exit=1990-04-23  hold=    4d  ret= -2.33%  reason=signal
+    entry=1990-05-09  exit=1990-08-06  hold=   89d  ret=-12.11%  reason=stop
+    entry=1991-03-22  exit=1994-05-04  hold= 1139d  ret=163.36%  reason=signal
+    entry=1995-02-14  exit=1997-11-25  hold= 1015d  ret= 99.82%  reason=signal
+    entry=1998-03-25  exit=1998-08-05  hold=  133d  ret=-12.11%  reason=stop
+    entry=1998-12-21  exit=1999-12-03  hold=  347d  ret= 49.10%  reason=signal
+    entry=2000-11-29  exit=2001-01-02  hold=   34d  ret=-12.11%  reason=stop
+    entry=2002-03-14  exit=2002-05-01  hold=   48d  ret=-12.11%  reason=stop
+    entry=2003-06-09  exit=2005-11-01  hold=  876d  ret= 34.56%  reason=signal
+    entry=2006-01-11  exit=2006-08-02  hold=  203d  ret=  3.76%  reason=signal
+    entry=2006-10-19  exit=2008-03-13  hold=  511d  ret= 39.98%  reason=signal
+    entry=2008-05-02  exit=2008-06-25  hold=   54d  ret=-12.11%  reason=stop
+    entry=2009-06-11  exit=2009-06-22  hold=   11d  ret=-12.11%  reason=stop
+    entry=2010-09-15  exit=2011-08-15  hold=  334d  ret= 10.08%  reason=signal
+    entry=2011-12-30  exit=2012-07-23  hold=  206d  ret=  6.79%  reason=signal
+    entry=2012-08-21  exit=2015-09-25  hold= 1130d  ret= 68.03%  reason=signal
+    entry=2015-12-10  exit=2016-02-09  hold=   61d  ret=  0.70%  reason=signal
+    entry=2016-02-24  exit=2016-11-15  hold=  265d  ret= 10.97%  reason=signal
+    entry=2016-12-30  exit=2018-05-25  hold=  511d  ret= 33.72%  reason=signal
+    entry=2018-06-12  exit=2018-06-27  hold=   15d  ret= -6.22%  reason=signal
+    entry=2018-07-26  exit=2018-12-19  hold=  146d  ret=-12.11%  reason=stop
+    entry=2019-03-13  exit=2020-03-16  hold=  369d  ret=-12.11%  reason=stop
+    entry=2020-09-09  exit=2021-11-15  hold=  432d  ret= 36.82%  reason=signal
+    entry=2022-11-18  exit=2023-03-15  hold=  117d  ret=-12.11%  reason=stop
+    entry=2023-06-16  exit=2023-08-15  hold=   60d  ret= -7.19%  reason=signal
+    entry=2023-12-28  exit=2025-04-04  hold=  463d  ret= -6.47%  reason=signal
+    entry=2025-06-18  exit=2025-10-02  hold=  106d  ret= -4.63%  reason=signal
+    entry=2026-02-03  exit=2026-09-01  hold=  210d  ret=-12.11%  reason=stop
+  JNJ: 45 isolated trade(s)
+    entry=1963-01-28  exit=1964-06-02  hold=  491d  ret= 20.49%  reason=signal
+    entry=1964-11-18  exit=1966-08-29  hold=  649d  ret= 42.13%  reason=signal
+    entry=1967-01-10  exit=1968-03-19  hold=  434d  ret= 38.86%  reason=signal
+    entry=1968-05-15  exit=1970-05-06  hold=  721d  ret= 59.40%  reason=signal
+    entry=1970-10-12  exit=1973-03-27  hold=  897d  ret=139.91%  reason=signal
+    entry=1973-11-12  exit=1973-12-14  hold=   32d  ret=-12.11%  reason=stop
+    entry=1974-06-13  exit=1974-07-08  hold=   25d  ret=-12.11%  reason=stop
+    entry=1975-04-02  exit=1975-09-10  hold=  161d  ret= -9.26%  reason=signal
+    entry=1975-12-22  exit=1976-04-26  hold=  126d  ret= -3.58%  reason=signal
+    entry=1976-05-13  exit=1976-06-07  hold=   25d  ret= -3.84%  reason=signal
+    entry=1976-09-17  exit=1976-11-09  hold=   53d  ret=-12.11%  reason=stop
+    entry=1977-08-19  exit=1978-03-03  hold=  196d  ret= -7.36%  reason=signal
+    entry=1978-05-19  exit=1978-12-12  hold=  207d  ret= -0.53%  reason=signal
+    entry=1979-08-10  exit=1979-10-16  hold=   67d  ret=-12.11%  reason=stop
+    entry=1979-12-21  exit=1980-02-21  hold=   62d  ret=-12.11%  reason=stop
+    entry=1980-05-23  exit=1981-08-27  hold=  461d  ret= 14.60%  reason=signal
+    entry=1981-11-17  exit=1983-08-05  hold=  626d  ret= 24.90%  reason=signal
+    entry=1984-11-26  exit=1987-11-05  hold= 1074d  ret=137.16%  reason=signal
+    entry=1988-07-25  exit=1992-05-08  hold= 1383d  ret=164.16%  reason=signal
+    entry=1992-09-18  exit=1992-10-05  hold=   17d  ret=-12.11%  reason=stop
+    entry=1993-11-18  exit=1994-03-17  hold=  119d  ret=-12.11%  reason=stop
+    entry=1994-06-10  exit=1997-10-15  hold= 1223d  ret=188.71%  reason=signal
+    entry=1997-11-24  exit=2000-01-26  hold=  793d  ret= 33.13%  reason=signal
+    entry=2000-07-05  exit=2001-03-21  hold=  259d  ret=-12.11%  reason=stop
+    entry=2001-06-06  exit=2002-07-08  hold=  397d  ret=  5.02%  reason=signal
+    entry=2002-11-25  exit=2003-01-23  hold=   59d  ret= -6.77%  reason=signal
+    entry=2003-04-11  exit=2003-06-16  hold=   66d  ret= -6.23%  reason=signal
+    entry=2004-02-10  exit=2005-08-19  hold=  556d  ret= 20.51%  reason=signal
+    entry=2006-07-06  exit=2007-03-29  hold=  266d  ret=  1.19%  reason=signal
+    entry=2007-10-09  exit=2008-03-27  hold=  170d  ret= -1.44%  reason=signal
+    entry=2008-04-16  exit=2008-10-10  hold=  177d  ret=-12.11%  reason=stop
+    entry=2009-07-16  exit=2010-06-22  hold=  341d  ret=  2.92%  reason=signal
+    entry=2010-10-27  exit=2011-03-29  hold=  153d  ret= -5.42%  reason=signal
+    entry=2011-04-29  exit=2015-02-24  hold= 1397d  ret= 73.61%  reason=signal
+    entry=2015-11-30  exit=2016-12-19  hold=  385d  ret= 17.56%  reason=signal
+    entry=2017-03-10  exit=2018-03-26  hold=  381d  ret=  3.29%  reason=signal
+    entry=2018-09-10  exit=2019-02-21  hold=  164d  ret= -0.91%  reason=signal
+    entry=2019-03-12  exit=2019-08-21  hold=  162d  ret= -5.08%  reason=signal
+    entry=2019-12-16  exit=2020-03-16  hold=   91d  ret=-12.11%  reason=stop
+    entry=2022-01-10  exit=2022-09-09  hold=  242d  ret= -2.61%  reason=signal
+    entry=2022-12-13  exit=2023-02-17  hold=   66d  ret=-12.11%  reason=stop
+    entry=2023-08-10  exit=2023-10-19  hold=   70d  ret=-12.11%  reason=stop
+    entry=2024-02-12  exit=2024-04-12  hold=   60d  ret= -6.06%  reason=signal
+    entry=2024-08-19  exit=2024-12-31  hold=  134d  ret= -8.20%  reason=signal
+    entry=2025-03-12  exit=2025-04-09  hold=   28d  ret=-12.11%  reason=stop
+  JPM: 34 isolated trade(s)
+    entry=1980-12-30  exit=1981-09-29  hold=  273d  ret= 17.98%  reason=signal
+    entry=1981-11-19  exit=1982-01-15  hold=   57d  ret= -8.59%  reason=signal
+    entry=1982-04-21  exit=1982-05-07  hold=   16d  ret= -5.14%  reason=signal
+    entry=1982-10-13  exit=1983-09-28  hold=  350d  ret=  5.78%  reason=signal
+    entry=1984-02-14  exit=1984-04-06  hold=   52d  ret=-12.11%  reason=stop
+    entry=1984-10-02  exit=1985-10-07  hold=  370d  ret= 32.80%  reason=signal
+    entry=1985-12-05  exit=1986-09-08  hold=  277d  ret=  9.45%  reason=signal
+    entry=1987-02-18  exit=1987-04-13  hold=   54d  ret=-12.11%  reason=stop
+    entry=1988-06-14  exit=1989-12-07  hold=  541d  ret= 15.28%  reason=signal
+    entry=1991-04-05  exit=1992-01-02  hold=  272d  ret= 26.24%  reason=signal
+    entry=1992-01-16  exit=1992-10-05  hold=  263d  ret=  9.33%  reason=signal
+    entry=1992-12-03  exit=1993-12-17  hold=  379d  ret= 10.22%  reason=signal
+    entry=1994-07-20  exit=1994-10-12  hold=   84d  ret= -1.00%  reason=signal
+    entry=1995-01-19  exit=1998-09-21  hold= 1341d  ret=176.12%  reason=signal
+    entry=1999-01-07  exit=1999-01-14  hold=    7d  ret=-12.11%  reason=stop
+    entry=1999-12-28  exit=2000-01-10  hold=   13d  ret= -6.16%  reason=signal
+    entry=2000-03-17  exit=2000-04-14  hold=   28d  ret=-12.11%  reason=stop
+    entry=2000-09-07  exit=2000-09-13  hold=    6d  ret=-12.11%  reason=stop
+    entry=2001-02-07  exit=2001-02-22  hold=   15d  ret=-12.11%  reason=stop
+    entry=2001-06-01  exit=2001-06-12  hold=   11d  ret=-12.11%  reason=stop
+    entry=2002-05-21  exit=2002-06-07  hold=   17d  ret=-12.11%  reason=stop
+    entry=2003-04-14  exit=2004-06-24  hold=  437d  ret= 47.33%  reason=signal
+    entry=2004-09-22  exit=2005-03-09  hold=  168d  ret= -7.12%  reason=signal
+    entry=2005-11-14  exit=2007-08-07  hold=  631d  ret= 25.18%  reason=signal
+    entry=2008-05-12  exit=2008-06-03  hold=   22d  ret=-12.11%  reason=stop
+    entry=2009-05-28  exit=2009-06-17  hold=   20d  ret=-12.11%  reason=stop
+    entry=2011-01-06  exit=2011-07-08  hold=  183d  ret= -7.57%  reason=signal
+    entry=2012-02-24  exit=2012-05-18  hold=   84d  ret=-12.11%  reason=stop
+    entry=2012-09-25  exit=2015-10-21  hold= 1121d  ret= 66.77%  reason=signal
+    entry=2015-12-01  exit=2016-01-08  hold=   38d  ret=-12.11%  reason=stop
+    entry=2016-05-26  exit=2016-06-27  hold=   32d  ret=-12.11%  reason=stop
+    entry=2019-05-06  exit=2020-03-09  hold=  308d  ret=-12.11%  reason=stop
+    entry=2020-11-11  exit=2022-02-01  hold=  447d  ret= 35.48%  reason=signal
+    entry=2022-12-02  exit=2026-03-27  hold= 1211d  ret=125.79%  reason=signal
+  KO: 44 isolated trade(s)
+    entry=1963-01-10  exit=1966-05-05  hold= 1211d  ret= 90.40%  reason=signal
+    entry=1966-11-16  exit=1969-02-17  hold=  824d  ret= 70.57%  reason=signal
+    entry=1969-05-29  exit=1969-07-28  hold=   60d  ret=-12.11%  reason=stop
+    entry=1969-09-16  exit=1970-05-07  hold=  233d  ret= -6.43%  reason=signal
+    entry=1970-10-29  exit=1973-05-07  hold=  921d  ret= 77.10%  reason=signal
+    entry=1973-08-03  exit=1973-12-04  hold=  123d  ret=-12.11%  reason=stop
+    entry=1975-03-24  exit=1975-09-30  hold=  190d  ret= -7.02%  reason=signal
+    entry=1975-11-25  exit=1976-06-14  hold=  202d  ret= -5.83%  reason=signal
+    entry=1976-08-18  exit=1976-11-08  hold=   82d  ret=-12.11%  reason=stop
+    entry=1977-08-04  exit=1977-12-20  hold=  138d  ret= -4.12%  reason=signal
+    entry=1978-04-18  exit=1979-03-28  hold=  344d  ret=  6.89%  reason=signal
+    entry=1980-06-19  exit=1980-11-12  hold=  146d  ret= -3.29%  reason=signal
+    entry=1981-02-05  exit=1981-08-28  hold=  204d  ret=  1.04%  reason=signal
+    entry=1981-11-16  exit=1982-02-18  hold=   94d  ret= -6.04%  reason=signal
+    entry=1982-05-04  exit=1983-08-12  hold=  465d  ret= 53.63%  reason=signal
+    entry=1983-10-06  exit=1986-11-10  hold= 1131d  ret=121.96%  reason=signal
+    entry=1986-12-10  exit=1987-10-19  hold=  313d  ret=-12.11%  reason=stop
+    entry=1988-08-02  exit=1992-11-12  hold= 1563d  ret=367.35%  reason=signal  <-- LONG HOLD FLAG
+    entry=1993-02-16  exit=1993-04-30  hold=   73d  ret= -2.93%  reason=signal
+    entry=1993-07-02  exit=1994-02-23  hold=  236d  ret=  0.27%  reason=signal
+    entry=1994-08-02  exit=1997-10-03  hold= 1158d  ret=193.34%  reason=signal
+    entry=1998-01-16  exit=1998-09-22  hold=  249d  ret=-12.11%  reason=stop
+    entry=1999-06-07  exit=1999-07-14  hold=   37d  ret= -8.67%  reason=signal
+    entry=2000-01-12  exit=2000-02-11  hold=   30d  ret= -9.87%  reason=signal
+    entry=2000-07-19  exit=2000-08-31  hold=   43d  ret=-12.11%  reason=stop
+    entry=2001-11-08  exit=2002-02-01  hold=   85d  ret= -8.82%  reason=signal
+    entry=2002-03-22  exit=2002-07-19  hold=  119d  ret=-12.11%  reason=stop
+    entry=2003-06-25  exit=2004-08-11  hold=  413d  ret= -3.05%  reason=signal
+    entry=2005-04-11  exit=2005-11-14  hold=  217d  ret=  2.75%  reason=signal
+    entry=2006-04-28  exit=2008-06-04  hold=  768d  ret= 42.08%  reason=signal
+    entry=2009-06-05  exit=2010-05-28  hold=  357d  ret=  7.07%  reason=signal
+    entry=2010-08-31  exit=2012-12-19  hold=  841d  ret= 40.93%  reason=signal
+    entry=2013-03-08  exit=2013-09-27  hold=  203d  ret= -0.22%  reason=signal
+    entry=2013-12-26  exit=2014-02-18  hold=   54d  ret= -7.68%  reason=signal
+    entry=2014-04-30  exit=2015-04-01  hold=  336d  ret=  2.51%  reason=signal
+    entry=2015-11-04  exit=2016-09-22  hold=  323d  ret=  5.35%  reason=signal
+    entry=2017-04-17  exit=2018-03-20  hold=  337d  ret=  3.33%  reason=signal
+    entry=2018-08-02  exit=2019-04-18  hold=  259d  ret=  5.17%  reason=signal
+    entry=2019-05-06  exit=2020-03-16  hold=  315d  ret=-12.11%  reason=stop
+    entry=2020-10-09  exit=2022-10-07  hold=  728d  ret= 13.75%  reason=signal
+    entry=2022-12-28  exit=2023-03-10  hold=   72d  ret= -7.08%  reason=signal
+    entry=2023-04-17  exit=2023-08-30  hold=  135d  ret= -4.22%  reason=signal
+    entry=2024-01-29  exit=2024-12-26  hold=  332d  ret=  7.70%  reason=signal
+    entry=2025-03-12  exit=2025-10-09  hold=  211d  ret= -3.22%  reason=signal
+  LLY: 41 isolated trade(s)
+    entry=1973-03-20  exit=1973-09-04  hold=  168d  ret=-12.11%  reason=stop
+    entry=1974-06-10  exit=1974-07-29  hold=   49d  ret=-12.11%  reason=stop
+    entry=1975-03-10  exit=1975-03-31  hold=   21d  ret=-12.11%  reason=stop
+    entry=1976-08-18  exit=1976-11-08  hold=   82d  ret=-12.11%  reason=stop
+    entry=1977-12-30  exit=1978-12-07  hold=  342d  ret= 23.29%  reason=signal
+    entry=1979-01-25  exit=1980-03-04  hold=  404d  ret=  7.56%  reason=signal
+    entry=1980-09-02  exit=1981-08-06  hold=  338d  ret=  5.17%  reason=signal
+    entry=1982-02-10  exit=1982-08-05  hold=  176d  ret=-12.11%  reason=stop
+    entry=1982-11-09  exit=1984-01-13  hold=  430d  ret=  1.05%  reason=signal
+    entry=1984-03-07  exit=1984-07-03  hold=  118d  ret= -3.09%  reason=signal
+    entry=1984-11-27  exit=1986-11-12  hold=  715d  ret=158.22%  reason=signal
+    entry=1986-11-28  exit=1987-10-19  hold=  325d  ret=-12.11%  reason=stop
+    entry=1988-06-13  exit=1990-11-26  hold=  896d  ret= 82.34%  reason=signal
+    entry=1991-02-13  exit=1991-07-11  hold=  148d  ret=-12.11%  reason=stop
+    entry=1991-08-29  exit=1991-10-18  hold=   50d  ret=-12.11%  reason=stop
+    entry=1992-01-07  exit=1992-02-19  hold=   43d  ret=-12.11%  reason=stop
+    entry=1993-10-21  exit=1994-04-13  hold=  174d  ret=-12.11%  reason=stop
+    entry=1994-06-24  exit=1994-07-11  hold=   17d  ret=-12.11%  reason=stop
+    entry=1994-09-29  exit=1996-09-13  hold=  715d  ret=128.68%  reason=signal
+    entry=1996-09-27  exit=1998-07-28  hold=  669d  ret=105.77%  reason=signal
+    entry=1998-08-10  exit=1999-05-21  hold=  284d  ret=  5.97%  reason=signal
+    entry=2000-05-11  exit=2001-02-15  hold=  280d  ret=  1.24%  reason=signal
+    entry=2001-06-05  exit=2001-06-22  hold=   17d  ret=-12.11%  reason=stop
+    entry=2001-11-30  exit=2002-01-25  hold=   56d  ret= -9.36%  reason=signal
+    entry=2002-12-17  exit=2003-02-21  hold=   66d  ret=-12.11%  reason=stop
+    entry=2003-05-16  exit=2004-08-04  hold=  446d  ret=  1.98%  reason=signal
+    entry=2005-06-02  exit=2005-08-23  hold=   82d  ret= -7.25%  reason=signal
+    entry=2006-01-26  exit=2006-05-25  hold=  119d  ret= -8.19%  reason=signal
+    entry=2006-07-28  exit=2007-01-09  hold=  165d  ret= -7.80%  reason=signal
+    entry=2007-04-20  exit=2007-10-25  hold=  188d  ret=-12.11%  reason=stop
+    entry=2009-07-08  exit=2009-09-09  hold=   63d  ret= -0.40%  reason=signal
+    entry=2009-10-23  exit=2010-06-24  hold=  244d  ret=  5.63%  reason=signal
+    entry=2010-08-10  exit=2013-07-29  hold= 1084d  ret= 63.46%  reason=signal
+    entry=2013-09-23  exit=2013-10-03  hold=   10d  ret= -8.21%  reason=signal
+    entry=2014-01-30  exit=2016-02-18  hold=  749d  ret= 46.95%  reason=signal
+    entry=2016-08-03  exit=2016-11-01  hold=   90d  ret=-12.11%  reason=stop
+    entry=2017-02-27  exit=2018-03-05  hold=  371d  ret= -4.17%  reason=signal
+    entry=2018-06-15  exit=2019-07-05  hold=  385d  ret= 32.37%  reason=signal
+    entry=2019-12-19  exit=2020-10-28  hold=  314d  ret=  1.60%  reason=signal
+    entry=2021-01-07  exit=2023-03-29  hold=  811d  ret=108.59%  reason=signal
+    entry=2023-04-17  exit=2024-12-13  hold=  606d  ret=114.21%  reason=signal
+  LMT: 48 isolated trade(s)
+    entry=1962-10-15  exit=1963-08-21  hold=  310d  ret= -3.93%  reason=signal
+    entry=1964-04-01  exit=1964-05-13  hold=   42d  ret=-11.32%  reason=signal
+    entry=1964-08-28  exit=1966-07-25  hold=  696d  ret= 61.14%  reason=signal
+    entry=1966-12-19  exit=1967-02-09  hold=   52d  ret=-12.11%  reason=stop
+    entry=1968-06-03  exit=1968-08-02  hold=   60d  ret=-12.11%  reason=stop
+    entry=1971-02-08  exit=1971-02-10  hold=    2d  ret=-12.11%  reason=stop
+    entry=1972-01-31  exit=1972-02-18  hold=   18d  ret=-12.11%  reason=stop
+    entry=1975-02-18  exit=1975-03-04  hold=   14d  ret=-12.11%  reason=stop
+    entry=1976-03-30  exit=1976-04-09  hold=   10d  ret=-12.11%  reason=stop
+    entry=1977-03-01  exit=1977-04-25  hold=   55d  ret=-12.11%  reason=stop
+    entry=1978-04-13  exit=1978-10-24  hold=  194d  ret=-12.11%  reason=stop
+    entry=1979-07-26  exit=1980-05-08  hold=  287d  ret= 39.31%  reason=signal
+    entry=1980-10-02  exit=1980-10-20  hold=   18d  ret=-12.11%  reason=stop
+    entry=1981-05-27  exit=1981-07-08  hold=   42d  ret=-12.11%  reason=stop
+    entry=1984-08-02  exit=1985-10-23  hold=  447d  ret= 11.46%  reason=signal
+    entry=1986-03-14  exit=1986-07-18  hold=  126d  ret=-12.11%  reason=stop
+    entry=1987-01-09  exit=1987-04-21  hold=  102d  ret=-12.11%  reason=stop
+    entry=1987-07-09  exit=1987-10-16  hold=   99d  ret=-12.11%  reason=stop
+    entry=1988-05-03  exit=1988-08-23  hold=  112d  ret=-12.11%  reason=stop
+    entry=1989-02-02  exit=1989-11-10  hold=  281d  ret= -2.94%  reason=signal
+    entry=1991-01-03  exit=1991-10-28  hold=  298d  ret= 45.15%  reason=signal
+    entry=1991-11-14  exit=1992-01-29  hold=   76d  ret=-12.11%  reason=stop
+    entry=1994-09-01  exit=1994-09-27  hold=   26d  ret=-12.11%  reason=stop
+    entry=1997-06-05  exit=1997-12-22  hold=  200d  ret=  1.51%  reason=signal
+    entry=1998-02-06  exit=1998-08-04  hold=  179d  ret=-12.11%  reason=stop
+    entry=1998-11-27  exit=1998-12-15  hold=   18d  ret=-12.11%  reason=stop
+    entry=2000-06-02  exit=2000-06-22  hold=   20d  ret=-12.11%  reason=stop
+    entry=2003-08-15  exit=2003-09-25  hold=   41d  ret=-12.11%  reason=stop
+    entry=2004-01-15  exit=2004-03-04  hold=   49d  ret=-12.11%  reason=stop
+    entry=2004-06-09  exit=2005-11-03  hold=  512d  ret= 21.92%  reason=signal
+    entry=2006-01-12  exit=2008-04-14  hold=  823d  ret= 61.28%  reason=signal
+    entry=2008-06-02  exit=2008-06-30  hold=   28d  ret= -9.84%  reason=signal
+    entry=2008-08-25  exit=2008-10-07  hold=   43d  ret=-12.11%  reason=stop
+    entry=2009-06-23  exit=2009-09-11  hold=   80d  ret= -6.54%  reason=signal
+    entry=2010-01-19  exit=2010-02-12  hold=   24d  ret= -3.72%  reason=signal
+    entry=2010-02-25  exit=2010-07-29  hold=  154d  ret= -2.11%  reason=signal
+    entry=2011-02-09  exit=2011-08-08  hold=  180d  ret=-12.11%  reason=stop
+    entry=2011-12-12  exit=2018-06-22  hold= 2384d  ret=382.38%  reason=signal  <-- LONG HOLD FLAG
+    entry=2018-09-27  exit=2018-10-26  hold=   29d  ret=-12.11%  reason=stop
+    entry=2019-04-24  exit=2020-03-23  hold=  334d  ret=-12.11%  reason=stop
+    entry=2020-09-16  exit=2020-10-29  hold=   43d  ret=-12.11%  reason=stop
+    entry=2021-05-03  exit=2021-09-23  hold=  143d  ret= -9.63%  reason=signal
+    entry=2022-02-08  exit=2023-06-29  hold=  506d  ret= 19.80%  reason=signal
+    entry=2024-01-02  exit=2024-02-27  hold=   56d  ret= -5.86%  reason=signal
+    entry=2024-04-18  exit=2025-01-17  hold=  274d  ret=  9.25%  reason=signal
+    entry=2025-10-08  exit=2025-11-10  hold=   33d  ret=-12.11%  reason=stop
+    entry=2026-08-21  exit=2026-08-24  hold=    3d  ret= -0.14%  reason=signal
+    entry=2026-08-31  exit=2026-09-21  hold=   21d  ret= -4.24%  reason=signal
+  MCD: 45 isolated trade(s)
+    entry=1967-04-19  exit=1968-07-09  hold=  447d  ret= 15.01%  reason=signal
+    entry=1969-05-12  exit=1969-06-13  hold=   32d  ret=-12.11%  reason=stop
+    entry=1970-02-13  exit=1970-04-10  hold=   56d  ret=-12.11%  reason=stop
+    entry=1970-10-15  exit=1970-11-16  hold=   32d  ret=-12.11%  reason=stop
+    entry=1973-10-10  exit=1973-11-12  hold=   33d  ret=-12.11%  reason=stop
+    entry=1975-03-19  exit=1976-07-02  hold=  471d  ret= 34.53%  reason=signal
+    entry=1977-08-23  exit=1978-03-03  hold=  192d  ret= -9.90%  reason=signal
+    entry=1978-05-19  exit=1978-11-10  hold=  175d  ret= -7.04%  reason=signal
+    entry=1979-07-13  exit=1979-11-06  hold=  116d  ret=-12.11%  reason=stop
+    entry=1980-06-09  exit=1980-12-18  hold=  192d  ret= -6.20%  reason=signal
+    entry=1981-01-12  exit=1982-02-03  hold=  387d  ret= 15.85%  reason=signal
+    entry=1982-04-12  exit=1983-08-17  hold=  492d  ret= 29.47%  reason=signal
+    entry=1983-10-31  exit=1984-04-10  hold=  162d  ret= -5.64%  reason=signal
+    entry=1984-04-30  exit=1984-05-22  hold=   22d  ret= -5.62%  reason=signal
+    entry=1984-08-01  exit=1986-10-01  hold=  791d  ret= 79.02%  reason=signal
+    entry=1987-02-03  exit=1987-10-19  hold=  258d  ret=-12.11%  reason=stop
+    entry=1988-07-15  exit=1990-08-29  hold=  775d  ret= 21.28%  reason=signal
+    entry=1991-03-13  exit=1991-08-19  hold=  159d  ret=-12.11%  reason=stop
+    entry=1992-10-20  exit=1992-10-21  hold=    1d  ret= -0.82%  reason=signal
+    entry=1992-10-26  exit=1994-08-05  hold=  648d  ret= 20.24%  reason=signal
+    entry=1994-12-20  exit=1996-07-29  hold=  587d  ret= 60.08%  reason=signal
+    entry=1997-04-10  exit=1997-10-14  hold=  187d  ret= -6.02%  reason=signal
+    entry=1998-03-02  exit=2000-02-01  hold=  701d  ret= 38.59%  reason=signal
+    entry=2001-01-19  exit=2001-01-25  hold=    6d  ret=-12.11%  reason=stop
+    entry=2001-10-12  exit=2001-10-30  hold=   18d  ret=-12.11%  reason=stop
+    entry=2002-04-23  exit=2002-07-18  hold=   86d  ret=-12.11%  reason=stop
+    entry=2003-06-06  exit=2005-06-13  hold=  738d  ret= 42.64%  reason=signal
+    entry=2005-09-07  exit=2006-06-23  hold=  289d  ret= -1.52%  reason=signal
+    entry=2006-08-30  exit=2008-11-20  hold=  813d  ret= 56.51%  reason=signal
+    entry=2009-01-07  exit=2009-02-23  hold=   47d  ret=-12.11%  reason=stop
+    entry=2009-07-02  exit=2009-09-14  hold=   74d  ret= -5.00%  reason=signal
+    entry=2009-10-05  exit=2012-06-08  hold=  977d  ret= 68.40%  reason=signal
+    entry=2013-01-29  exit=2013-10-10  hold=  254d  ret=  1.66%  reason=signal
+    entry=2014-04-01  exit=2014-09-03  hold=  155d  ret= -3.50%  reason=signal
+    entry=2015-03-16  exit=2016-08-31  hold=  534d  ret= 24.59%  reason=signal
+    entry=2017-01-11  exit=2018-04-05  hold=  449d  ret= 39.67%  reason=signal
+    entry=2018-10-08  exit=2019-12-04  hold=  422d  ret= 19.06%  reason=signal
+    entry=2020-02-12  exit=2020-02-28  hold=   16d  ret=-12.11%  reason=stop
+    entry=2020-08-04  exit=2022-04-13  hold=  617d  ret= 30.89%  reason=signal
+    entry=2022-06-02  exit=2022-06-13  hold=   11d  ret= -4.46%  reason=signal
+    entry=2022-08-02  exit=2023-10-09  hold=  433d  ret= -1.83%  reason=signal
+    entry=2024-01-08  exit=2024-05-09  hold=  122d  ret= -7.90%  reason=signal
+    entry=2024-09-19  exit=2025-08-14  hold=  329d  ret=  6.73%  reason=signal
+    entry=2025-08-26  exit=2025-11-17  hold=   83d  ret= -2.25%  reason=signal
+    entry=2025-12-08  exit=2026-05-12  hold=  155d  ret=-11.00%  reason=signal
+  MRK: 38 isolated trade(s)
+    entry=1962-12-27  exit=1966-09-12  hold= 1355d  ret=169.09%  reason=signal
+    entry=1966-12-01  exit=1968-01-30  hold=  425d  ret=  3.37%  reason=signal
+    entry=1968-05-22  exit=1969-03-12  hold=  294d  ret= -4.47%  reason=signal
+    entry=1969-05-14  exit=1970-04-30  hold=  351d  ret=  3.17%  reason=signal
+    entry=1970-12-14  exit=1973-07-10  hold=  939d  ret= 85.65%  reason=signal
+    entry=1974-06-20  exit=1974-07-09  hold=   19d  ret= -7.37%  reason=signal
+    entry=1975-03-04  exit=1975-09-10  hold=  190d  ret=-12.11%  reason=stop
+    entry=1975-12-05  exit=1976-01-05  hold=   31d  ret= -7.05%  reason=signal
+    entry=1976-05-06  exit=1976-06-17  hold=   42d  ret= -6.66%  reason=signal
+    entry=1976-08-26  exit=1976-12-02  hold=   98d  ret=-12.11%  reason=stop
+    entry=1977-10-04  exit=1978-02-28  hold=  147d  ret= -8.63%  reason=signal
+    entry=1978-06-06  exit=1978-06-26  hold=   20d  ret=-12.11%  reason=stop
+    entry=1980-06-02  exit=1981-09-21  hold=  476d  ret= 21.35%  reason=signal
+    entry=1982-10-07  exit=1984-01-30  hold=  480d  ret= 14.10%  reason=signal
+    entry=1984-04-25  exit=1984-05-15  hold=   20d  ret= -2.90%  reason=signal
+    entry=1984-12-19  exit=1987-12-15  hold= 1091d  ret=263.68%  reason=signal
+    entry=1988-07-22  exit=1990-03-02  hold=  588d  ret= 33.98%  reason=signal
+    entry=1990-05-24  exit=1992-09-23  hold=  853d  ret= 78.68%  reason=signal
+    entry=1994-01-05  exit=1994-02-18  hold=   44d  ret=-12.11%  reason=stop
+    entry=1994-09-16  exit=1999-06-15  hold= 1733d  ret=335.45%  reason=signal  <-- LONG HOLD FLAG
+    entry=1999-11-12  exit=1999-12-17  hold=   35d  ret=-12.11%  reason=stop
+    entry=2000-06-14  exit=2000-07-20  hold=   36d  ret=-12.11%  reason=stop
+    entry=2002-12-04  exit=2003-01-27  hold=   54d  ret=-12.11%  reason=stop
+    entry=2004-06-08  exit=2004-08-30  hold=   83d  ret= -7.33%  reason=signal
+    entry=2005-05-19  exit=2005-08-19  hold=   92d  ret=-12.11%  reason=stop
+    entry=2006-01-06  exit=2008-02-28  hold=  783d  ret= 46.05%  reason=signal
+    entry=2009-07-21  exit=2010-06-08  hold=  322d  ret= 17.53%  reason=signal
+    entry=2010-10-05  exit=2011-02-22  hold=  140d  ret=-12.11%  reason=stop
+    entry=2011-05-24  exit=2011-08-04  hold=   72d  ret=-12.11%  reason=stop
+    entry=2011-12-01  exit=2013-03-01  hold=  456d  ret= 25.67%  reason=signal
+    entry=2013-03-15  exit=2013-03-26  hold=   11d  ret=  0.44%  reason=signal
+    entry=2013-04-02  exit=2015-04-09  hold=  737d  ret= 36.18%  reason=signal
+    entry=2015-05-20  exit=2015-08-12  hold=   84d  ret= -3.14%  reason=signal
+    entry=2016-04-21  exit=2017-11-07  hold=  565d  ret=  2.47%  reason=signal
+    entry=2018-06-06  exit=2020-03-18  hold=  651d  ret= 22.10%  reason=signal
+    entry=2020-09-08  exit=2021-02-23  hold=  168d  ret= -9.40%  reason=signal
+    entry=2021-06-28  exit=2023-09-01  hold=  795d  ret= 51.93%  reason=signal
+    entry=2024-01-23  exit=2024-09-05  hold=  226d  ret= -0.06%  reason=signal
+  MSFT: 28 isolated trade(s)
+    entry=1986-12-24  exit=1987-12-14  hold=  355d  ret=105.08%  reason=signal
+    entry=1988-02-17  exit=1988-08-10  hold=  175d  ret=-12.11%  reason=stop
+    entry=1989-02-22  exit=1989-03-08  hold=   14d  ret=-12.11%  reason=stop
+    entry=1989-05-24  exit=1990-10-16  hold=  510d  ret= 89.54%  reason=signal
+    entry=1990-11-21  exit=1992-07-21  hold=  608d  ret=134.26%  reason=signal
+    entry=1992-10-21  exit=1993-02-17  hold=  119d  ret=-12.11%  reason=stop
+    entry=1994-01-28  exit=1996-01-18  hold=  720d  ret=105.99%  reason=signal
+    entry=1996-02-27  exit=2000-04-18  hold= 1512d  ret=542.15%  reason=signal  <-- LONG HOLD FLAG
+    entry=2001-05-16  exit=2001-08-21  hold=   97d  ret=-12.11%  reason=stop
+    entry=2001-12-19  exit=2002-02-04  hold=   47d  ret=-12.11%  reason=stop
+    entry=2002-12-10  exit=2003-01-31  hold=   52d  ret=-12.11%  reason=stop
+    entry=2003-05-21  exit=2003-05-23  hold=    2d  ret=  0.55%  reason=signal
+    entry=2003-08-04  exit=2004-03-22  hold=  231d  ret= -6.12%  reason=signal
+    entry=2004-07-06  exit=2005-03-28  hold=  265d  ret= -3.39%  reason=signal
+    entry=2005-08-11  exit=2006-05-03  hold=  265d  ret=-12.11%  reason=stop
+    entry=2006-09-28  exit=2007-09-06  hold=  343d  ret=  6.70%  reason=signal
+    entry=2007-10-26  exit=2008-02-01  hold=   98d  ret=-12.11%  reason=stop
+    entry=2009-06-16  exit=2010-06-21  hold=  370d  ret= 12.53%  reason=signal
+    entry=2010-12-22  exit=2011-03-16  hold=   84d  ret=-12.11%  reason=stop
+    entry=2011-09-01  exit=2011-09-29  hold=   28d  ret= -3.13%  reason=signal
+    entry=2011-10-20  exit=2012-10-25  hold=  371d  ret=  5.70%  reason=signal
+    entry=2013-04-23  exit=2015-03-10  hold=  686d  ret= 44.87%  reason=signal
+    entry=2015-06-04  exit=2015-08-24  hold=   81d  ret=-12.11%  reason=stop
+    entry=2016-08-01  exit=2019-02-12  hold=  925d  ret= 98.56%  reason=signal
+    entry=2019-03-07  exit=2022-03-16  hold= 1105d  ret=174.52%  reason=signal
+    entry=2023-03-20  exit=2024-11-29  hold=  620d  ret= 57.33%  reason=signal
+    entry=2024-12-11  exit=2025-02-26  hold=   77d  ret=-12.11%  reason=stop
+    entry=2025-06-09  exit=2026-01-22  hold=  227d  ret= -4.46%  reason=signal
+  NEE: 37 isolated trade(s)
+    entry=1975-02-10  exit=1975-10-13  hold=  245d  ret= 13.93%  reason=signal
+    entry=1975-10-16  exit=1976-05-06  hold=  203d  ret= -5.57%  reason=signal
+    entry=1976-09-20  exit=1976-11-10  hold=   51d  ret=-12.11%  reason=stop
+    entry=1977-06-20  exit=1977-09-30  hold=  102d  ret= -4.79%  reason=signal
+    entry=1977-12-08  exit=1978-01-30  hold=   53d  ret= -6.30%  reason=signal
+    entry=1978-06-05  exit=1978-12-18  hold=  196d  ret= -4.77%  reason=signal
+    entry=1979-03-21  exit=1979-05-07  hold=   47d  ret= -6.03%  reason=signal
+    entry=1979-07-16  exit=1979-09-11  hold=   57d  ret= -5.23%  reason=signal
+    entry=1980-05-21  exit=1980-12-09  hold=  202d  ret=-12.11%  reason=stop
+    entry=1981-05-04  exit=1983-07-12  hold=  799d  ret= 30.74%  reason=signal
+    entry=1983-08-23  exit=1984-04-06  hold=  227d  ret=  4.07%  reason=signal
+    entry=1984-08-17  exit=1987-04-14  hold=  970d  ret= 80.92%  reason=signal
+    entry=1987-08-19  exit=1987-10-19  hold=   61d  ret=-12.11%  reason=stop
+    entry=1988-02-24  exit=1988-04-27  hold=   63d  ret= -8.52%  reason=signal
+    entry=1988-06-14  exit=1989-05-01  hold=  321d  ret=  4.87%  reason=signal
+    entry=1989-05-17  exit=1990-05-01  hold=  349d  ret=  2.13%  reason=signal
+    entry=1991-01-30  exit=1994-01-24  hold= 1090d  ret= 52.04%  reason=signal
+    entry=1994-11-03  exit=1996-06-17  hold=  592d  ret= 39.49%  reason=signal
+    entry=1996-06-28  exit=1998-12-30  hold=  915d  ret= 46.76%  reason=signal
+    entry=2000-05-23  exit=2001-05-10  hold=  352d  ret= 23.69%  reason=signal
+    entry=2002-01-31  exit=2002-02-05  hold=    5d  ret= -3.33%  reason=signal
+    entry=2002-03-21  exit=2002-07-15  hold=  116d  ret=-12.11%  reason=stop
+    entry=2002-12-11  exit=2004-06-10  hold=  547d  ret= 13.60%  reason=signal
+    entry=2004-08-02  exit=2006-02-06  hold=  553d  ret= 27.19%  reason=signal
+    entry=2006-07-27  exit=2008-08-06  hold=  741d  ret= 39.76%  reason=signal
+    entry=2009-05-08  exit=2009-10-27  hold=  172d  ret=-12.11%  reason=stop
+    entry=2010-06-16  exit=2011-10-04  hold=  475d  ret=  7.43%  reason=signal
+    entry=2011-10-21  exit=2015-06-26  hold= 1344d  ret= 99.85%  reason=signal
+    entry=2015-08-19  exit=2015-09-01  hold=   13d  ret=-12.11%  reason=stop
+    entry=2015-12-08  exit=2016-12-06  hold=  364d  ret= 18.69%  reason=signal
+    entry=2017-02-27  exit=2020-05-08  hold= 1166d  ret= 90.35%  reason=signal
+    entry=2020-06-08  exit=2021-06-21  hold=  378d  ret= 16.19%  reason=signal
+    entry=2021-08-12  exit=2022-01-26  hold=  167d  ret=-12.11%  reason=stop
+    entry=2022-08-17  exit=2022-09-30  hold=   44d  ret=-12.11%  reason=stop
+    entry=2022-12-16  exit=2023-01-31  hold=   46d  ret=-12.11%  reason=stop
+    entry=2024-04-29  exit=2025-01-13  hold=  259d  ret=  1.04%  reason=signal
+    entry=2025-07-21  exit=2026-08-24  hold=  399d  ret= 13.34%  reason=signal
+  NKE: 30 isolated trade(s)
+    entry=1981-11-02  exit=1983-03-09  hold=  492d  ret= 23.97%  reason=signal
+    entry=1985-03-01  exit=1986-09-04  hold=  552d  ret= 55.03%  reason=signal
+    entry=1987-03-25  exit=1987-04-10  hold=   16d  ret=-12.11%  reason=stop
+    entry=1988-02-16  exit=1990-10-15  hold=  972d  ret=171.62%  reason=signal
+    entry=1991-01-16  exit=1991-07-16  hold=  181d  ret=  9.63%  reason=signal
+    entry=1991-08-29  exit=1992-06-12  hold=  288d  ret= 17.82%  reason=signal
+    entry=1992-08-25  exit=1993-04-05  hold=  223d  ret=  3.73%  reason=signal
+    entry=1994-03-21  exit=1997-05-14  hold= 1150d  ret=299.71%  reason=signal
+    entry=1998-06-25  exit=1998-08-11  hold=   47d  ret=-12.11%  reason=stop
+    entry=1999-02-18  exit=1999-09-20  hold=  214d  ret= 11.16%  reason=signal
+    entry=2000-08-11  exit=2000-08-23  hold=   12d  ret=-12.11%  reason=stop
+    entry=2000-11-17  exit=2001-03-14  hold=  117d  ret=-12.11%  reason=stop
+    entry=2001-08-14  exit=2001-09-18  hold=   35d  ret=-12.11%  reason=stop
+    entry=2003-03-21  exit=2005-05-11  hold=  782d  ret= 47.30%  reason=signal
+    entry=2005-07-14  exit=2005-09-01  hold=   49d  ret=-10.88%  reason=signal
+    entry=2005-11-18  exit=2006-05-15  hold=  178d  ret= -6.80%  reason=signal
+    entry=2006-10-17  exit=2008-07-29  hold=  651d  ret= 34.08%  reason=signal
+    entry=2009-05-29  exit=2011-05-16  hold=  717d  ret= 53.90%  reason=signal
+    entry=2011-06-30  exit=2011-08-08  hold=   39d  ret=-12.11%  reason=stop
+    entry=2013-01-17  exit=2014-06-02  hold=  501d  ret= 45.99%  reason=signal
+    entry=2014-07-07  exit=2016-04-15  hold=  648d  ret= 53.84%  reason=signal
+    entry=2016-04-21  exit=2016-05-06  hold=   15d  ret= -2.98%  reason=signal
+    entry=2017-03-02  exit=2017-05-19  hold=   78d  ret=-12.11%  reason=stop
+    entry=2017-12-05  exit=2018-12-20  hold=  380d  ret= 12.76%  reason=signal
+    entry=2019-02-08  exit=2020-03-16  hold=  402d  ret=-12.11%  reason=stop
+    entry=2020-06-18  exit=2021-06-21  hold=  368d  ret= 32.91%  reason=signal
+    entry=2021-06-29  exit=2022-02-15  hold=  231d  ret= -6.55%  reason=signal
+    entry=2023-01-13  exit=2023-05-19  hold=  126d  ret=-12.11%  reason=stop
+    entry=2023-12-26  exit=2024-03-01  hold=   66d  ret= -5.57%  reason=signal
+    entry=2025-08-12  exit=2025-10-10  hold=   59d  ret=-12.11%  reason=stop
+  ORCL: 29 isolated trade(s)
+    entry=1987-01-12  exit=1987-12-16  hold=  338d  ret=135.80%  reason=signal
+    entry=1988-01-11  exit=1988-01-12  hold=    1d  ret=-12.11%  reason=stop
+    entry=1989-01-13  exit=1990-04-27  hold=  469d  ret= 50.86%  reason=signal
+    entry=1991-04-19  exit=1991-05-01  hold=   12d  ret=-12.11%  reason=stop
+    entry=1992-07-15  exit=1992-08-20  hold=   36d  ret=-12.11%  reason=stop
+    entry=1997-06-10  exit=1997-12-09  hold=  182d  ret=-12.11%  reason=stop
+    entry=1998-11-05  exit=1999-06-03  hold=  210d  ret= 29.36%  reason=signal
+    entry=1999-06-21  exit=2000-11-07  hold=  505d  ret=210.61%  reason=signal
+    entry=2002-02-13  exit=2002-03-04  hold=   19d  ret=-12.11%  reason=stop
+    entry=2002-12-12  exit=2003-11-18  hold=  341d  ret=  3.35%  reason=signal
+    entry=2003-12-10  exit=2004-03-22  hold=  103d  ret=-12.11%  reason=stop
+    entry=2004-11-10  exit=2005-04-15  hold=  156d  ret=-12.11%  reason=stop
+    entry=2005-07-21  exit=2005-09-29  hold=   70d  ret=-12.11%  reason=stop
+    entry=2006-04-03  exit=2008-03-06  hold=  703d  ret= 39.11%  reason=signal
+    entry=2008-05-19  exit=2008-09-05  hold=  109d  ret=-12.11%  reason=stop
+    entry=2009-05-18  exit=2010-07-01  hold=  409d  ret= 14.63%  reason=signal
+    entry=2010-09-24  exit=2011-08-09  hold=  319d  ret=  2.85%  reason=signal
+    entry=2011-12-12  exit=2011-12-21  hold=    9d  ret=-12.11%  reason=stop
+    entry=2012-04-27  exit=2012-05-15  hold=   18d  ret= -7.68%  reason=signal
+    entry=2012-08-10  exit=2013-07-17  hold=  341d  ret=  2.66%  reason=signal
+    entry=2013-11-11  exit=2014-10-29  hold=  352d  ret= 13.35%  reason=signal
+    entry=2014-12-19  exit=2015-06-30  hold=  193d  ret=-12.11%  reason=stop
+    entry=2016-04-06  exit=2016-11-04  hold=  212d  ret= -5.23%  reason=signal
+    entry=2017-02-15  exit=2018-04-10  hold=  419d  ret= 12.15%  reason=signal
+    entry=2018-09-06  exit=2020-02-04  hold=  516d  ret= 15.90%  reason=signal
+    entry=2020-06-16  exit=2022-02-15  hold=  609d  ret= 49.80%  reason=signal
+    entry=2022-12-08  exit=2024-02-01  hold=  420d  ret= 46.69%  reason=signal
+    entry=2024-03-14  exit=2025-04-07  hold=  389d  ret=  2.15%  reason=signal
+    entry=2025-06-30  exit=2025-11-25  hold=  148d  ret=-12.11%  reason=stop
+  PEP: 33 isolated trade(s)
+    entry=1973-10-05  exit=1973-11-26  hold=   52d  ret=-12.11%  reason=stop
+    entry=1975-02-21  exit=1977-02-01  hold=  711d  ret= 35.64%  reason=signal
+    entry=1977-08-29  exit=1978-11-10  hold=  438d  ret=  0.96%  reason=signal
+    entry=1979-08-08  exit=1979-10-22  hold=   75d  ret=-12.11%  reason=stop
+    entry=1980-06-09  exit=1983-01-04  hold=  939d  ret= 51.88%  reason=signal
+    entry=1983-11-15  exit=1986-10-22  hold= 1072d  ret=139.15%  reason=signal
+    entry=1987-02-26  exit=1987-10-19  hold=  235d  ret=-12.11%  reason=stop
+    entry=1988-05-03  exit=1988-05-18  hold=   15d  ret= -4.52%  reason=signal
+    entry=1988-05-20  exit=1990-03-21  hold=  670d  ret= 89.78%  reason=signal
+    entry=1990-03-27  exit=1991-10-15  hold=  567d  ret= 39.83%  reason=signal
+    entry=1992-01-08  exit=1992-02-14  hold=   37d  ret=-12.11%  reason=stop
+    entry=1993-09-28  exit=1994-03-24  hold=  177d  ret= -6.87%  reason=signal
+    entry=1994-11-21  exit=1996-09-17  hold=  666d  ret= 62.06%  reason=signal
+    entry=1997-02-24  exit=1998-08-28  hold=  550d  ret=  1.65%  reason=signal
+    entry=1998-12-30  exit=1999-05-11  hold=  132d  ret=-12.11%  reason=stop
+    entry=2000-01-26  exit=2000-02-07  hold=   12d  ret= -4.83%  reason=signal
+    entry=2000-05-08  exit=2001-03-30  hold=  326d  ret= 17.08%  reason=signal
+    entry=2001-08-17  exit=2002-07-15  hold=  332d  ret=-12.11%  reason=stop
+    entry=2003-05-19  exit=2004-09-15  hold=  485d  ret= 17.49%  reason=signal
+    entry=2005-01-13  exit=2008-03-26  hold= 1168d  ret= 42.83%  reason=signal
+    entry=2008-09-26  exit=2008-10-08  hold=   12d  ret=-12.11%  reason=stop
+    entry=2009-07-13  exit=2011-03-28  hold=  623d  ret= 21.50%  reason=signal
+    entry=2011-04-21  exit=2011-09-06  hold=  138d  ret= -6.16%  reason=signal
+    entry=2012-01-24  exit=2014-02-19  hold=  757d  ret= 23.26%  reason=signal
+    entry=2014-04-21  exit=2015-09-28  hold=  525d  ret= 12.08%  reason=signal
+    entry=2015-10-23  exit=2017-01-05  hold=  440d  ret=  5.72%  reason=signal
+    entry=2017-02-16  exit=2017-11-13  hold=  270d  ret=  7.42%  reason=signal
+    entry=2017-12-13  exit=2018-03-22  hold=   99d  ret= -7.91%  reason=signal
+    entry=2018-08-09  exit=2020-04-06  hold=  606d  ret= 21.24%  reason=signal
+    entry=2020-08-03  exit=2021-03-18  hold=  227d  ret= -1.11%  reason=signal
+    entry=2021-04-27  exit=2023-10-04  hold=  890d  ret= 26.22%  reason=signal
+    entry=2024-05-01  exit=2024-11-22  hold=  205d  ret= -6.29%  reason=signal
+    entry=2025-09-08  exit=2026-06-29  hold=  294d  ret=  0.51%  reason=signal
+  PFE: 42 isolated trade(s)
+    entry=1973-03-20  exit=1973-03-23  hold=    3d  ret= -7.82%  reason=signal
+    entry=1973-07-02  exit=1973-12-05  hold=  156d  ret=-12.11%  reason=stop
+    entry=1975-02-27  exit=1975-07-17  hold=  140d  ret=-12.11%  reason=stop
+    entry=1976-03-04  exit=1976-12-13  hold=  284d  ret=  7.95%  reason=signal
+    entry=1977-04-14  exit=1977-05-06  hold=   22d  ret= -9.03%  reason=signal
+    entry=1978-01-03  exit=1979-02-06  hold=  399d  ret= 16.30%  reason=signal
+    entry=1979-08-15  exit=1981-08-04  hold=  720d  ret= 45.47%  reason=signal
+    entry=1981-12-17  exit=1983-12-16  hold=  729d  ret= 45.59%  reason=signal
+    entry=1984-09-19  exit=1986-11-05  hold=  777d  ret= 78.79%  reason=signal
+    entry=1987-01-27  exit=1987-10-19  hold=  265d  ret=-12.11%  reason=stop
+    entry=1988-07-29  exit=1988-08-25  hold=   27d  ret= -1.45%  reason=signal
+    entry=1988-09-20  exit=1990-03-20  hold=  546d  ret= 18.44%  reason=signal
+    entry=1990-07-20  exit=1992-06-24  hold=  705d  ret=102.36%  reason=signal
+    entry=1992-07-01  exit=1993-01-13  hold=  196d  ret=-12.11%  reason=stop
+    entry=1993-06-22  exit=1993-07-30  hold=   38d  ret=-12.11%  reason=stop
+    entry=1993-12-13  exit=1994-02-16  hold=   65d  ret=-12.11%  reason=stop
+    entry=1994-06-23  exit=1998-10-27  hold= 1587d  ret=621.42%  reason=signal  <-- LONG HOLD FLAG
+    entry=1998-11-27  exit=1999-06-10  hold=  195d  ret=-12.11%  reason=stop
+    entry=2000-04-24  exit=2001-01-23  hold=  274d  ret= -1.06%  reason=signal
+    entry=2001-02-07  exit=2001-03-05  hold=   26d  ret= -1.50%  reason=signal
+    entry=2001-06-21  exit=2001-07-11  hold=   20d  ret=-12.11%  reason=stop
+    entry=2001-11-28  exit=2002-02-06  hold=   70d  ret= -4.58%  reason=signal
+    entry=2003-05-05  exit=2003-10-07  hold=  155d  ret= -3.30%  reason=signal
+    entry=2003-11-28  exit=2004-07-23  hold=  238d  ret= -3.12%  reason=signal
+    entry=2005-06-07  exit=2005-09-06  hold=   91d  ret= -7.04%  reason=signal
+    entry=2006-03-01  exit=2006-06-19  hold=  110d  ret=-12.11%  reason=stop
+    entry=2006-08-08  exit=2007-04-03  hold=  238d  ret=  0.76%  reason=signal
+    entry=2007-05-22  exit=2007-07-26  hold=   65d  ret=-12.11%  reason=stop
+    entry=2009-07-30  exit=2010-05-03  hold=  277d  ret=  8.94%  reason=signal
+    entry=2010-10-06  exit=2011-09-08  hold=  337d  ret= 13.38%  reason=signal
+    entry=2011-12-13  exit=2014-06-11  hold=  911d  ret= 54.49%  reason=signal
+    entry=2014-12-08  exit=2015-10-08  hold=  304d  ret=  5.85%  reason=signal
+    entry=2016-05-19  exit=2016-11-17  hold=  182d  ret= -3.43%  reason=signal
+    entry=2017-03-29  exit=2019-04-30  hold=  762d  ret= 26.85%  reason=signal
+    entry=2019-07-09  exit=2019-08-01  hold=   23d  ret=-12.11%  reason=stop
+    entry=2020-01-23  exit=2020-02-20  hold=   28d  ret=-12.11%  reason=stop
+    entry=2020-06-05  exit=2020-06-26  hold=   21d  ret=-12.11%  reason=stop
+    entry=2020-08-24  exit=2021-04-08  hold=  227d  ret= -0.58%  reason=signal
+    entry=2021-04-19  exit=2022-08-10  hold=  478d  ret= 34.70%  reason=signal
+    entry=2022-12-28  exit=2023-01-19  hold=   22d  ret=-12.11%  reason=stop
+    entry=2024-07-10  exit=2024-12-05  hold=  148d  ret= -6.86%  reason=signal
+    entry=2025-08-15  exit=2026-07-15  hold=  334d  ret=  3.59%  reason=signal
+  PG: 46 isolated trade(s)
+    entry=1963-01-09  exit=1964-12-11  hold=  702d  ret= 15.02%  reason=signal
+    entry=1966-08-24  exit=1967-12-08  hold=  471d  ret= 35.37%  reason=signal
+    entry=1968-05-13  exit=1969-01-09  hold=  241d  ret=-11.55%  reason=signal
+    entry=1969-05-28  exit=1970-05-19  hold=  356d  ret=  2.10%  reason=signal
+    entry=1970-09-10  exit=1973-05-09  hold=  972d  ret=105.38%  reason=signal
+    entry=1974-06-04  exit=1974-08-14  hold=   71d  ret=-12.11%  reason=stop
+    entry=1975-03-04  exit=1975-08-20  hold=  169d  ret=-12.11%  reason=stop
+    entry=1975-12-23  exit=1976-03-16  hold=   84d  ret= -6.97%  reason=signal
+    entry=1976-05-12  exit=1977-01-21  hold=  254d  ret= -0.90%  reason=signal
+    entry=1977-09-08  exit=1978-03-01  hold=  174d  ret=-10.07%  reason=signal
+    entry=1978-06-01  exit=1979-02-26  hold=  270d  ret= -2.76%  reason=signal
+    entry=1980-06-05  exit=1980-11-21  hold=  169d  ret= -4.52%  reason=signal
+    entry=1981-04-28  exit=1983-07-07  hold=  800d  ret= 67.21%  reason=signal
+    entry=1983-10-20  exit=1984-01-27  hold=   99d  ret=-12.11%  reason=stop
+    entry=1984-07-25  exit=1985-04-26  hold=  275d  ret= -0.83%  reason=signal
+    entry=1985-07-24  exit=1986-11-04  hold=  468d  ret= 38.09%  reason=signal
+    entry=1986-12-05  exit=1987-10-19  hold=  318d  ret=-12.11%  reason=stop
+    entry=1988-10-20  exit=1991-07-15  hold=  998d  ret=109.17%  reason=signal
+    entry=1991-09-26  exit=1992-09-24  hold=  364d  ret= 19.71%  reason=signal
+    entry=1992-11-05  exit=1993-04-06  hold=  152d  ret=-12.11%  reason=stop
+    entry=1993-11-01  exit=1994-07-20  hold=  261d  ret=  1.30%  reason=signal
+    entry=1994-09-09  exit=1998-09-14  hold= 1466d  ret=152.92%  reason=signal
+    entry=1998-12-01  exit=1999-07-27  hold=  238d  ret=  0.96%  reason=signal
+    entry=1999-09-01  exit=2000-02-24  hold=  176d  ret=-12.11%  reason=stop
+    entry=2000-10-31  exit=2001-03-22  hold=  142d  ret=-12.11%  reason=stop
+    entry=2001-08-21  exit=2002-12-04  hold=  470d  ret= 18.49%  reason=signal
+    entry=2003-05-05  exit=2005-03-15  hold=  680d  ret= 21.08%  reason=signal
+    entry=2005-05-18  exit=2006-05-24  hold=  371d  ret= -1.03%  reason=signal
+    entry=2006-08-23  exit=2007-06-25  hold=  306d  ret=  1.56%  reason=signal
+    entry=2007-08-27  exit=2008-03-18  hold=  204d  ret=  5.87%  reason=signal
+    entry=2008-09-11  exit=2008-10-09  hold=   28d  ret=-12.11%  reason=stop
+    entry=2009-08-27  exit=2010-05-06  hold=  252d  ret=-12.11%  reason=stop
+    entry=2010-11-01  exit=2011-08-17  hold=  289d  ret= -0.97%  reason=signal
+    entry=2011-10-21  exit=2012-06-20  hold=  243d  ret= -7.58%  reason=signal
+    entry=2012-08-28  exit=2014-03-06  hold=  555d  ret= 21.76%  reason=signal
+    entry=2014-04-25  exit=2015-04-08  hold=  348d  ret=  3.75%  reason=signal
+    entry=2015-12-28  exit=2017-01-23  hold=  392d  ret= 13.00%  reason=signal
+    entry=2017-01-25  exit=2018-02-16  hold=  387d  ret= -2.53%  reason=signal
+    entry=2018-08-30  exit=2020-04-01  hold=  580d  ret= 36.43%  reason=signal
+    entry=2020-07-27  exit=2021-03-08  hold=  224d  ret=  1.71%  reason=signal
+    entry=2021-05-24  exit=2022-06-23  hold=  395d  ret=  5.34%  reason=signal
+    entry=2022-12-30  exit=2023-12-28  hold=  363d  ret= -1.64%  reason=signal
+    entry=2024-02-02  exit=2025-02-14  hold=  378d  ret=  5.33%  reason=signal
+    entry=2025-03-21  exit=2025-05-05  hold=   45d  ret= -4.35%  reason=signal
+    entry=2026-03-10  exit=2026-05-04  hold=   55d  ret= -7.60%  reason=signal
+    entry=2026-07-27  exit=2026-09-24  hold=   59d  ret= -2.22%  reason=signal
+  RTX: 45 isolated trade(s)
+    entry=1963-01-16  exit=1963-05-03  hold=  107d  ret= -6.15%  reason=signal
+    entry=1964-03-09  exit=1966-07-22  hold=  865d  ret=137.04%  reason=signal
+    entry=1967-01-09  exit=1967-10-03  hold=  267d  ret=  0.42%  reason=signal
+    entry=1968-12-17  exit=1969-06-26  hold=  191d  ret=-12.11%  reason=stop
+    entry=1970-09-25  exit=1970-10-28  hold=   33d  ret=-12.11%  reason=stop
+    entry=1972-02-16  exit=1973-03-15  hold=  393d  ret= 15.88%  reason=signal
+    entry=1974-04-26  exit=1974-07-29  hold=   94d  ret=-12.11%  reason=stop
+    entry=1976-03-02  exit=1977-09-28  hold=  575d  ret= 25.42%  reason=signal
+    entry=1978-04-14  exit=1978-11-21  hold=  221d  ret=  0.66%  reason=signal
+    entry=1979-08-02  exit=1980-05-08  hold=  280d  ret=  2.40%  reason=signal
+    entry=1980-07-03  exit=1981-07-21  hold=  383d  ret= 15.31%  reason=signal
+    entry=1982-07-30  exit=1983-11-03  hold=  461d  ret= 68.44%  reason=signal
+    entry=1983-12-29  exit=1984-02-08  hold=   41d  ret=-12.11%  reason=stop
+    entry=1984-08-02  exit=1985-10-01  hold=  425d  ret=  2.98%  reason=signal
+    entry=1985-12-11  exit=1986-08-01  hold=  233d  ret= -9.25%  reason=signal
+    entry=1987-01-13  exit=1987-10-19  hold=  279d  ret=-12.11%  reason=stop
+    entry=1988-07-08  exit=1988-09-08  hold=   62d  ret= -4.14%  reason=signal
+    entry=1988-10-07  exit=1990-02-02  hold=  483d  ret= 24.19%  reason=signal
+    entry=1990-04-09  exit=1990-08-17  hold=  130d  ret=-12.11%  reason=stop
+    entry=1991-04-08  exit=1991-05-17  hold=   39d  ret=-12.11%  reason=stop
+    entry=1991-08-06  exit=1991-08-19  hold=   13d  ret= -3.12%  reason=signal
+    entry=1991-08-21  exit=1991-10-08  hold=   48d  ret=-12.11%  reason=stop
+    entry=1991-10-29  exit=1991-11-07  hold=    9d  ret=  0.79%  reason=signal
+    entry=1991-11-08  exit=1992-10-19  hold=  346d  ret= -2.46%  reason=signal
+    entry=1993-05-10  exit=1994-08-22  hold=  469d  ret= 23.11%  reason=signal
+    entry=1995-02-08  exit=1997-11-07  hold= 1003d  ret=135.02%  reason=signal
+    entry=1998-03-05  exit=1998-08-31  hold=  179d  ret=-12.11%  reason=stop
+    entry=1998-12-02  exit=1999-10-05  hold=  307d  ret= 10.09%  reason=signal
+    entry=2000-05-12  exit=2000-06-08  hold=   27d  ret=-12.11%  reason=stop
+    entry=2002-02-28  exit=2002-06-24  hold=  116d  ret=-12.11%  reason=stop
+    entry=2003-02-19  exit=2003-03-07  hold=   16d  ret= -8.39%  reason=signal
+    entry=2003-05-15  exit=2004-05-24  hold=  375d  ret= 23.67%  reason=signal
+    entry=2004-08-02  exit=2005-09-26  hold=  420d  ret= 12.19%  reason=signal
+    entry=2005-10-04  exit=2005-10-07  hold=    3d  ret= -0.79%  reason=signal
+    entry=2005-10-11  exit=2008-02-21  hold=  863d  ret= 47.67%  reason=signal
+    entry=2009-06-10  exit=2010-07-13  hold=  398d  ret= 24.83%  reason=signal
+    entry=2010-09-24  exit=2011-08-25  hold=  335d  ret=  1.00%  reason=signal
+    entry=2012-02-27  exit=2012-05-18  hold=   81d  ret=-12.11%  reason=stop
+    entry=2012-09-20  exit=2014-08-14  hold=  693d  ret= 36.39%  reason=signal
+    entry=2015-01-06  exit=2015-07-27  hold=  202d  ret=-10.59%  reason=signal
+    entry=2016-04-13  exit=2018-12-12  hold=  973d  ret= 21.71%  reason=signal
+    entry=2019-04-08  exit=2020-03-09  hold=  336d  ret=-12.11%  reason=stop
+    entry=2020-12-03  exit=2022-09-12  hold=  648d  ret= 24.55%  reason=signal
+    entry=2022-12-14  exit=2023-07-25  hold=  223d  ret=-12.11%  reason=stop
+    entry=2024-02-12  exit=2026-06-18  hold=  857d  ret=113.39%  reason=signal
+  SHW: 34 isolated trade(s)
+    entry=1980-12-30  exit=1981-08-27  hold=  240d  ret= 12.80%  reason=signal
+    entry=1981-12-23  exit=1982-01-12  hold=   20d  ret=-12.11%  reason=stop
+    entry=1982-04-16  exit=1983-09-01  hold=  503d  ret=113.05%  reason=signal
+    entry=1984-01-20  exit=1984-02-07  hold=   18d  ret=-12.11%  reason=stop
+    entry=1984-05-07  exit=1984-05-25  hold=   18d  ret=-12.11%  reason=stop
+    entry=1986-12-16  exit=1987-10-14  hold=  302d  ret= 13.25%  reason=signal
+    entry=1988-07-15  exit=1988-11-28  hold=  136d  ret= -6.63%  reason=signal
+    entry=1989-04-24  exit=1990-09-26  hold=  520d  ret= 21.04%  reason=signal
+    entry=1991-01-08  exit=1991-12-02  hold=  328d  ret= 29.70%  reason=signal
+    entry=1992-01-06  exit=1994-03-31  hold=  815d  ret= 21.97%  reason=signal
+    entry=1994-09-16  exit=1994-10-13  hold=   27d  ret= -0.62%  reason=signal
+    entry=1994-10-19  exit=1994-11-18  hold=   30d  ret= -5.56%  reason=signal
+    entry=1994-12-14  exit=1997-10-23  hold= 1044d  ret= 89.90%  reason=signal
+    entry=1998-03-11  exit=1998-06-19  hold=  100d  ret=-12.11%  reason=stop
+    entry=1999-04-23  exit=1999-08-10  hold=  109d  ret=-12.11%  reason=stop
+    entry=2000-04-27  exit=2000-06-23  hold=   57d  ret=-12.11%  reason=stop
+    entry=2001-01-04  exit=2001-01-22  hold=   18d  ret=-12.11%  reason=stop
+    entry=2001-10-31  exit=2002-08-30  hold=  303d  ret= 12.94%  reason=signal
+    entry=2003-01-07  exit=2003-02-27  hold=   51d  ret= -8.41%  reason=signal
+    entry=2003-04-25  exit=2005-10-24  hold=  913d  ret= 71.97%  reason=signal
+    entry=2006-01-23  exit=2006-02-22  hold=   30d  ret=-12.11%  reason=stop
+    entry=2008-09-10  exit=2008-10-03  hold=   23d  ret=-12.11%  reason=stop
+    entry=2009-05-27  exit=2011-08-11  hold=  806d  ret= 43.82%  reason=signal
+    entry=2011-11-28  exit=2015-08-31  hold= 1372d  ret=218.05%  reason=signal
+    entry=2016-03-23  exit=2016-10-19  hold=  210d  ret= -3.74%  reason=signal
+    entry=2017-02-13  exit=2018-05-29  hold=  470d  ret= 26.82%  reason=signal
+    entry=2018-07-19  exit=2018-10-25  hold=   98d  ret=-12.11%  reason=stop
+    entry=2019-03-21  exit=2020-03-17  hold=  362d  ret=-12.11%  reason=stop
+    entry=2020-06-22  exit=2022-03-03  hold=  619d  ret= 34.46%  reason=signal
+    entry=2023-01-13  exit=2023-02-28  hold=   46d  ret= -9.95%  reason=signal
+    entry=2023-06-07  exit=2025-03-31  hold=  663d  ret= 46.88%  reason=signal
+    entry=2025-09-05  exit=2025-11-03  hold=   59d  ret= -7.42%  reason=signal
+    entry=2026-02-23  exit=2026-03-12  hold=   17d  ret=-12.11%  reason=stop
+    entry=2026-08-13  exit=2026-09-10  hold=   28d  ret=-12.11%  reason=stop
+  SO: 29 isolated trade(s)
+    entry=1982-10-14  exit=1984-03-30  hold=  533d  ret= 15.56%  reason=signal
+    entry=1984-08-15  exit=1987-05-15  hold= 1003d  ret= 84.71%  reason=signal
+    entry=1988-01-27  exit=1988-09-16  hold=  233d  ret= -7.20%  reason=signal
+    entry=1988-11-28  exit=1990-03-30  hold=  487d  ret= 37.47%  reason=signal
+    entry=1990-11-06  exit=1994-03-07  hold= 1217d  ret= 93.23%  reason=signal
+    entry=1994-11-22  exit=1996-05-10  hold=  535d  ret= 24.98%  reason=signal
+    entry=1996-12-27  exit=1997-03-20  hold=   83d  ret= -5.94%  reason=signal
+    entry=1997-07-10  exit=1999-03-03  hold=  601d  ret= 22.31%  reason=signal
+    entry=1999-06-17  exit=1999-11-18  hold=  154d  ret=-10.90%  reason=signal
+    entry=2000-05-30  exit=2004-06-08  hold= 1470d  ret=124.87%  reason=signal
+    entry=2004-08-04  exit=2006-03-21  hold=  594d  ret= 20.28%  reason=signal
+    entry=2006-08-21  exit=2007-07-12  hold=  325d  ret=  5.78%  reason=signal
+    entry=2007-09-27  exit=2008-04-01  hold=  187d  ret=  0.43%  reason=signal
+    entry=2008-05-16  exit=2008-06-26  hold=   41d  ret= -5.78%  reason=signal
+    entry=2008-09-03  exit=2008-10-10  hold=   37d  ret=-12.11%  reason=stop
+    entry=2009-01-05  exit=2009-02-10  hold=   36d  ret=-11.54%  reason=signal
+    entry=2009-08-21  exit=2012-11-21  hold= 1188d  ret= 56.09%  reason=signal
+    entry=2013-03-27  exit=2013-08-22  hold=  148d  ret= -7.76%  reason=signal
+    entry=2014-03-14  exit=2015-04-15  hold=  397d  ret=  6.14%  reason=signal
+    entry=2015-10-16  exit=2016-11-28  hold=  409d  ret= 10.35%  reason=signal
+    entry=2017-04-13  exit=2017-08-24  hold=  133d  ret= -0.75%  reason=signal
+    entry=2017-09-25  exit=2018-01-29  hold=  126d  ret= -9.48%  reason=signal
+    entry=2018-08-01  exit=2018-11-05  hold=   96d  ret= -4.91%  reason=signal
+    entry=2018-11-06  exit=2020-04-16  hold=  527d  ret= 29.13%  reason=signal
+    entry=2020-11-09  exit=2022-11-04  hold=  725d  ret= 12.51%  reason=signal
+    entry=2023-05-05  exit=2023-09-29  hold=  147d  ret=-12.11%  reason=stop
+    entry=2023-12-18  exit=2025-02-18  hold=  428d  ret= 25.44%  reason=signal
+    entry=2025-02-26  exit=2025-12-24  hold=  301d  ret=  0.41%  reason=signal
+    entry=2026-03-10  exit=2026-09-22  hold=  196d  ret=-10.30%  reason=signal
+  T: 31 isolated trade(s)
+    entry=1984-09-05  exit=1987-12-14  hold= 1195d  ret=113.62%  reason=signal
+    entry=1988-03-23  exit=1988-04-22  hold=   30d  ret= -3.71%  reason=signal
+    entry=1988-06-14  exit=1990-08-01  hold=  778d  ret= 64.85%  reason=signal
+    entry=1990-11-23  exit=1991-06-12  hold=  201d  ret= -1.94%  reason=signal
+    entry=1991-08-07  exit=1994-02-22  hold=  930d  ret= 62.02%  reason=signal
+    entry=1994-06-02  exit=1996-04-23  hold=  691d  ret= 33.77%  reason=signal
+    entry=1996-11-27  exit=1999-09-30  hold= 1037d  ret=113.31%  reason=signal
+    entry=2000-07-20  exit=2000-08-21  hold=   32d  ret= -7.32%  reason=signal
+    entry=2000-09-29  exit=2000-12-20  hold=   82d  ret=-12.11%  reason=stop
+    entry=2001-10-09  exit=2001-10-22  hold=   13d  ret=-12.11%  reason=stop
+    entry=2003-06-17  exit=2003-09-17  hold=   92d  ret= -6.48%  reason=signal
+    entry=2003-11-04  exit=2005-03-07  hold=  489d  ret= 10.68%  reason=signal
+    entry=2005-08-05  exit=2008-01-14  hold=  892d  ret= 80.18%  reason=signal
+    entry=2008-05-23  exit=2008-06-24  hold=   32d  ret=-12.11%  reason=stop
+    entry=2009-08-21  exit=2010-06-24  hold=  307d  ret=  2.19%  reason=signal
+    entry=2010-08-10  exit=2011-09-26  hold=  412d  ret= 12.84%  reason=signal
+    entry=2011-12-06  exit=2013-01-03  hold=  394d  ret= 28.41%  reason=signal
+    entry=2013-03-01  exit=2013-09-17  hold=  200d  ret= -0.54%  reason=signal
+    entry=2013-12-05  exit=2014-01-22  hold=   48d  ret= -1.17%  reason=signal
+    entry=2014-04-21  exit=2015-01-02  hold=  256d  ret= -3.01%  reason=signal
+    entry=2015-03-04  exit=2015-03-26  hold=   22d  ret= -3.70%  reason=signal
+    entry=2015-05-18  exit=2015-10-12  hold=  147d  ret= -1.20%  reason=signal
+    entry=2015-11-20  exit=2016-11-15  hold=  361d  ret= 16.38%  reason=signal
+    entry=2017-01-09  exit=2017-06-09  hold=  151d  ret= -3.65%  reason=signal
+    entry=2018-01-24  exit=2018-04-27  hold=   93d  ret= -9.28%  reason=signal
+    entry=2019-04-03  exit=2020-04-01  hold=  364d  ret= -5.19%  reason=signal
+    entry=2020-12-30  exit=2021-08-16  hold=  229d  ret=  5.89%  reason=signal
+    entry=2022-05-17  exit=2022-08-24  hold=   99d  ret=-12.11%  reason=stop
+    entry=2022-12-22  exit=2023-05-25  hold=  154d  ret=-12.11%  reason=stop
+    entry=2023-12-15  exit=2025-11-12  hold=  698d  ret= 71.85%  reason=signal
+    entry=2026-03-19  exit=2026-05-15  hold=   57d  ret=-12.11%  reason=stop
+  TMO: 28 isolated trade(s)
+    entry=1980-12-30  exit=1981-02-10  hold=   42d  ret= -1.05%  reason=signal
+    entry=1981-03-17  exit=1981-06-08  hold=   83d  ret=-12.11%  reason=stop
+    entry=1982-11-05  exit=1982-11-22  hold=   17d  ret=-12.11%  reason=stop
+    entry=1984-01-06  exit=1984-02-01  hold=   26d  ret=-12.11%  reason=stop
+    entry=1984-09-13  exit=1984-11-19  hold=   67d  ret=-12.11%  reason=stop
+    entry=1987-02-12  exit=1987-04-23  hold=   70d  ret=-12.11%  reason=stop
+    entry=1988-06-30  exit=1990-07-16  hold=  746d  ret= 71.81%  reason=signal
+    entry=1991-01-23  exit=1992-05-01  hold=  464d  ret= 44.67%  reason=signal
+    entry=1992-11-09  exit=1994-04-25  hold=  532d  ret= 30.21%  reason=signal
+    entry=1994-08-25  exit=1996-10-24  hold=  791d  ret= 94.64%  reason=signal
+    entry=1997-08-01  exit=1998-05-20  hold=  292d  ret=  5.66%  reason=signal
+    entry=1999-06-07  exit=1999-07-30  hold=   53d  ret=-12.11%  reason=stop
+    entry=2000-03-07  exit=2000-03-21  hold=   14d  ret=-12.11%  reason=stop
+    entry=2001-12-12  exit=2002-02-20  hold=   70d  ret=-12.11%  reason=stop
+    entry=2002-12-03  exit=2003-02-13  hold=   72d  ret=-12.11%  reason=stop
+    entry=2004-11-18  exit=2005-02-03  hold=   77d  ret=-12.11%  reason=stop
+    entry=2005-08-16  exit=2008-03-07  hold=  934d  ret= 86.14%  reason=signal
+    entry=2008-04-10  exit=2008-10-06  hold=  179d  ret=-12.11%  reason=stop
+    entry=2009-07-01  exit=2010-08-11  hold=  406d  ret= 11.25%  reason=signal
+    entry=2010-11-24  exit=2011-09-09  hold=  289d  ret= -2.69%  reason=signal
+    entry=2012-03-15  exit=2012-05-18  hold=   64d  ret=-12.11%  reason=stop
+    entry=2012-08-03  exit=2014-11-11  hold=  830d  ret=111.66%  reason=signal
+    entry=2014-12-08  exit=2015-10-01  hold=  297d  ret= -4.75%  reason=signal
+    entry=2015-12-04  exit=2016-02-08  hold=   66d  ret=-12.11%  reason=stop
+    entry=2017-03-09  exit=2022-03-17  hold= 1834d  ret=266.90%  reason=signal  <-- LONG HOLD FLAG
+    entry=2023-01-19  exit=2023-05-17  hold=  118d  ret=-12.11%  reason=stop
+    entry=2024-01-30  exit=2024-11-18  hold=  293d  ret=-12.11%  reason=stop
+    entry=2025-09-30  exit=2026-04-07  hold=  189d  ret=  0.86%  reason=signal
+  UNH: 24 isolated trade(s)
+    entry=1985-08-01  exit=1985-08-07  hold=    6d  ret=-12.11%  reason=stop
+    entry=1988-04-15  exit=1988-06-13  hold=   59d  ret=-12.11%  reason=stop
+    entry=1989-01-24  exit=1990-02-15  hold=  387d  ret=124.46%  reason=signal
+    entry=1990-05-24  exit=1993-04-13  hold= 1055d  ret=551.26%  reason=signal
+    entry=1993-06-01  exit=1993-08-11  hold=   71d  ret=-12.11%  reason=stop
+    entry=1995-09-12  exit=1996-06-07  hold=  269d  ret= 15.67%  reason=signal
+    entry=1997-01-22  exit=1997-10-28  hold=  279d  ret=  7.15%  reason=signal
+    entry=1998-03-04  exit=1998-07-23  hold=  141d  ret=-12.11%  reason=stop
+    entry=1999-03-16  exit=1999-04-08  hold=   23d  ret=-12.11%  reason=stop
+    entry=2000-04-12  exit=2002-12-30  hold=  992d  ret=145.98%  reason=signal
+    entry=2003-04-28  exit=2006-04-18  hold= 1086d  ret=118.50%  reason=signal
+    entry=2006-12-27  exit=2007-08-07  hold=  223d  ret=-12.11%  reason=stop
+    entry=2007-12-17  exit=2008-01-23  hold=   37d  ret=-12.11%  reason=stop
+    entry=2009-02-20  exit=2009-02-23  hold=    3d  ret=-12.11%  reason=stop
+    entry=2009-06-02  exit=2009-06-11  hold=    9d  ret=-12.11%  reason=stop
+    entry=2010-09-08  exit=2011-11-22  hold=  440d  ret= 33.10%  reason=signal
+    entry=2011-12-29  exit=2012-09-10  hold=  256d  ret=  5.45%  reason=signal
+    entry=2012-10-22  exit=2012-11-28  hold=   37d  ret= -6.93%  reason=signal
+    entry=2013-02-14  exit=2015-11-27  hold= 1016d  ret=108.94%  reason=signal
+    entry=2016-03-23  exit=2019-02-26  hold= 1070d  ret=110.70%  reason=signal
+    entry=2019-11-26  exit=2020-02-28  hold=   94d  ret=-12.11%  reason=stop
+    entry=2023-09-13  exit=2024-03-21  hold=  190d  ret=  2.98%  reason=signal
+    entry=2024-07-26  exit=2024-12-16  hold=  143d  ret=-12.11%  reason=stop
+    entry=2026-01-26  exit=2026-01-27  hold=    1d  ret=-12.11%  reason=stop
+  VZ: 35 isolated trade(s)
+    entry=1984-09-05  exit=1987-04-30  hold=  967d  ret=108.14%  reason=signal
+    entry=1987-07-31  exit=1988-01-06  hold=  159d  ret=  0.53%  reason=signal
+    entry=1988-02-24  exit=1988-04-21  hold=   57d  ret= -7.68%  reason=signal
+    entry=1988-06-27  exit=1990-03-13  hold=  624d  ret= 38.98%  reason=signal
+    entry=1990-05-31  exit=1990-07-12  hold=   42d  ret=-12.11%  reason=stop
+    entry=1990-11-05  exit=1991-05-10  hold=  186d  ret=-12.11%  reason=stop
+    entry=1991-09-24  exit=1991-10-03  hold=    9d  ret= -2.68%  reason=signal
+    entry=1992-01-07  exit=1992-03-09  hold=   62d  ret= -9.74%  reason=signal
+    entry=1992-07-02  exit=1994-02-02  hold=  580d  ret= 33.18%  reason=signal
+    entry=1994-08-03  exit=1994-10-05  hold=   63d  ret=-12.11%  reason=stop
+    entry=1995-03-14  exit=1996-05-31  hold=  444d  ret= 22.49%  reason=signal
+    entry=1996-11-29  exit=1998-08-20  hold=  629d  ret= 46.74%  reason=signal
+    entry=1998-10-21  exit=2000-02-02  hold=  469d  ret= 22.15%  reason=signal
+    entry=2000-12-05  exit=2000-12-20  hold=   15d  ret=-12.11%  reason=stop
+    entry=2002-12-11  exit=2003-03-06  hold=   85d  ret=-12.11%  reason=stop
+    entry=2004-02-05  exit=2005-02-24  hold=  385d  ret= -0.07%  reason=signal
+    entry=2006-03-06  exit=2008-02-07  hold=  703d  ret= 23.58%  reason=signal
+    entry=2009-05-20  exit=2009-07-17  hold=   58d  ret=  0.52%  reason=signal
+    entry=2009-07-20  exit=2010-03-17  hold=  240d  ret=  4.13%  reason=signal
+    entry=2010-08-16  exit=2011-09-26  hold=  406d  ret= 27.72%  reason=signal
+    entry=2011-10-18  exit=2013-10-09  hold=  722d  ret= 35.63%  reason=signal
+    entry=2013-11-15  exit=2014-01-24  hold=   70d  ret= -4.53%  reason=signal
+    entry=2014-05-21  exit=2015-01-21  hold=  245d  ret=  1.24%  reason=signal
+    entry=2015-03-20  exit=2015-07-23  hold=  125d  ret= -4.54%  reason=signal
+    entry=2016-02-01  exit=2016-10-28  hold=  270d  ret= -2.18%  reason=signal
+    entry=2017-01-23  exit=2017-03-06  hold=   42d  ret= -4.77%  reason=signal
+    entry=2017-09-26  exit=2018-04-30  hold=  216d  ret=  3.06%  reason=signal
+    entry=2018-07-02  exit=2020-03-20  hold=  627d  ret= 10.40%  reason=signal
+    entry=2020-08-26  exit=2021-03-01  hold=  187d  ret= -5.12%  reason=signal
+    entry=2021-05-13  exit=2021-07-13  hold=   61d  ret= -3.78%  reason=signal
+    entry=2022-03-07  exit=2022-03-30  hold=   23d  ret= -5.84%  reason=signal
+    entry=2022-04-07  exit=2022-04-29  hold=   22d  ret=-12.11%  reason=stop
+    entry=2023-12-08  exit=2025-02-11  hold=  431d  ret= 14.64%  reason=signal
+    entry=2025-03-07  exit=2025-10-23  hold=  230d  ret=-12.11%  reason=stop
+    entry=2026-02-12  exit=2026-06-29  hold=  137d  ret=-12.11%  reason=stop
+  WFC: 43 isolated trade(s)
+    entry=1973-03-20  exit=1973-04-25  hold=   36d  ret=  3.32%  reason=signal
+    entry=1973-05-07  exit=1973-05-22  hold=   15d  ret= -4.46%  reason=signal
+    entry=1973-07-30  exit=1974-05-03  hold=  277d  ret= -7.35%  reason=signal
+    entry=1975-02-05  exit=1975-10-03  hold=  240d  ret=  0.47%  reason=signal
+    entry=1975-11-05  exit=1976-11-19  hold=  380d  ret=  9.92%  reason=signal
+    entry=1977-01-03  exit=1977-06-06  hold=  154d  ret=-11.15%  reason=signal
+    entry=1978-05-08  exit=1979-01-03  hold=  240d  ret=  1.14%  reason=signal
+    entry=1979-01-04  exit=1979-03-16  hold=   71d  ret=-10.98%  reason=signal
+    entry=1979-06-28  exit=1979-12-17  hold=  172d  ret=  0.81%  reason=signal
+    entry=1979-12-28  exit=1980-01-14  hold=   17d  ret= -5.49%  reason=signal
+    entry=1980-06-24  exit=1981-09-08  hold=  441d  ret= 12.10%  reason=signal
+    entry=1982-10-06  exit=1984-01-03  hold=  454d  ret= 55.64%  reason=signal
+    entry=1985-02-27  exit=1985-10-14  hold=  229d  ret= -5.89%  reason=signal
+    entry=1985-12-09  exit=1986-11-19  hold=  345d  ret= 32.68%  reason=signal
+    entry=1986-11-24  exit=1987-04-14  hold=  141d  ret=-12.11%  reason=stop
+    entry=1988-03-01  exit=1990-02-05  hold=  706d  ret= 46.10%  reason=signal
+    entry=1990-06-20  exit=1990-08-03  hold=   44d  ret=-12.11%  reason=stop
+    entry=1991-01-07  exit=1993-12-06  hold= 1064d  ret=156.91%  reason=signal
+    entry=1994-05-19  exit=1994-11-01  hold=  166d  ret= -4.01%  reason=signal
+    entry=1995-03-22  exit=1998-07-29  hold= 1225d  ret=217.76%  reason=signal
+    entry=1998-12-18  exit=1999-02-01  hold=   45d  ret=-12.11%  reason=stop
+    entry=2000-05-18  exit=2000-06-16  hold=   29d  ret=-12.11%  reason=stop
+    entry=2002-02-12  exit=2002-11-07  hold=  268d  ret=  3.18%  reason=signal
+    entry=2003-05-30  exit=2005-05-17  hold=  718d  ret= 33.28%  reason=signal
+    entry=2005-05-26  exit=2005-10-05  hold=  132d  ret= -4.54%  reason=signal
+    entry=2005-11-22  exit=2007-04-09  hold=  503d  ret= 11.75%  reason=signal
+    entry=2007-05-24  exit=2007-08-08  hold=   76d  ret= -2.28%  reason=signal
+    entry=2007-08-27  exit=2007-08-28  hold=    1d  ret= -2.81%  reason=signal
+    entry=2007-08-31  exit=2007-11-01  hold=   62d  ret=-12.11%  reason=stop
+    entry=2008-09-12  exit=2008-10-08  hold=   26d  ret=-12.11%  reason=stop
+    entry=2009-06-25  exit=2010-07-14  hold=  384d  ret= 16.75%  reason=signal
+    entry=2010-12-29  exit=2011-06-01  hold=  154d  ret=-12.11%  reason=stop
+    entry=2012-01-19  exit=2015-09-30  hold= 1350d  ret= 88.26%  reason=signal
+    entry=2015-12-22  exit=2016-01-13  hold=   22d  ret= -8.70%  reason=signal
+    entry=2016-12-06  exit=2017-08-11  hold=  248d  ret= -4.74%  reason=signal
+    entry=2017-11-14  exit=2018-04-17  hold=  154d  ret= -6.09%  reason=signal
+    entry=2018-08-14  exit=2018-10-11  hold=   58d  ret=-12.11%  reason=stop
+    entry=2019-09-26  exit=2020-02-28  hold=  155d  ret=-12.11%  reason=stop
+    entry=2020-12-24  exit=2022-05-02  hold=  494d  ret= 48.65%  reason=signal
+    entry=2022-12-02  exit=2022-12-22  hold=   20d  ret=-12.11%  reason=stop
+    entry=2023-07-28  exit=2023-09-07  hold=   41d  ret=-12.11%  reason=stop
+    entry=2023-12-05  exit=2024-10-08  hold=  308d  ret= 31.12%  reason=signal
+    entry=2024-10-15  exit=2026-04-07  hold=  539d  ret= 33.62%  reason=signal
+  WMT: 39 isolated trade(s)
+    entry=1974-07-03  exit=1974-08-14  hold=   42d  ret=-12.11%  reason=stop
+    entry=1975-03-17  exit=1975-04-07  hold=   21d  ret=-12.11%  reason=stop
+    entry=1976-10-08  exit=1977-02-24  hold=  139d  ret= -8.62%  reason=signal
+    entry=1977-07-26  exit=1978-12-18  hold=  510d  ret= 47.26%  reason=signal
+    entry=1979-04-23  exit=1980-04-17  hold=  360d  ret= 16.05%  reason=signal
+    entry=1980-06-05  exit=1984-01-30  hold= 1334d  ret=708.97%  reason=signal
+    entry=1984-07-05  exit=1987-11-20  hold= 1233d  ret=171.12%  reason=signal
+    entry=1988-07-06  exit=1993-05-07  hold= 1766d  ret=237.17%  reason=signal  <-- LONG HOLD FLAG
+    entry=1993-12-07  exit=1994-01-06  hold=   30d  ret=-12.11%  reason=stop
+    entry=1994-03-03  exit=1994-03-31  hold=   28d  ret=-12.11%  reason=stop
+    entry=1995-03-28  exit=1995-10-19  hold=  205d  ret= -7.90%  reason=signal
+    entry=1996-05-17  exit=1997-01-06  hold=  234d  ret= -9.82%  reason=signal
+    entry=1997-03-25  exit=2000-04-26  hold= 1128d  ret=307.18%  reason=signal
+    entry=2000-05-01  exit=2000-05-04  hold=    3d  ret=-12.11%  reason=stop
+    entry=2001-02-05  exit=2001-03-13  hold=   36d  ret=-12.11%  reason=stop
+    entry=2001-05-14  exit=2001-07-06  hold=   53d  ret=-12.11%  reason=stop
+    entry=2001-09-26  exit=2001-09-27  hold=    1d  ret= -0.42%  reason=signal
+    entry=2001-11-16  exit=2002-06-27  hold=  223d  ret=  4.86%  reason=signal
+    entry=2003-04-28  exit=2003-12-26  hold=  242d  ret= -6.12%  reason=signal
+    entry=2004-03-11  exit=2004-06-22  hold=  103d  ret= -6.43%  reason=signal
+    entry=2005-12-20  exit=2006-02-08  hold=   50d  ret= -6.81%  reason=signal
+    entry=2006-05-10  exit=2006-08-03  hold=   85d  ret= -6.28%  reason=signal
+    entry=2006-10-06  exit=2007-08-22  hold=  320d  ret= -8.02%  reason=signal
+    entry=2008-01-04  exit=2008-11-20  hold=  321d  ret= 11.98%  reason=signal
+    entry=2009-09-18  exit=2010-06-23  hold=  278d  ret=  2.83%  reason=signal
+    entry=2010-10-12  exit=2011-04-21  hold=  191d  ret=  0.38%  reason=signal
+    entry=2011-05-12  exit=2011-08-03  hold=   83d  ret= -8.19%  reason=signal
+    entry=2011-10-25  exit=2013-02-11  hold=  475d  ret= 29.50%  reason=signal
+    entry=2013-03-27  exit=2014-03-06  hold=  344d  ret=  1.69%  reason=signal
+    entry=2014-04-24  exit=2014-07-31  hold=   98d  ret= -5.68%  reason=signal
+    entry=2014-09-25  exit=2015-05-19  hold=  236d  ret=  1.97%  reason=signal
+    entry=2016-03-14  exit=2016-12-08  hold=  269d  ret=  6.41%  reason=signal
+    entry=2016-12-22  exit=2017-01-11  hold=   20d  ret= -1.76%  reason=signal
+    entry=2017-04-13  exit=2018-04-30  hold=  382d  ret= 23.59%  reason=signal
+    entry=2018-09-11  exit=2020-03-30  hold=  566d  ret= 22.52%  reason=signal
+    entry=2020-04-06  exit=2021-03-30  hold=  358d  ret=  9.18%  reason=signal
+    entry=2021-08-10  exit=2022-01-26  hold=  169d  ret= -8.21%  reason=signal
+    entry=2022-04-13  exit=2022-05-17  hold=   34d  ret=-12.11%  reason=stop
+    entry=2022-11-15  exit=2026-07-27  hold= 1350d  ret=137.09%  reason=signal
+  XOM: 41 isolated trade(s)
+    entry=1962-10-15  exit=1965-03-08  hold=  875d  ret= 63.62%  reason=signal
+    entry=1965-11-03  exit=1966-04-01  hold=  149d  ret= -7.07%  reason=signal
+    entry=1967-09-01  exit=1969-07-28  hold=  696d  ret= 20.94%  reason=signal
+    entry=1970-08-10  exit=1971-09-22  hold=  408d  ret= 17.76%  reason=signal
+    entry=1972-01-28  exit=1973-09-17  hold=  598d  ret= 24.15%  reason=signal
+    entry=1973-11-16  exit=1973-12-14  hold=   28d  ret= -6.95%  reason=signal
+    entry=1974-01-03  exit=1974-01-10  hold=    7d  ret= -9.09%  reason=signal
+    entry=1975-02-14  exit=1977-04-21  hold=  797d  ret= 61.09%  reason=signal
+    entry=1977-05-06  exit=1977-09-15  hold=  132d  ret= -5.36%  reason=signal
+    entry=1978-05-10  exit=1981-03-31  hold= 1056d  ret= 77.12%  reason=signal
+    entry=1982-09-27  exit=1987-11-25  hold= 1885d  ret=305.27%  reason=signal  <-- LONG HOLD FLAG
+    entry=1988-04-26  exit=1989-01-03  hold=  252d  ret= -0.53%  reason=signal
+    entry=1989-01-30  exit=1989-04-20  hold=   80d  ret= -3.70%  reason=signal
+    entry=1989-06-27  exit=1992-03-20  hold=  997d  ret= 36.59%  reason=signal
+    entry=1992-05-26  exit=1993-01-12  hold=  231d  ret= -4.26%  reason=signal
+    entry=1993-02-09  exit=1993-12-13  hold=  307d  ret=  3.77%  reason=signal
+    entry=1994-01-31  exit=1994-05-05  hold=   94d  ret= -7.88%  reason=signal
+    entry=1994-12-05  exit=1998-02-04  hold= 1157d  ret=129.14%  reason=signal
+    entry=1998-03-19  exit=1999-03-15  hold=  361d  ret= 16.06%  reason=signal
+    entry=1999-03-18  exit=1999-03-19  hold=    1d  ret= -2.41%  reason=signal
+    entry=1999-04-09  exit=1999-11-03  hold=  208d  ret= -1.51%  reason=signal
+    entry=1999-12-17  exit=2000-02-24  hold=   69d  ret=-12.11%  reason=stop
+    entry=2000-05-09  exit=2001-02-22  hold=  289d  ret=  7.99%  reason=signal
+    entry=2001-06-01  exit=2001-08-27  hold=   87d  ret= -7.39%  reason=signal
+    entry=2002-03-22  exit=2002-07-10  hold=  110d  ret=-12.11%  reason=stop
+    entry=2003-04-11  exit=2005-12-01  hold=  965d  ret= 84.03%  reason=signal
+    entry=2006-01-18  exit=2008-03-10  hold=  782d  ret= 41.10%  reason=signal
+    entry=2008-04-25  exit=2008-07-16  hold=   82d  ret=-12.11%  reason=stop
+    entry=2009-10-23  exit=2010-01-29  hold=   98d  ret=-12.11%  reason=stop
+    entry=2010-11-03  exit=2011-08-22  hold=  292d  ret=  5.48%  reason=signal
+    entry=2011-12-19  exit=2013-10-03  hold=  654d  ret= 12.21%  reason=signal
+    entry=2013-11-21  exit=2014-10-08  hold=  321d  ret=  1.77%  reason=signal
+    entry=2015-12-23  exit=2015-12-29  hold=    6d  ret= -1.52%  reason=signal
+    entry=2016-03-04  exit=2016-11-09  hold=  250d  ret=  7.28%  reason=signal
+    entry=2016-12-14  exit=2017-02-14  hold=   62d  ret= -7.95%  reason=signal
+    entry=2017-10-31  exit=2018-03-21  hold=  141d  ret= -8.43%  reason=signal
+    entry=2018-06-14  exit=2018-12-19  hold=  188d  ret=-12.11%  reason=stop
+    entry=2019-04-04  exit=2019-05-31  hold=   57d  ret=-12.11%  reason=stop
+    entry=2021-01-12  exit=2023-07-07  hold=  906d  ret=141.11%  reason=signal
+    entry=2023-09-14  exit=2023-11-07  hold=   54d  ret=-12.11%  reason=stop
+    entry=2024-03-27  exit=2025-01-03  hold=  282d  ret= -4.11%  reason=signal
+
+==========================================================================================
+VERDICT
+==========================================================================================
+  NEEDS EXCLUSION -- breadth differs by more than 0.02 in the recent window; flagged symbol held an isolated position longer than 1500 calendar days
+
+wrote /Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/runtime/universe_data_hygiene_flags.json

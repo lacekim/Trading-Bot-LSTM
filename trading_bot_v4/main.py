@@ -114,6 +114,12 @@ def parse_args():
     parser.add_argument("--horizon", type=int, default=1, help="With --train-per-asset, candles ahead the target looks (1 = next single candle). Non-default horizons train into a separate models/{direction}_h{horizon}/ namespace.")
     parser.add_argument("--symbols", nargs="*", default=None, help="With --train-per-asset, limit training to these GMX symbols instead of every listed asset")
     parser.add_argument("--liquid-only", action="store_true", help="With --train-per-asset, further restrict to symbols currently clearing the GMX liquidity/open-interest risk floor (evaluate_asset_risk) -- any promotion is then automatically tradeable")
+    parser.add_argument("--ma200-live", action="store_true", help="Print the current live 200MA cross signal for BTC and ETH (read-only, no orders)")
+    parser.add_argument("--ma200-backtest", action="store_true", help="Run the verified 200MA cross backtest (real costs, fixed sizing) for BTC and ETH")
+    parser.add_argument("--ma200-paper-trade", action="store_true", help="Run one paper-trade check/update cycle for the 200MA strategy (dry-run, Telegram alerts, no real orders)")
+    parser.add_argument("--ma200-auto", action="store_true", help="Run the 200MA paper trader as a persistent process, checking every 4h until interrupted (dry-run, Telegram alerts, no real orders)")
+    parser.add_argument("--alpaca-auto", action="store_true", help="Run the Alpaca golden-cross paper trader (equities + migrated BTC/ETH/SOL/PAXG) as a persistent process, checking every 4h until interrupted (real Alpaca paper-account orders, no real money)")
+    parser.add_argument("--combined-status", action="store_true", help="Send one Telegram message combining freqtrade's Kraken open trades (both strategies) and Alpaca's real positions -- freqtrade's own Telegram /status has no visibility into Alpaca at all, this fills that gap. Runs once and exits.")
     parser.add_argument("--train-cost-aware-long", action="store_true", help="Train and holdout-validate the all-asset cost-aware LONG challenger")
     parser.add_argument("--walk-forward-cost-aware-long", action="store_true", help="Run repeated expanding walk-forward validation for the cost-aware LONG challenger")
     parser.add_argument("--walk-forward-cost-aware-directional", action="store_true", help="Run causal LONG/SHORT return-regression walk-forward validation")
@@ -245,6 +251,30 @@ def main():
                     f"holdout_return_pct={result.holdout_return_pct:.2f} "
                     f"holdout_profit_factor={result.holdout_profit_factor:.2f}"
                 )
+        return 0
+    if args.ma200_live:
+        from tools.run_ma200_cross_strategy import run_live
+        run_live()
+        return 0
+    if args.ma200_backtest:
+        from tools.run_ma200_cross_strategy import run_backtest
+        run_backtest()
+        return 0
+    if args.ma200_paper_trade:
+        from tools.run_ma200_paper_trader import main as run_paper_trade
+        run_paper_trade()
+        return 0
+    if args.ma200_auto:
+        from trading_bot_v4.signals.ma200_auto import run as run_ma200_auto
+        run_ma200_auto()
+        return 0
+    if args.alpaca_auto:
+        from tools.run_alpaca_paper_trader_loop import main as run_alpaca_auto
+        run_alpaca_auto()
+        return 0
+    if args.combined_status:
+        from tools.run_combined_status_report import main as run_combined_status
+        run_combined_status()
         return 0
     if args.train_cost_aware_long:
         train_cost_aware_long_model(str(args.timeframe))

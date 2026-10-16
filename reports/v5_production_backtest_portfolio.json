@@ -5,18 +5,16 @@
   "zero_costs": false,
   "qualification_policy": "current daily GO list for LONG; current untouched-holdout promotion for SHORT",
   "qualified_long_symbols": [],
-  "qualified_short_symbols": [
-    "WLD"
-  ],
-  "assets_tested": 1,
+  "qualified_short_symbols": [],
+  "assets_tested": 2,
   "eligible_assets": 0,
   "market_cap_risk_enabled": true,
-  "risk_allowed_long_assets": 0,
-  "risk_allowed_short_assets": 0,
+  "risk_allowed_long_assets": 2,
+  "risk_allowed_short_assets": 2,
   "equal_weight_return_pct": 0.0,
   "warning": "Current-snapshot qualification is not a historical daily walk-forward selector. Model results may include training-period observations. Market-cap and GMX-depth admission use the latest available snapshot across history.",
   "baseline_parity": {
-    "symbol": "WLD",
+    "symbol": "DEFAULT",
     "persistent_policy": false,
     "configuration_parity": false,
     "baseline": {

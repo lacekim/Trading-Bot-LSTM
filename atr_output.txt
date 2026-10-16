@@ -1,0 +1,361 @@
+universe: 60 robust non-crypto instruments (same as live; hygiene gate cleared, no exclusions)
+usable OHLCV history for 60 of 60 instruments
+full history span: 1962-01-02 -> 2026-09-25
+
+
+==========================================================================================
+VARIANT: CONTROL (fixed -12% stop + death cross)
+==========================================================================================
+  [NAV, full capital path]      cagr=8.64%  total_return=21218.58%  sharpe=0.96  sortino=1.13  max_dd=-24.62%  worst_day=-10.14%
+  [CLOSED TRADES ONLY]          n=1785  cagr=8.47%  total_return=17977.75%  win_rate=45.6%  pf=3.99  avg_trade=19.96%  median_trade=-2.04%
+  [HOLDING / STOP / MFE]        avg_hold=325d  max_hold=2384d  stop_exit_pct=32.4%  avg_mfe_capture=-282.7%
+  [CONCENTRATION top_1pct]  n=18  pnl_share=46.2%
+  [CONCENTRATION top_5pct]  n=90  pnl_share=88.3%
+  [CONCENTRATION top_10pct]  n=179  pnl_share=109.4%
+  [BY CALENDAR YEAR]
+    1962: n=7  win_rate=71.4%  total_pnl=8,307
+    1963: n=6  win_rate=83.3%  total_pnl=8,646
+    1964: n=9  win_rate=66.7%  total_pnl=5,735
+    1965: n=4  win_rate=25.0%  total_pnl=-273
+    1966: n=6  win_rate=66.7%  total_pnl=2,976
+    1967: n=10  win_rate=80.0%  total_pnl=2,315
+    1968: n=9  win_rate=22.2%  total_pnl=578
+    1969: n=6  win_rate=50.0%  total_pnl=260
+    1970: n=13  win_rate=76.9%  total_pnl=14,310
+    1971: n=3  win_rate=33.3%  total_pnl=556
+    1972: n=9  win_rate=44.4%  total_pnl=1,104
+    1973: n=17  win_rate=17.6%  total_pnl=-2,573
+    1974: n=8  win_rate=0.0%  total_pnl=-2,514
+    1975: n=28  win_rate=35.7%  total_pnl=3,289
+    1976: n=17  win_rate=17.6%  total_pnl=8,829
+    1977: n=20  win_rate=15.0%  total_pnl=-1,709
+    1978: n=18  win_rate=38.9%  total_pnl=517
+    1979: n=21  win_rate=33.3%  total_pnl=1,212
+    1980: n=26  win_rate=53.8%  total_pnl=23,724
+    1981: n=22  win_rate=36.4%  total_pnl=3,455
+    1982: n=28  win_rate=67.9%  total_pnl=40,708
+    1983: n=9  win_rate=55.6%  total_pnl=12,484
+    1984: n=40  win_rate=47.5%  total_pnl=58,124
+    1985: n=17  win_rate=64.7%  total_pnl=21,413
+    1986: n=15  win_rate=46.7%  total_pnl=7,514
+    1987: n=23  win_rate=13.0%  total_pnl=-3,730
+    1988: n=51  win_rate=51.0%  total_pnl=130,053
+    1989: n=18  win_rate=55.6%  total_pnl=23,926
+    1990: n=19  win_rate=42.1%  total_pnl=85,492
+    1991: n=38  win_rate=42.1%  total_pnl=43,472
+    1992: n=34  win_rate=41.2%  total_pnl=16,337
+    1993: n=24  win_rate=41.7%  total_pnl=25,203
+    1994: n=43  win_rate=55.8%  total_pnl=363,355
+    1995: n=19  win_rate=63.2%  total_pnl=106,404
+    1996: n=20  win_rate=65.0%  total_pnl=155,364
+    1997: n=17  win_rate=70.6%  total_pnl=128,307
+    1998: n=34  win_rate=41.2%  total_pnl=137,407
+    1999: n=33  win_rate=27.3%  total_pnl=107,517
+    2000: n=44  win_rate=29.5%  total_pnl=23,518
+    2001: n=42  win_rate=21.4%  total_pnl=-50,129
+    2002: n=35  win_rate=14.3%  total_pnl=-14,186
+    2003: n=56  win_rate=64.3%  total_pnl=609,239
+    2004: n=28  win_rate=50.0%  total_pnl=61,401
+    2005: n=41  win_rate=51.2%  total_pnl=178,124
+    2006: n=47  win_rate=70.2%  total_pnl=258,672
+    2007: n=20  win_rate=30.0%  total_pnl=-6,927
+    2008: n=27  win_rate=3.7%  total_pnl=-143,757
+    2009: n=64  win_rate=65.6%  total_pnl=967,423
+    2010: n=39  win_rate=56.4%  total_pnl=172,382
+    2011: n=37  win_rate=59.5%  total_pnl=875,433
+    2012: n=36  win_rate=58.3%  total_pnl=832,798
+    2013: n=34  win_rate=64.7%  total_pnl=543,152
+    2014: n=34  win_rate=50.0%  total_pnl=108,269
+    2015: n=44  win_rate=36.4%  total_pnl=729,265
+    2016: n=49  win_rate=59.2%  total_pnl=1,599,967
+    2017: n=34  win_rate=58.8%  total_pnl=801,211
+    2018: n=35  win_rate=45.7%  total_pnl=711,498
+    2019: n=51  win_rate=19.6%  total_pnl=458,370
+    2020: n=51  win_rate=70.6%  total_pnl=1,943,581
+    2021: n=20  win_rate=50.0%  total_pnl=593,477
+    2022: n=44  win_rate=27.3%  total_pnl=2,262,138
+    2023: n=51  win_rate=49.0%  total_pnl=3,583,580
+    2024: n=30  win_rate=33.3%  total_pnl=109,260
+    2025: n=31  win_rate=32.3%  total_pnl=-151,451
+    2026: n=20  win_rate=0.0%  total_pnl=-616,655
+  [BY BREADTH BUCKET AT ENTRY]
+    LOW-breadth: n=597  win_rate=44.7%  total_pnl=7,657,288
+    MID-breadth: n=599  win_rate=45.4%  total_pnl=5,793,347
+    HIGH-breadth: n=589  win_rate=46.7%  total_pnl=4,527,114
+  [RESULTS AFTER REMOVING THIS VARIANT'S OWN TOP-K TRADES]
+    excl_top1: n_remaining=1784  total_pnl_excl=16,765,567  total_return_excl=16765.57%
+    excl_top2: n_remaining=1783  total_pnl_excl=15,642,094  total_return_excl=15642.09%
+
+  NOTE: ATR_TRAIL x2 trade set differs from control on 44 of 1829 total (symbol, entry_time) pairs -- expected capital-timing divergence from the two variants' capital paths splitting apart after their first differing exit (see module docstring's ENTRY-SET DIVERGENCE note), not a signal difference. Winner-preservation diagnostics below use only the trades both runs actually took.
+
+==========================================================================================
+VARIANT: ATR_TRAIL x2
+==========================================================================================
+  [NAV, full capital path]      cagr=-0.02%  total_return=-1.40%  sharpe=-0.03  sortino=-0.03  max_dd=-6.87%  worst_day=-0.75%
+  [CLOSED TRADES ONLY]          n=1829  cagr=-0.02%  total_return=-1.40%  win_rate=36.5%  pf=0.97  avg_trade=-0.04%  median_trade=-1.01%
+  [HOLDING / STOP / MFE]        avg_hold=12d  max_hold=74d  stop_exit_pct=99.2%  avg_mfe_capture=-267.5%
+  [CONCENTRATION top_1pct]  n=19  pnl_share=-588.1%
+  [CONCENTRATION top_5pct]  n=92  pnl_share=-1655.2%
+  [CONCENTRATION top_10pct]  n=183  pnl_share=-2472.2%
+  [BY CALENDAR YEAR]
+    1962: n=7  win_rate=42.9%  total_pnl=100
+    1963: n=6  win_rate=33.3%  total_pnl=-128
+    1964: n=9  win_rate=55.6%  total_pnl=133
+    1965: n=4  win_rate=75.0%  total_pnl=433
+    1966: n=6  win_rate=50.0%  total_pnl=-26
+    1967: n=10  win_rate=40.0%  total_pnl=129
+    1968: n=9  win_rate=44.4%  total_pnl=-25
+    1969: n=6  win_rate=50.0%  total_pnl=164
+    1970: n=13  win_rate=38.5%  total_pnl=-32
+    1971: n=3  win_rate=66.7%  total_pnl=-117
+    1972: n=9  win_rate=33.3%  total_pnl=-267
+    1973: n=17  win_rate=29.4%  total_pnl=-221
+    1974: n=8  win_rate=50.0%  total_pnl=70
+    1975: n=28  win_rate=39.3%  total_pnl=20
+    1976: n=17  win_rate=29.4%  total_pnl=99
+    1977: n=20  win_rate=15.0%  total_pnl=-610
+    1978: n=18  win_rate=50.0%  total_pnl=87
+    1979: n=21  win_rate=28.6%  total_pnl=264
+    1980: n=26  win_rate=42.3%  total_pnl=396
+    1981: n=22  win_rate=22.7%  total_pnl=-364
+    1982: n=28  win_rate=50.0%  total_pnl=1,073
+    1983: n=9  win_rate=22.2%  total_pnl=-149
+    1984: n=40  win_rate=35.0%  total_pnl=-121
+    1985: n=17  win_rate=47.1%  total_pnl=481
+    1986: n=15  win_rate=33.3%  total_pnl=-12
+    1987: n=23  win_rate=39.1%  total_pnl=-136
+    1988: n=51  win_rate=17.6%  total_pnl=-1,791
+    1989: n=18  win_rate=44.4%  total_pnl=449
+    1990: n=19  win_rate=26.3%  total_pnl=-447
+    1991: n=38  win_rate=34.2%  total_pnl=995
+    1992: n=34  win_rate=29.4%  total_pnl=-600
+    1993: n=24  win_rate=37.5%  total_pnl=-608
+    1994: n=43  win_rate=34.9%  total_pnl=-458
+    1995: n=19  win_rate=42.1%  total_pnl=-32
+    1996: n=20  win_rate=15.0%  total_pnl=-590
+    1997: n=17  win_rate=47.1%  total_pnl=286
+    1998: n=34  win_rate=50.0%  total_pnl=451
+    1999: n=33  win_rate=42.4%  total_pnl=694
+    2000: n=44  win_rate=40.9%  total_pnl=-630
+    2001: n=42  win_rate=19.0%  total_pnl=-1,563
+    2002: n=35  win_rate=31.4%  total_pnl=-603
+    2003: n=56  win_rate=35.7%  total_pnl=380
+    2004: n=28  win_rate=46.4%  total_pnl=168
+    2005: n=41  win_rate=29.3%  total_pnl=-325
+    2006: n=47  win_rate=40.4%  total_pnl=761
+    2007: n=20  win_rate=45.0%  total_pnl=118
+    2008: n=27  win_rate=25.9%  total_pnl=-1,170
+    2009: n=64  win_rate=31.2%  total_pnl=-812
+    2010: n=39  win_rate=41.0%  total_pnl=1,109
+    2011: n=39  win_rate=38.5%  total_pnl=-142
+    2012: n=37  win_rate=29.7%  total_pnl=-625
+    2013: n=34  win_rate=41.2%  total_pnl=327
+    2014: n=35  win_rate=28.6%  total_pnl=-357
+    2015: n=44  win_rate=15.9%  total_pnl=-1,044
+    2016: n=49  win_rate=34.7%  total_pnl=429
+    2017: n=34  win_rate=47.1%  total_pnl=685
+    2018: n=37  win_rate=43.2%  total_pnl=-99
+    2019: n=51  win_rate=47.1%  total_pnl=180
+    2020: n=51  win_rate=35.3%  total_pnl=437
+    2021: n=20  win_rate=45.0%  total_pnl=502
+    2022: n=44  win_rate=38.6%  total_pnl=-319
+    2023: n=51  win_rate=37.3%  total_pnl=510
+    2024: n=34  win_rate=41.2%  total_pnl=454
+    2025: n=48  win_rate=54.2%  total_pnl=1,129
+    2026: n=37  win_rate=40.5%  total_pnl=-485
+  [BY BREADTH BUCKET AT ENTRY]
+    LOW-breadth: n=626  win_rate=34.3%  total_pnl=-2,299
+    MID-breadth: n=601  win_rate=38.3%  total_pnl=-1,522
+    HIGH-breadth: n=602  win_rate=37.0%  total_pnl=2,426
+  [RESULTS AFTER REMOVING THIS VARIANT'S OWN TOP-K TRADES]
+    excl_top1: n_remaining=1828  total_pnl_excl=-2,395  total_return_excl=-2.40%
+    excl_top2: n_remaining=1827  total_pnl_excl=-3,022  total_return_excl=-3.02%
+  [WINNER PRESERVATION vs CONTROL]
+    matched_trades=1785  control_winners=814  cut_short=772 (94.8% of control winners)
+    avg_winner_pnl_change=-29,387  largest_winner_pnl_change=-1,211,183  mfe_capture_pct_change=23.1pp
+
+  NOTE: ATR_TRAIL x3 trade set differs from control on 43 of 1828 total (symbol, entry_time) pairs -- expected capital-timing divergence from the two variants' capital paths splitting apart after their first differing exit (see module docstring's ENTRY-SET DIVERGENCE note), not a signal difference. Winner-preservation diagnostics below use only the trades both runs actually took.
+
+==========================================================================================
+VARIANT: ATR_TRAIL x3
+==========================================================================================
+  [NAV, full capital path]      cagr=0.43%  total_return=31.72%  sharpe=0.36  sortino=0.38  max_dd=-6.87%  worst_day=-1.32%
+  [CLOSED TRADES ONLY]          n=1828  cagr=0.43%  total_return=31.78%  win_rate=40.0%  pf=1.38  avg_trade=0.77%  median_trade=-1.19%
+  [HOLDING / STOP / MFE]        avg_hold=27d  max_hold=215d  stop_exit_pct=98.1%  avg_mfe_capture=-244.3%
+  [CONCENTRATION top_1pct]  n=19  pnl_share=67.3%
+  [CONCENTRATION top_5pct]  n=92  pnl_share=165.7%
+  [CONCENTRATION top_10pct]  n=183  pnl_share=233.7%
+  [BY CALENDAR YEAR]
+    1962: n=7  win_rate=57.1%  total_pnl=35
+    1963: n=6  win_rate=33.3%  total_pnl=-203
+    1964: n=9  win_rate=66.7%  total_pnl=184
+    1965: n=4  win_rate=100.0%  total_pnl=380
+    1966: n=6  win_rate=50.0%  total_pnl=-44
+    1967: n=10  win_rate=60.0%  total_pnl=383
+    1968: n=9  win_rate=44.4%  total_pnl=-181
+    1969: n=6  win_rate=33.3%  total_pnl=-11
+    1970: n=13  win_rate=46.2%  total_pnl=211
+    1971: n=3  win_rate=66.7%  total_pnl=183
+    1972: n=9  win_rate=44.4%  total_pnl=39
+    1973: n=17  win_rate=17.6%  total_pnl=-239
+    1974: n=8  win_rate=25.0%  total_pnl=-189
+    1975: n=28  win_rate=42.9%  total_pnl=146
+    1976: n=17  win_rate=29.4%  total_pnl=-100
+    1977: n=20  win_rate=25.0%  total_pnl=-767
+    1978: n=18  win_rate=44.4%  total_pnl=468
+    1979: n=21  win_rate=23.8%  total_pnl=278
+    1980: n=26  win_rate=42.3%  total_pnl=397
+    1981: n=22  win_rate=31.8%  total_pnl=-463
+    1982: n=28  win_rate=42.9%  total_pnl=1,896
+    1983: n=9  win_rate=22.2%  total_pnl=-242
+    1984: n=40  win_rate=30.0%  total_pnl=-176
+    1985: n=17  win_rate=47.1%  total_pnl=423
+    1986: n=15  win_rate=46.7%  total_pnl=1,234
+    1987: n=23  win_rate=47.8%  total_pnl=1,197
+    1988: n=51  win_rate=25.5%  total_pnl=-1,750
+    1989: n=18  win_rate=27.8%  total_pnl=551
+    1990: n=19  win_rate=36.8%  total_pnl=-326
+    1991: n=38  win_rate=44.7%  total_pnl=2,981
+    1992: n=34  win_rate=41.2%  total_pnl=-191
+    1993: n=24  win_rate=50.0%  total_pnl=231
+    1994: n=43  win_rate=44.2%  total_pnl=258
+    1995: n=19  win_rate=57.9%  total_pnl=1,452
+    1996: n=20  win_rate=20.0%  total_pnl=-663
+    1997: n=17  win_rate=52.9%  total_pnl=930
+    1998: n=34  win_rate=58.8%  total_pnl=2,259
+    1999: n=33  win_rate=30.3%  total_pnl=-184
+    2000: n=44  win_rate=22.7%  total_pnl=-1,934
+    2001: n=42  win_rate=21.4%  total_pnl=-2,578
+    2002: n=35  win_rate=34.3%  total_pnl=-1,310
+    2003: n=56  win_rate=46.4%  total_pnl=2,820
+    2004: n=28  win_rate=42.9%  total_pnl=268
+    2005: n=41  win_rate=34.1%  total_pnl=-342
+    2006: n=47  win_rate=57.4%  total_pnl=2,735
+    2007: n=20  win_rate=30.0%  total_pnl=959
+    2008: n=27  win_rate=11.1%  total_pnl=-2,087
+    2009: n=64  win_rate=39.1%  total_pnl=226
+    2010: n=39  win_rate=48.7%  total_pnl=3,062
+    2011: n=39  win_rate=51.3%  total_pnl=1,571
+    2012: n=37  win_rate=37.8%  total_pnl=1,885
+    2013: n=34  win_rate=55.9%  total_pnl=889
+    2014: n=35  win_rate=25.7%  total_pnl=-463
+    2015: n=44  win_rate=25.0%  total_pnl=-54
+    2016: n=49  win_rate=36.7%  total_pnl=584
+    2017: n=34  win_rate=55.9%  total_pnl=2,278
+    2018: n=37  win_rate=43.2%  total_pnl=353
+    2019: n=51  win_rate=51.0%  total_pnl=862
+    2020: n=51  win_rate=47.1%  total_pnl=1,978
+    2021: n=20  win_rate=50.0%  total_pnl=1,914
+    2022: n=44  win_rate=34.1%  total_pnl=-1,101
+    2023: n=51  win_rate=31.4%  total_pnl=4,022
+    2024: n=34  win_rate=55.9%  total_pnl=2,375
+    2025: n=48  win_rate=58.3%  total_pnl=3,635
+    2026: n=36  win_rate=30.6%  total_pnl=-1,150
+  [BY BREADTH BUCKET AT ENTRY]
+    LOW-breadth: n=626  win_rate=38.7%  total_pnl=9,742
+    MID-breadth: n=600  win_rate=40.5%  total_pnl=11,641
+    HIGH-breadth: n=602  win_rate=41.0%  total_pnl=10,398
+  [RESULTS AFTER REMOVING THIS VARIANT'S OWN TOP-K TRADES]
+    excl_top1: n_remaining=1827  total_pnl_excl=28,674  total_return_excl=28.67%
+    excl_top2: n_remaining=1826  total_pnl_excl=26,687  total_return_excl=26.69%
+  [WINNER PRESERVATION vs CONTROL]
+    matched_trades=1785  control_winners=814  cut_short=734 (90.2% of control winners)
+    avg_winner_pnl_change=-29,310  largest_winner_pnl_change=-1,209,075  mfe_capture_pct_change=52.2pp
+
+  NOTE: ATR_TRAIL x4 trade set differs from control on 39 of 1824 total (symbol, entry_time) pairs -- expected capital-timing divergence from the two variants' capital paths splitting apart after their first differing exit (see module docstring's ENTRY-SET DIVERGENCE note), not a signal difference. Winner-preservation diagnostics below use only the trades both runs actually took.
+
+==========================================================================================
+VARIANT: ATR_TRAIL x4
+==========================================================================================
+  [NAV, full capital path]      cagr=0.74%  total_return=61.04%  sharpe=0.43  sortino=0.46  max_dd=-10.17%  worst_day=-1.81%
+  [CLOSED TRADES ONLY]          n=1824  cagr=0.75%  total_return=60.83%  win_rate=42.6%  pf=1.54  avg_trade=1.34%  median_trade=-1.38%
+  [HOLDING / STOP / MFE]        avg_hold=45d  max_hold=332d  stop_exit_pct=96.7%  avg_mfe_capture=-238.6%
+  [CONCENTRATION top_1pct]  n=19  pnl_share=48.5%
+  [CONCENTRATION top_5pct]  n=92  pnl_share=125.0%
+  [CONCENTRATION top_10pct]  n=183  pnl_share=180.8%
+  [BY CALENDAR YEAR]
+    1962: n=7  win_rate=57.1%  total_pnl=-68
+    1963: n=6  win_rate=33.3%  total_pnl=-278
+    1964: n=9  win_rate=33.3%  total_pnl=-1
+    1965: n=4  win_rate=100.0%  total_pnl=530
+    1966: n=6  win_rate=50.0%  total_pnl=448
+    1967: n=10  win_rate=70.0%  total_pnl=748
+    1968: n=9  win_rate=33.3%  total_pnl=-272
+    1969: n=6  win_rate=50.0%  total_pnl=68
+    1970: n=13  win_rate=69.2%  total_pnl=416
+    1971: n=3  win_rate=33.3%  total_pnl=24
+    1972: n=9  win_rate=55.6%  total_pnl=-160
+    1973: n=17  win_rate=23.5%  total_pnl=-558
+    1974: n=8  win_rate=37.5%  total_pnl=-382
+    1975: n=28  win_rate=42.9%  total_pnl=951
+    1976: n=17  win_rate=29.4%  total_pnl=-440
+    1977: n=20  win_rate=25.0%  total_pnl=-687
+    1978: n=18  win_rate=44.4%  total_pnl=265
+    1979: n=21  win_rate=28.6%  total_pnl=228
+    1980: n=26  win_rate=38.5%  total_pnl=423
+    1981: n=22  win_rate=27.3%  total_pnl=-568
+    1982: n=28  win_rate=50.0%  total_pnl=1,576
+    1983: n=9  win_rate=22.2%  total_pnl=-325
+    1984: n=40  win_rate=40.0%  total_pnl=1,472
+    1985: n=17  win_rate=58.8%  total_pnl=1,295
+    1986: n=15  win_rate=60.0%  total_pnl=3,764
+    1987: n=23  win_rate=43.5%  total_pnl=953
+    1988: n=51  win_rate=31.4%  total_pnl=-1,724
+    1989: n=18  win_rate=38.9%  total_pnl=559
+    1990: n=19  win_rate=47.4%  total_pnl=761
+    1991: n=38  win_rate=47.4%  total_pnl=3,405
+    1992: n=34  win_rate=50.0%  total_pnl=69
+    1993: n=24  win_rate=54.2%  total_pnl=278
+    1994: n=43  win_rate=46.5%  total_pnl=1,247
+    1995: n=19  win_rate=57.9%  total_pnl=2,534
+    1996: n=20  win_rate=35.0%  total_pnl=1,608
+    1997: n=17  win_rate=70.6%  total_pnl=3,780
+    1998: n=34  win_rate=58.8%  total_pnl=3,618
+    1999: n=33  win_rate=27.3%  total_pnl=-969
+    2000: n=44  win_rate=31.8%  total_pnl=-2,351
+    2001: n=42  win_rate=21.4%  total_pnl=-4,062
+    2002: n=35  win_rate=25.7%  total_pnl=-2,154
+    2003: n=56  win_rate=53.6%  total_pnl=5,024
+    2004: n=28  win_rate=53.6%  total_pnl=304
+    2005: n=41  win_rate=41.5%  total_pnl=171
+    2006: n=47  win_rate=59.6%  total_pnl=4,130
+    2007: n=20  win_rate=20.0%  total_pnl=217
+    2008: n=27  win_rate=3.7%  total_pnl=-3,921
+    2009: n=64  win_rate=45.3%  total_pnl=2,660
+    2010: n=39  win_rate=51.3%  total_pnl=4,359
+    2011: n=39  win_rate=46.2%  total_pnl=1,534
+    2012: n=37  win_rate=37.8%  total_pnl=2,109
+    2013: n=34  win_rate=50.0%  total_pnl=1,072
+    2014: n=35  win_rate=48.6%  total_pnl=1,072
+    2015: n=44  win_rate=31.8%  total_pnl=77
+    2016: n=49  win_rate=42.9%  total_pnl=1,905
+    2017: n=34  win_rate=58.8%  total_pnl=3,148
+    2018: n=37  win_rate=37.8%  total_pnl=2,978
+    2019: n=51  win_rate=47.1%  total_pnl=36
+    2020: n=51  win_rate=54.9%  total_pnl=5,754
+    2021: n=20  win_rate=55.0%  total_pnl=2,196
+    2022: n=44  win_rate=29.5%  total_pnl=-2,174
+    2023: n=51  win_rate=35.3%  total_pnl=6,260
+    2024: n=34  win_rate=52.9%  total_pnl=2,389
+    2025: n=48  win_rate=50.0%  total_pnl=5,526
+    2026: n=32  win_rate=21.9%  total_pnl=-2,019
+  [BY BREADTH BUCKET AT ENTRY]
+    LOW-breadth: n=626  win_rate=42.5%  total_pnl=18,343
+    MID-breadth: n=596  win_rate=41.8%  total_pnl=25,098
+    HIGH-breadth: n=602  win_rate=43.5%  total_pnl=17,385
+  [RESULTS AFTER REMOVING THIS VARIANT'S OWN TOP-K TRADES]
+    excl_top1: n_remaining=1823  total_pnl_excl=57,274  total_return_excl=57.27%
+    excl_top2: n_remaining=1822  total_pnl_excl=54,732  total_return_excl=54.73%
+  [WINNER PRESERVATION vs CONTROL]
+    matched_trades=1785  control_winners=814  cut_short=705 (86.6% of control winners)
+    avg_winner_pnl_change=-29,244  largest_winner_pnl_change=-1,208,630  mfe_capture_pct_change=40.3pp
+
+==========================================================================================
+SUMMARY: does any ATR variant beat the control?
+==========================================================================================
+  CONTROL: nav_cagr=8.64%  sharpe=0.96  sortino=1.13  closed_cagr=8.47%
+  ATR_TRAIL x2: nav_cagr=-0.02%  sharpe=-0.03  sortino=-0.03  -> does not beat control on CAGR or risk-adjusted metrics
+  ATR_TRAIL x3: nav_cagr=0.43%  sharpe=0.36  sortino=0.38  -> does not beat control on CAGR or risk-adjusted metrics
+  ATR_TRAIL x4: nav_cagr=0.74%  sharpe=0.43  sortino=0.46  -> does not beat control on CAGR or risk-adjusted metrics
+
+  Per the predeclared sequencing: no ATR variant beats the control on both CAGR and risk-adjusted performance -- next step is Chandelier exits, per the predeclared order.

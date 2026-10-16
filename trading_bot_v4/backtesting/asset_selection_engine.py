@@ -16,7 +16,7 @@ from trading_bot_v4.execution.paper_model_comparison import _predict_original_mo
 from trading_bot_v4.execution.paper_model_performance import PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH
 from trading_bot_v4.features.smc_feature_builder import _build_smc_feature_frame
 from trading_bot_v4.utils.logger import build_logger
-from trading_bot_v4.utils.model_cache import ModelScalerCache
+from trading_bot_v4.utils.model_cache import ModelScalerCache, PerAssetModelCache
 
 
 logger = build_logger("v4_asset_selection")
@@ -569,22 +569,22 @@ def run_asset_ranking(args: Any) -> AssetRankingResult:
         raise FileNotFoundError(f"Validated ranking requires constrained performance: {PAPER_MODEL_PERFORMANCE_CONSTRAINED_CSV_PATH}")
     walk_forward_stability = _load_walk_forward_stability(timeframe)
 
-    model = getattr(args, "model", None)
-    scaler = getattr(args, "scaler", None)
-    if model is None or scaler is None:
-        model = scaler = None
-        try:
-            model, scaler = ModelScalerCache().load()
-        except Exception as exc:
-            logger.warning("CNN/LSTM confidence unavailable; continuing without model confidence: %s", exc)
+    # A single shared model (ModelScalerCache, originally trained on ADA
+    # alone) was the root bug the per-asset system was built to fix -- asset
+    # ranking never got wired to that fix. Resolve one independently trained
+    # model per symbol instead, the same way --backtest-production does;
+    # symbols without a trained LONG model get no model-confidence signal
+    # rather than being scored against a symbol they were never trained on.
+    per_asset_cache = getattr(args, "per_asset_cache", None) or PerAssetModelCache()
 
     rows: list[dict[str, float | int | str]] = []
     for symbol in symbols:
         try:
             row = _ohlc_metrics(symbol, timeframe)
             row["smc_score"] = _smc_score(symbol, timeframe)
-            if model is not None and scaler is not None:
-                row.update(_prediction_metrics(model, scaler, symbol, timeframe))
+            pair = per_asset_cache.get("long", symbol)
+            if pair is not None:
+                row.update(_prediction_metrics(pair[0], pair[1], symbol, timeframe))
             else:
                 row.update({"cnn_lstm_confidence": 0.0, "trade_frequency_pct": 0.0, "prediction_count": 0})
             row.update(_performance_overrides(symbol, performance))

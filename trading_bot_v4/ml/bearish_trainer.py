@@ -113,7 +113,7 @@ def _split_bearish_four_way(dataset: pd.DataFrame, features: list[str]):
             entry[f"{name}_target"] = frame["target"].to_numpy(np.float32)
             stats[f"{name}_rows"] += len(frame)
             stats[f"{name}_sequences"] += len(frame) - Config.SEQUENCE_LENGTH
-        train_y = entry["train_target"][Config.SEQUENCE_LENGTH:]
+        train_y = entry["train_target"][Config.SEQUENCE_LENGTH - 1: -1]  # matches _sequence_generator's target[end - 1] alignment
         stats["train_positive"] += int(train_y.sum())
         stats["train_negative"] += int(len(train_y) - train_y.sum())
         arrays[symbol] = entry
@@ -130,7 +130,7 @@ def _partition_endpoints(dataset: pd.DataFrame, start_fraction: float,
         end = int(len(group) * end_fraction)
         partition = group.iloc[start:end]
         if len(partition) > Config.SEQUENCE_LENGTH:
-            frames.append(partition.iloc[Config.SEQUENCE_LENGTH:][
+            frames.append(partition.iloc[Config.SEQUENCE_LENGTH - 1: -1][
                 ["timestamp", "symbol", "bearish_future_return", "target"]
             ])
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()

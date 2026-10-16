@@ -205,21 +205,34 @@ def add_swing_features(
     for column in OHLCV_COLUMNS:
         result[column] = pd.to_numeric(result[column], errors="coerce")
 
+    # A bar is only confirmed as a swing high/low once `window` later bars
+    # have failed to exceed it -- that confirmation is only knowable once
+    # those later bars have actually happened. The centered rolling window
+    # below identifies *which* bar was the swing (a legitimate, standard
+    # definition), but its result must be shifted forward by `window` bars
+    # before use as a feature -- otherwise a bar's own swing status gets
+    # backdated to before it was confirmable, leaking future price action
+    # into what's meant to be a point-in-time feature. This was previously
+    # unshifted and produced provably too-good-to-be-true backtest results.
     rolling_window = (window * 2) + 1
     rolling_high = result["High"].rolling(window=rolling_window, center=True, min_periods=rolling_window).max()
     rolling_low = result["Low"].rolling(window=rolling_window, center=True, min_periods=rolling_window).min()
-    high_candidates = result["High"].eq(rolling_high).fillna(False)
-    low_candidates = result["Low"].eq(rolling_low).fillna(False)
+    high_candidates = result["High"].eq(rolling_high).fillna(False).shift(window).fillna(False)
+    low_candidates = result["Low"].eq(rolling_low).fillna(False).shift(window).fillna(False)
 
     atr = calculate_atr(result)
-    swing_high = _filter_by_atr_distance(high_candidates, result["High"], atr, min_distance)
-    swing_low = _filter_by_atr_distance(low_candidates, result["Low"], atr, min_distance)
+    swing_high = _filter_by_atr_distance(high_candidates, result["High"].shift(window), atr, min_distance)
+    swing_low = _filter_by_atr_distance(low_candidates, result["Low"].shift(window), atr, min_distance)
 
     result["swing_high"] = swing_high.astype(int)
     result["swing_low"] = swing_low.astype(int)
 
-    swing_high_price = result["High"].where(result["swing_high"].eq(1))
-    swing_low_price = result["Low"].where(result["swing_low"].eq(1))
+    # The swing's actual price is at the original bar (N - window), not the
+    # bar where its confirmation becomes visible (N) -- must use the same
+    # shifted series the flags above were derived from, or the recorded
+    # price would silently be today's High/Low instead of the swing's own.
+    swing_high_price = result["High"].shift(window).where(result["swing_high"].eq(1))
+    swing_low_price = result["Low"].shift(window).where(result["swing_low"].eq(1))
 
     result["last_swing_high"] = swing_high_price.ffill()
     result["last_swing_low"] = swing_low_price.ffill()

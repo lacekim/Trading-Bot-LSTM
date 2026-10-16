@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-10-14T15:35:22.313510+00:00",
+  "reason": "complete daily retraining",
+  "version": "d3eaafe579920898",
+  "artifacts": [
+    {
+      "path": "models/lstm_smc_model.h5",
+      "sha256": "a6b3c0862b860ac3d93c087ccfb8b8989c9199e4b861d4a2565098c7e4c79f0b",
+      "size_bytes": 269256,
+      "modified_at": "2026-10-14T14:42:35.340000+00:00"
+    },
+    {
+      "path": "models/scaler_smc.pkl",
+      "sha256": "e8936cd9344a22dfbda91d5e8e237ac155c873c728fc780724f0dd72760acddb",
+      "size_bytes": 1769,
+      "modified_at": "2026-10-14T14:42:35.350000+00:00"
+    },
+    {
+      "path": "models/long/calibration.json",
+      "sha256": "b8e6d5f636d6fbcd5b8fc8db4b643b87d5adaa6e32e0d08d679d33e858647ba1",
+      "size_bytes": 169649,
+      "modified_at": "2026-08-24T02:39:47.920000+00:00"
+    },
+    {
+      "path": "models/short/calibration.json",
+      "sha256": "a7d0fc54dc33f625d6154c6d2507fd0acc5e72aa301ee5078377260bb1805ae7",
+      "size_bytes": 170411,
+      "modified_at": "2026-08-24T02:46:04.010000+00:00"
+    }
+  ]
+}

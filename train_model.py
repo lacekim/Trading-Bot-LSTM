@@ -364,9 +364,9 @@ class DataHandler:
             end_ix = i + seq_length
             if end_ix > len(data) - 1:
                 break
-            
+
             seq_x = data[i:end_ix]
-            seq_y = target[end_ix]
+            seq_y = target[end_ix - 1]  # target anchored on the sequence's last observed row, not one candle past it
             
             X.append(seq_x)
             y.append(seq_y)

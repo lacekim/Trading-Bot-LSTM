@@ -1,0 +1,117 @@
+{
+  "thresholds": {
+    "long": {
+      "threshold": 0.35000000000000003,
+      "cal_pf": 3.9870473653919163,
+      "cal_trades": 40,
+      "trees_used": [
+        5,
+        10,
+        23,
+        39,
+        23
+      ],
+      "bag_ns": [
+        40000,
+        40000,
+        40000,
+        40000,
+        40000
+      ]
+    },
+    "short": {
+      "threshold": 1.0,
+      "cal_pf": -1.0,
+      "cal_trades": 0,
+      "trees_used": [
+        12,
+        10,
+        13,
+        12,
+        12
+      ],
+      "bag_ns": [
+        40000,
+        40000,
+        40000,
+        40000,
+        40000
+      ]
+    }
+  },
+  "without_pullout": {
+    "trades": 266,
+    "return_pct": 739.4217757934498,
+    "pf": 1.7345285376959707
+  },
+  "with_pullout": {
+    "trades": 93,
+    "return_pct": 784.3553867194429,
+    "pf": 4.12826238831594
+  },
+  "windows": [
+    {
+      "window": 1,
+      "trades": 89,
+      "return_pct": 806.2483397560969,
+      "pf": 4.538454033373434,
+      "start": "2024-01-03 23:00:00",
+      "end": "2024-04-14 18:00:00",
+      "june2026_overlap": false,
+      "clears_bar": "True"
+    },
+    {
+      "window": 2,
+      "trades": 89,
+      "return_pct": 140.1703063435724,
+      "pf": 1.328437288419931,
+      "start": "2024-04-14 19:00:00",
+      "end": "2025-01-20 01:00:00",
+      "june2026_overlap": false,
+      "clears_bar": "True"
+    },
+    {
+      "window": 3,
+      "trades": 88,
+      "return_pct": -206.99687030621945,
+      "pf": 0.4119890715124971,
+      "start": "2025-01-20 02:00:00",
+      "end": "2025-11-09 23:00:00",
+      "june2026_overlap": false,
+      "clears_bar": false
+    }
+  ],
+  "june_2026_standalone": {
+    "trades": 0,
+    "return_pct": 0.0,
+    "pf": 0.0
+  },
+  "promoted": false,
+  "per_symbol": [
+    {
+      "symbol": "TRX",
+      "n": 19,
+      "sum_return_pct": -329.7070168542895
+    },
+    {
+      "symbol": "PAXG",
+      "n": 29,
+      "sum_return_pct": -94.44467026703511
+    },
+    {
+      "symbol": "XMR",
+      "n": 87,
+      "sum_return_pct": -40.22470737919363
+    },
+    {
+      "symbol": "ETH",
+      "n": 34,
+      "sum_return_pct": 275.3063983707484
+    },
+    {
+      "symbol": "SOL",
+      "n": 97,
+      "sum_return_pct": 928.4917719232197
+    }
+  ]
+}

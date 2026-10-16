@@ -619,16 +619,17 @@ def run_daily_research(args: Any) -> DailyResearchResult:
     )
     rankings = ranking_result.rankings
 
-    original_model = getattr(args, "model", None)
-    original_scaler = getattr(args, "scaler", None)
-    if original_model is None or original_scaler is None:
-        from trading_bot_v4.utils.model_cache import ModelScalerCache
-        original_model, original_scaler = ModelScalerCache().load()
+    # The single ADA-only model (ModelScalerCache) was the original root bug
+    # this whole per-asset system was built to fix -- daily research just
+    # never got wired to the fix. Every symbol here gets its own trained
+    # model now, the same way --backtest-production already does.
+    from trading_bot_v4.utils.model_cache import PerAssetModelCache
+    per_asset_cache = getattr(args, "per_asset_cache", None) or PerAssetModelCache()
     daily_signals = run_original_baseline_paper_signals(
         sorted({str(symbol).upper() for symbol in list_gmx_symbols(timeframe)}),
-        timeframe, original_model, original_scaler,
-        signals_path=DAILY_ALL_ASSET_SIGNALS_PATH,
+        timeframe, signals_path=DAILY_ALL_ASSET_SIGNALS_PATH,
         summary_path=DAILY_ALL_ASSET_SUMMARY_PATH,
+        per_asset_cache=per_asset_cache,
     )
 
     validation_symbols = sorted({str(symbol).upper() for symbol in list_gmx_symbols(timeframe)})
