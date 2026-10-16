@@ -18,3 +18,11 @@ __pycache__/
 .env
 .DS_Store
 ._*
+
+# Files that contain API keys / bot tokens, and the nested freqtrade repo: never commit
+handoff2.md
+handoff3.md
+market_data_collectors/collect_santiment_social.py
+tools/run_santiment_social_experiment.py
+tools/run_social_exhaustion_experiment.py
+freqtrade-develop/
