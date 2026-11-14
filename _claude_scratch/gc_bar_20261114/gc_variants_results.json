@@ -1,0 +1,254 @@
+{
+ "full": [
+  {
+   "variant": "LIVE",
+   "trades": 513,
+   "win_pct": 34.3,
+   "total_pct": 27809.2,
+   "cagr_pct": 59.14,
+   "max_dd_pct": -52.2,
+   "cagr_over_dd": 1.13,
+   "pf": 2.03,
+   "pf_ex_top3": 1.61,
+   "stops": 237,
+   "exits": {
+    "death_cross": 276,
+    "stop": 237
+   }
+  },
+  {
+   "variant": "VALIDATED",
+   "trades": 285,
+   "win_pct": 35.4,
+   "total_pct": 6961.1,
+   "cagr_pct": 42.08,
+   "max_dd_pct": -42.9,
+   "cagr_over_dd": 0.98,
+   "pf": 2.8,
+   "pf_ex_top3": 2.18,
+   "stops": 124,
+   "exits": {
+    "death_cross": 161,
+    "stop": 124
+   }
+  },
+  {
+   "variant": "FAST_EXIT",
+   "trades": 847,
+   "win_pct": 20.8,
+   "total_pct": 4888.4,
+   "cagr_pct": 38.07,
+   "max_dd_pct": -44.3,
+   "cagr_over_dd": 0.86,
+   "pf": 1.97,
+   "pf_ex_top3": 1.58,
+   "stops": 69,
+   "exits": {
+    "close<ma200": 753,
+    "stop": 69,
+    "death_cross": 25
+   }
+  },
+  {
+   "variant": "SLOPE",
+   "trades": 104,
+   "win_pct": 37.5,
+   "total_pct": 191.7,
+   "cagr_pct": 9.23,
+   "max_dd_pct": -37.4,
+   "cagr_over_dd": 0.25,
+   "pf": 2.42,
+   "pf_ex_top3": 1.55,
+   "stops": 46,
+   "exits": {
+    "death_cross": 58,
+    "stop": 46
+   }
+  },
+  {
+   "variant": "TRAIL",
+   "trades": 288,
+   "win_pct": 35.1,
+   "total_pct": 405.2,
+   "cagr_pct": 14.3,
+   "max_dd_pct": -22.1,
+   "cagr_over_dd": 0.65,
+   "pf": 1.95,
+   "pf_ex_top3": 1.6,
+   "stops": 99,
+   "exits": {
+    "trail": 161,
+    "stop": 99,
+    "death_cross": 28
+   }
+  }
+ ],
+ "first_half": [
+  {
+   "variant": "LIVE",
+   "trades": 163,
+   "win_pct": 31.3,
+   "total_pct": 2245.3,
+   "cagr_pct": 68.32,
+   "max_dd_pct": -52.2,
+   "cagr_over_dd": 1.31,
+   "pf": 2.17,
+   "pf_ex_top3": 1.07,
+   "stops": 91,
+   "exits": {
+    "stop": 91,
+    "death_cross": 72
+   }
+  },
+  {
+   "variant": "VALIDATED",
+   "trades": 76,
+   "win_pct": 32.9,
+   "total_pct": 802.5,
+   "cagr_pct": 43.78,
+   "max_dd_pct": -42.9,
+   "cagr_over_dd": 1.02,
+   "pf": 3.42,
+   "pf_ex_top3": 1.17,
+   "stops": 45,
+   "exits": {
+    "stop": 45,
+    "death_cross": 31
+   }
+  },
+  {
+   "variant": "FAST_EXIT",
+   "trades": 190,
+   "win_pct": 19.5,
+   "total_pct": 746.0,
+   "cagr_pct": 42.25,
+   "max_dd_pct": -44.3,
+   "cagr_over_dd": 0.95,
+   "pf": 3.09,
+   "pf_ex_top3": 1.31,
+   "stops": 28,
+   "exits": {
+    "close<ma200": 157,
+    "stop": 28,
+    "death_cross": 5
+   }
+  },
+  {
+   "variant": "SLOPE",
+   "trades": 23,
+   "win_pct": 39.1,
+   "total_pct": 47.2,
+   "cagr_pct": 6.58,
+   "max_dd_pct": -37.4,
+   "cagr_over_dd": 0.18,
+   "pf": 3.28,
+   "pf_ex_top3": 0.6,
+   "stops": 13,
+   "exits": {
+    "stop": 13,
+    "death_cross": 10
+   }
+  },
+  {
+   "variant": "TRAIL",
+   "trades": 76,
+   "win_pct": 34.2,
+   "total_pct": 108.3,
+   "cagr_pct": 12.88,
+   "max_dd_pct": -22.1,
+   "cagr_over_dd": 0.58,
+   "pf": 2.34,
+   "pf_ex_top3": 0.96,
+   "stops": 37,
+   "exits": {
+    "stop": 37,
+    "trail": 33,
+    "death_cross": 6
+   }
+  }
+ ],
+ "second_half": [
+  {
+   "variant": "LIVE",
+   "trades": 350,
+   "win_pct": 35.7,
+   "total_pct": 1090.0,
+   "cagr_pct": 50.49,
+   "max_dd_pct": -44.3,
+   "cagr_over_dd": 1.14,
+   "pf": 2.02,
+   "pf_ex_top3": 1.57,
+   "stops": 146,
+   "exits": {
+    "death_cross": 204,
+    "stop": 146
+   }
+  },
+  {
+   "variant": "VALIDATED",
+   "trades": 209,
+   "win_pct": 36.4,
+   "total_pct": 682.4,
+   "cagr_pct": 40.43,
+   "max_dd_pct": -25.6,
+   "cagr_over_dd": 1.58,
+   "pf": 2.74,
+   "pf_ex_top3": 2.06,
+   "stops": 79,
+   "exits": {
+    "death_cross": 130,
+    "stop": 79
+   }
+  },
+  {
+   "variant": "FAST_EXIT",
+   "trades": 657,
+   "win_pct": 21.2,
+   "total_pct": 489.7,
+   "cagr_pct": 34.03,
+   "max_dd_pct": -21.6,
+   "cagr_over_dd": 1.57,
+   "pf": 1.88,
+   "pf_ex_top3": 1.48,
+   "stops": 41,
+   "exits": {
+    "close<ma200": 596,
+    "stop": 41,
+    "death_cross": 20
+   }
+  },
+  {
+   "variant": "SLOPE",
+   "trades": 81,
+   "win_pct": 37.0,
+   "total_pct": 98.2,
+   "cagr_pct": 11.95,
+   "max_dd_pct": -21.8,
+   "cagr_over_dd": 0.55,
+   "pf": 2.26,
+   "pf_ex_top3": 1.29,
+   "stops": 33,
+   "exits": {
+    "death_cross": 48,
+    "stop": 33
+   }
+  },
+  {
+   "variant": "TRAIL",
+   "trades": 212,
+   "win_pct": 35.4,
+   "total_pct": 142.5,
+   "cagr_pct": 15.74,
+   "max_dd_pct": -17.9,
+   "cagr_over_dd": 0.88,
+   "pf": 1.86,
+   "pf_ex_top3": 1.44,
+   "stops": 62,
+   "exits": {
+    "trail": 128,
+    "stop": 62,
+    "death_cross": 22
+   }
+  }
+ ]
+}

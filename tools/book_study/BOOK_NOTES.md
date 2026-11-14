@@ -460,3 +460,28 @@ Not done and not in the book's code: Section 2.3 (equations only), PIN and VPIN,
 - Book silent on the window n: used the replaced estimator's count (336 bars; 100 daily returns), carried over holes as before. Stated assumption.
 - Results: runtime/book_bot_nat/kraken_20261016T135434Z, alpaca_20261016T144307Z (first Alpaca run was killed by a workspace restart: folder alpaca_20261016T142636Z_killed_partial, not used). Independent checker (own Appendix B code): Kraken 287,454 numbers 0 problems; Alpaca 1,529,354 numbers 0 problems; the baseline run fails it on sigma/trgt (so the swap is real) and a planted label error is caught.
 - Comparison: runtime/book_bot_nat/COMPARISON.md (numbers read from saved meta.json / summary.csv).
+
+## 2026-11-14: golden cross bar on both venues; the second book set (algorithmic_trading_book); standing instruction to write down and commit
+
+Standing instruction from the user (2026-11-14): write down each thing as it is done and commit it as it is done. Secrets are never committed (.gitignore unchanged).
+
+### 1. Golden cross bar (the user's rule, unchanged), Kraken and Alpaca - `_claude_scratch/gc_bar_20261114/`
+- Kraken: `run()` from `tools/run_golden_cross_variants.py` unchanged (4h bars, 6 assets, 12 bp per side, 15% allocation, -8% stop). `gc_run.py` reproduces `logs/v5_golden_cross_variants.json` exactly (LIVE: 513 trades, PF 2.03, CAGR 59.14%, max DD -52.2%). `kraken_bar.py` runs the same function on `runtime/venue_candles_v2/kraken_1h`. BTC candles there end 2026-01-05; the other five run to 2026-10-12.
+- Alpaca: `compute_trend_state`, `backtest_one`, `simulate_portfolio`, `robustness` unchanged from `tools/run_cross_asset_golden_cross_backtest_4h_alpaca.py`, run on daily closes in `runtime/venue_candles/alpaca_1d/alpaca_daily.csv.gz`, robust-on-daily universe. 55 of 60 instruments are in the local file (missing QQQ, VTI, DIA, GLD, PPLT).
+- Numbers (saved: `kraken_bar.json`, `alpaca_bar.json`, `alpaca_bar_checked.json`):
+
+| venue | window | golden cross | AFML book bot v2 (`book_bot_v2/RESULTS.md`) |
+|---|---|---|---|
+| Kraken (LIVE variant) | 2024-01-01 to 2026-10-12 | +107.5%, max DD -21.5%, 145 trades, PF 1.82 | -4.00% |
+| Kraken (LIVE variant) | 2025-10-13 to 2026-10-12 | +25.0%, max DD -14.2%, 34 trades, PF 1.70 | -2.11% |
+| Alpaca (daily, open positions marked at last close) | entered from 2024-01-01, to 2026-10-02 | +15.15%, max DD -3.64% (closed trades only: -2.13%, 80 trades) | -1.90% |
+| Alpaca (daily, open positions marked at last close) | entered from 2025-10-10, to 2026-10-02 | -2.54%, max DD -4.43% (closed trades only: -3.51%, 19 trades) | -0.74% |
+
+- Check (`check.py`, separate code): Kraken 6 of 6 rows match when recomputed from the trade lists. Alpaca window trade counts match (80, 19). Whole-file Alpaca differs: the engine has 404 closed trades (+216.61%), a strict-cross count has 355 (+149.75%), because the engine opens a position on the first bar after the 200-bar warm-up when the 50MA is already above the 200MA. The engine was not changed.
+- Caveats: marking open positions at the last close is an addition of this check (the engine counts closed trades only). The Alpaca universe was selected as robust on history that overlaps the windows. Trade lists and equity curves are CSV, which `.gitignore` excludes; they are on disk in the same folder.
+
+### 2. The second book set - `~/Documents/GitHub/algorithmic_trading_book` (Successful Algorithmic Trading; Advanced Algorithmic Trading)
+- Strategy code present and what each imports: SAT ch.14 moving average crossover 100/400 (numpy, pandas, the book's own backtester); SAT ch.15 intraday pairs mean reversion (statsmodels) and S&P forecast (sklearn.qda); AAT Kalman pairs, cointegration Bollinger, monthly rebalance, sentiment (qstrader); AAT HMM regime detection (qstrader, hmmlearn); AAT intraday ML (qstrader, sklearn); AAT ARIMA+GARCH (R).
+- Installed where the code runs (2026-11-14): numpy 2.2.6 and pandas 2.3.3 only; no network. So only SAT ch.14 can be attempted.
+- SAT ch.14 run as printed - `_claude_scratch/sat_ch14_mac_20261114/` (`book_code/` is an unchanged copy; `run_as_printed.py` is the book's `__main__` block with only `csv_dir` supplied; data: AAPL daily closes from the Alpaca file in the book's column layout, open/high/low/adj_close set to close because the file has close and volume only).
+- RESULT: STOPPED. `data.py` line 130, `.sort()`: `AttributeError: 'DataFrame' object has no attribute 'sort'` (book written for pandas 0.16.2; `run_as_printed_AAPL_error.txt`). Change it would need: `.sort()` -> `.sort_index()`. NOT made; waiting for the user's yes. No result exists for this strategy yet.

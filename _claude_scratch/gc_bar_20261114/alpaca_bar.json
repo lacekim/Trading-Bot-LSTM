@@ -1,0 +1,48 @@
+{
+ "instruments_used": 55,
+ "missing": [
+  [
+   "QQQ",
+   "QQQ"
+  ],
+  [
+   "VTI",
+   "VTI"
+  ],
+  [
+   "PA=F",
+   "PPLT"
+  ],
+  [
+   "GC=F",
+   "GLD"
+  ],
+  [
+   "DIA",
+   "DIA"
+  ]
+ ],
+ "data_last_day": "2026-10-02",
+ "whole_file_2016_to_2026-10-02": {
+  "n_trades": 404,
+  "total_return_pct": 216.61,
+  "max_drawdown_pct": -6.46,
+  "pf": 4.92,
+  "win_pct": 45.8
+ },
+ "entered_from_2024-01-01": {
+  "n_trades": 80,
+  "total_return_pct": -2.13,
+  "max_drawdown_pct": -3.64,
+  "pf": 0.76,
+  "win_pct": 27.5
+ },
+ "entered_from_2025-10-10": {
+  "n_trades": 19,
+  "total_return_pct": -3.51,
+  "max_drawdown_pct": -3.51,
+  "pf": 0.0,
+  "win_pct": 0.0
+ },
+ "robust_count": 4
+}

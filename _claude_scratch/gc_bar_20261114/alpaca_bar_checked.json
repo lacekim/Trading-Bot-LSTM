@@ -1,0 +1,44 @@
+{
+ "whole_file": {
+  "closed": 355,
+  "closed_only": [
+   149.75,
+   -5.49
+  ],
+  "open_marked": 36,
+  "with_open_marked": [
+   187.69,
+   -5.49
+  ],
+  "pf_with_open": 4.52,
+  "win_pct": 45.0
+ },
+ "entered_from_2024-01-01": {
+  "closed": 80,
+  "closed_only": [
+   -2.13,
+   -3.64
+  ],
+  "open_marked": 36,
+  "with_open_marked": [
+   15.15,
+   -3.64
+  ],
+  "pf_with_open": 2.35,
+  "win_pct": 37.1
+ },
+ "entered_from_2025-10-10": {
+  "closed": 19,
+  "closed_only": [
+   -3.51,
+   -3.51
+  ],
+  "open_marked": 25,
+  "with_open_marked": [
+   -2.54,
+   -4.43
+  ],
+  "pf_with_open": 0.53,
+  "win_pct": 22.7
+ }
+}

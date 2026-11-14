@@ -1,0 +1,15 @@
+Creating DataHandler, Strategy, Portfolio and ExecutionHandler
+Traceback (most recent call last):
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/run_as_printed.py", line 13, in <module>
+    backtest = Backtest(csv_dir, symbol_list, initial_capital, heartbeat, start_date,
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/backtest.py", line 60, in __init__
+    self._generate_trading_instances()
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/backtest.py", line 70, in _generate_trading_instances
+    self.data_handler = self.data_handler_cls(self.events, self.csv_dir, self.symbol_list)
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/data.py", line 110, in __init__
+    self._open_convert_csv_files()
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/data.py", line 130, in _open_convert_csv_files
+    ).sort()
+  File "/usr/local/lib/python3.10/dist-packages/pandas/core/generic.py", line 6321, in __getattr__
+    return object.__getattribute__(self, name)
+AttributeError: 'DataFrame' object has no attribute 'sort'
