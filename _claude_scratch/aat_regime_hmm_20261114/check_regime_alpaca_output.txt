@@ -1,0 +1,6 @@
+off  entered_from_2024-01-01    closed=80 open=36 return=15.15% maxDD=-3.64% | engine 15.15% / -3.64% | match=True
+off  entered_from_2025-10-10    closed=19 open=25 return=-2.54% maxDD=-3.62% | engine -2.54% / -3.62% | match=True
+hmm  entered_from_2024-01-01    closed=71 open=29 return=16.02% maxDD=-3.12% | engine 16.02% / -3.12% | match=True
+hmm  entered_from_2025-10-10    closed=18 open=18 return=-1.94% maxDD=-3.62% | engine -1.94% / -3.62% | match=True
+closed trades: off 404 hmm 354 | in hmm but not in off: 0 (must be 0: the filter can only remove entries)
+ALL MATCH

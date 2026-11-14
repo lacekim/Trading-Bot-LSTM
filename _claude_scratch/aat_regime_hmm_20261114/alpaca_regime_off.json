@@ -1,0 +1,27 @@
+{
+ "mode": "off",
+ "instruments": 55,
+ "models": {},
+ "rows": {
+  "entered_from_2024-01-01": {
+   "closed_trades": 80,
+   "closed_only_return_pct": -2.13,
+   "open_positions": 36,
+   "with_open_marked_return_pct": 15.15,
+   "with_open_marked_max_dd_pct": -3.64,
+   "pf_with_open": 2.35,
+   "win_pct": 37.1,
+   "mean_trade_pct": 6.67
+  },
+  "entered_from_2025-10-10": {
+   "closed_trades": 19,
+   "closed_only_return_pct": -3.51,
+   "open_positions": 25,
+   "with_open_marked_return_pct": -2.54,
+   "with_open_marked_max_dd_pct": -3.62,
+   "pf_with_open": 0.53,
+   "win_pct": 22.7,
+   "mean_trade_pct": -2.94
+  }
+ }
+}
