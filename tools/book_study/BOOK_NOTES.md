@@ -485,3 +485,20 @@ Standing instruction from the user (2026-11-14): write down each thing as it is 
 - Installed where the code runs (2026-11-14): numpy 2.2.6 and pandas 2.3.3 only; no network. So only SAT ch.14 can be attempted.
 - SAT ch.14 run as printed - `_claude_scratch/sat_ch14_mac_20261114/` (`book_code/` is an unchanged copy; `run_as_printed.py` is the book's `__main__` block with only `csv_dir` supplied; data: AAPL daily closes from the Alpaca file in the book's column layout, open/high/low/adj_close set to close because the file has close and volume only).
 - RESULT: STOPPED. `data.py` line 130, `.sort()`: `AttributeError: 'DataFrame' object has no attribute 'sort'` (book written for pandas 0.16.2; `run_as_printed_AAPL_error.txt`). Change it would need: `.sort()` -> `.sort_index()`. NOT made; waiting for the user's yes. No result exists for this strategy yet.
+
+### 3. SAT ch.14 moving average crossover: made to run, then tested against the golden cross bar (2026-11-14, after the user said "do what you need to, write it all down and commit EACH thing you do")
+- Changes to the book's code, one commit each, diffs in `_claude_scratch/sat_ch14_mac_20261114/changes/`, log in `CHANGES.md`: (1) `data.py` line 130 `.sort()` -> `.sort_index()`; (2) `mac.py` line 61 `bars != []` -> `len(bars) > 0`. Nothing else in the book's code was changed.
+- The book's own backtest as printed after those two changes (AAPL daily closes, 100 shares per order, the book's commission): Total Return 24.30%, Sharpe 11.75, Max Drawdown 8.58%, 9 fills (`run_step2.txt`). Finding: the book's `output_summary_stats` annualises with `periods=252*60*6.5` (minute bars) although the data is daily; recomputed with 252 from the saved `equity.csv` the Sharpe is 0.59 and the max drawdown -7.20%. Not changed.
+- The fixed 100-unit order makes the book's own backtest meaningless on crypto (100 BTC against 100,000 of capital), so the book's rule (short MA > long MA: long; short < long: exit; 100/400) was put inside the user's golden cross engines with only the two window lengths changed:
+
+| venue | window | golden cross 50/200 | book 100/400 | ahead |
+|---|---|---|---|---|
+| Kraken 4h, LIVE | 2024-01-01 to 2026-10-12 | +107.5% (max DD -21.5%, PF 1.82) | +44.4% (max DD -30.7%, PF 1.23) | golden cross |
+| Kraken 4h, LIVE | last 365 days | +25.0% (max DD -14.2%) | +5.5% (max DD -30.9%) | golden cross |
+| Kraken 4h, LIVE | whole history | +33503.5% | +7437.1% | golden cross |
+| Alpaca daily, open positions marked | entered from 2024-01-01 | +15.15% (max DD -3.64%) | +17.49% (max DD -3.21%) | book, by 2.3 points |
+| Alpaca daily, open positions marked | entered from 2025-10-10 | -2.54% | +0.87% | book, by 3.4 points |
+| Alpaca daily, open positions marked | whole file | +264.71% (max DD -6.46%) | +247.48% (max DD -4.24%) | golden cross |
+
+- VERDICT: NOT a clear win. Kraken: the golden cross is ahead in every window. Alpaca: the book's windows are slightly ahead in the two recent windows (few closed trades: 24 and 3; the lead is unrealised gains), behind on the whole file and on closed trades from 2024. The golden cross stays the bar.
+- Still blocked (libraries not installed where the code runs; no network there): Kalman pairs, cointegration Bollinger, HMM regime detection, intraday ML, monthly rebalance, sentiment (qstrader / hmmlearn / scikit-learn / statsmodels), ARIMA+GARCH (R).
