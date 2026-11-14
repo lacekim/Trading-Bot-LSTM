@@ -502,3 +502,22 @@ Standing instruction from the user (2026-11-14): write down each thing as it is 
 
 - VERDICT: NOT a clear win. Kraken: the golden cross is ahead in every window. Alpaca: the book's windows are slightly ahead in the two recent windows (few closed trades: 24 and 3; the lead is unrealised gains), behind on the whole file and on closed trades from 2024. The golden cross stays the bar.
 - Still blocked (libraries not installed where the code runs; no network there): Kalman pairs, cointegration Bollinger, HMM regime detection, intraday ML, monthly rebalance, sentiment (qstrader / hmmlearn / scikit-learn / statsmodels), ARIMA+GARCH (R).
+
+### 4. AAT regime detection (hidden Markov model) as a filter on the golden cross - `_claude_scratch/aat_regime_hmm_20261114/` (2026-11-14; user: "Do whats next, write everything down")
+- What the book does: a moving average crossover plus a risk manager that fits a 2-state Gaussian HMM to the traded instrument's returns on data before the backtest, then blocks new long entries while the HMM says the regime is the undesirable (high-volatility) one; exits always allowed; a blocked entry waits for the next cross.
+- hmmlearn is not installed where the code runs (no network), so the model is written out in `hmm_np.py` (Baum-Welch, bar-by-bar last Viterbi state). Stated differences from hmmlearn: deterministic start instead of seeded k-means; no covariance priors. The book's code assumes state 0 is the desirable regime; here it is the lower-variance state. Checks in `test_hmm_np.py` all pass (recovery on simulated data, EM never falls, two forward passes agree, brute-force Viterbi, no look-ahead, extreme-outlier regression).
+- BUG OF MINE, FOUND AND FIXED (commit "step 2"): the first Kraken run fitted ETH in 2 iterations with a falling log-likelihood, caused by flooring emission densities on ETH's +700% / +175% bars of August 2015. Fixed by exact log-space scaling; the first numbers were discarded and never reported as a result.
+- Each instrument's HMM is fitted on returns before 2024-01-01 only; both windows below are after that date. The engines are the user's; the only rule change is that a new entry needs the calm regime.
+
+| venue | window | golden cross | golden cross + HMM filter |
+|---|---|---|---|
+| Kraken 4h, LIVE | from 2024-01-01 | +107.5%, max DD -21.5%, PF 1.82, 145 trades | +111.2%, max DD -20.3%, PF 1.98, 132 trades |
+| Kraken 4h, LIVE | last 365 days | +25.0%, max DD -14.2% | +25.2%, max DD -14.2% |
+| Kraken 4h, VALIDATED | from 2024-01-01 | +124.8%, max DD -17.7%, PF 2.48, 89 trades | +106.4%, max DD -17.9%, PF 2.39, 81 trades |
+| Kraken 4h, VALIDATED | last 365 days | +28.2%, PF 2.39 | +24.7%, PF 2.01 |
+| Alpaca daily, open positions marked | entered from 2024-01-01 | +15.15%, max DD -3.64%, PF 2.35 | +16.02%, max DD -3.12%, PF 2.66 |
+| Alpaca daily, open positions marked | entered from 2025-10-10 | -2.54% | -1.94% |
+
+- VERDICT: NOT a clear win. Alpaca: slightly better in both windows (under 1 point). Kraken: slightly better in the LIVE variant, 18 points worse in the VALIDATED variant, flat over the last 365 days. The golden cross stays the bar. ETH's wild state is fitted to its 2015 listing bars (23% per-bar volatility), so ETH is almost never blocked; not tuned.
+- What this says: this regime detector reads price only (the instrument's own returns), like the AFML features and the earlier intermarket filter. Three price-only layers have now failed to add a clear edge to the golden cross.
+- Sentiment inventory on disk (for the next step): `data/sentiment/social_sentiment_*.csv` are 69 files with ONE row each (a single hourly snapshot, 2026-06-17 23:00 UTC), so there is no sentiment history to backtest with. README section 3.2 records that GDELT news tone was tried as a gate, a feature and a volatility target and did not clear the walk-forward bar. The AAT sentiment strategy (enter when a sentiment score reaches an entry threshold, exit at an exit threshold) needs a dated sentiment series per instrument, which is not on disk.
