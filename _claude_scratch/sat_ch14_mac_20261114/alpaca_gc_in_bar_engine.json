@@ -1,0 +1,29 @@
+{
+ "entered_from_2024-01-01": {
+  "closed_trades": 80,
+  "closed_only_return_pct": -2.13,
+  "open_positions": 36,
+  "with_open_marked_return_pct": 15.15,
+  "with_open_marked_max_dd_pct": -3.64,
+  "pf_with_open": 2.35,
+  "win_pct": 37.1
+ },
+ "entered_from_2025-10-10": {
+  "closed_trades": 19,
+  "closed_only_return_pct": -3.51,
+  "open_positions": 25,
+  "with_open_marked_return_pct": -2.54,
+  "with_open_marked_max_dd_pct": -3.62,
+  "pf_with_open": 0.53,
+  "win_pct": 22.7
+ },
+ "whole_file": {
+  "closed_trades": 404,
+  "closed_only_return_pct": 216.61,
+  "open_positions": 36,
+  "with_open_marked_return_pct": 264.71,
+  "with_open_marked_max_dd_pct": -6.46,
+  "pf_with_open": 5.16,
+  "win_pct": 46.8
+ }
+}

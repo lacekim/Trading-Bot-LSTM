@@ -1,0 +1,4 @@
+entered_from_2024-01-01    independent closed=24 open=26 | engine closed=24 open=26 | match=True
+entered_from_2025-10-10    independent closed=3 open=12 | engine closed=3 open=12 | match=True
+whole_file                 independent closed=171 open=39 | engine closed=171 open=39 | match=True
+ALL MATCH
