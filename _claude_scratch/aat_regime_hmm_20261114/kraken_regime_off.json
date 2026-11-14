@@ -1,0 +1,75 @@
+{
+ "mode": "off",
+ "models": {},
+ "share_of_bars_calm_from_2024": {},
+ "rows": {
+  "LIVE|from_2024-01-01": {
+   "variant": "LIVE",
+   "trades": 145,
+   "win_pct": 35.2,
+   "total_pct": 107.5,
+   "cagr_pct": 30.04,
+   "max_dd_pct": -21.5,
+   "cagr_over_dd": 1.4,
+   "pf": 1.82,
+   "pf_ex_top3": 1.46,
+   "stops": 50,
+   "exits": {
+    "death_cross": 95,
+    "stop": 50
+   },
+   "sharpe_4h_annualised": 1.17
+  },
+  "VALIDATED|from_2024-01-01": {
+   "variant": "VALIDATED",
+   "trades": 89,
+   "win_pct": 37.1,
+   "total_pct": 124.8,
+   "cagr_pct": 33.85,
+   "max_dd_pct": -17.7,
+   "cagr_over_dd": 1.91,
+   "pf": 2.48,
+   "pf_ex_top3": 1.91,
+   "stops": 30,
+   "exits": {
+    "death_cross": 59,
+    "stop": 30
+   },
+   "sharpe_4h_annualised": 1.42
+  },
+  "LIVE|last_365d": {
+   "variant": "LIVE",
+   "trades": 34,
+   "win_pct": 35.3,
+   "total_pct": 25.0,
+   "cagr_pct": 25.12,
+   "max_dd_pct": -14.2,
+   "cagr_over_dd": 1.76,
+   "pf": 1.7,
+   "pf_ex_top3": 0.81,
+   "stops": 6,
+   "exits": {
+    "death_cross": 28,
+    "stop": 6
+   },
+   "sharpe_4h_annualised": 1.32
+  },
+  "VALIDATED|last_365d": {
+   "variant": "VALIDATED",
+   "trades": 25,
+   "win_pct": 40.0,
+   "total_pct": 28.2,
+   "cagr_pct": 28.28,
+   "max_dd_pct": -13.8,
+   "cagr_over_dd": 2.05,
+   "pf": 2.39,
+   "pf_ex_top3": 1.04,
+   "stops": 4,
+   "exits": {
+    "death_cross": 21,
+    "stop": 4
+   },
+   "sharpe_4h_annualised": 1.5
+  }
+ }
+}

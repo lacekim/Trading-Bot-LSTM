@@ -1,0 +1,137 @@
+{
+ "mode": "hmm",
+ "models": {
+  "BTC": {
+   "train_bars": 21339,
+   "iters": 48,
+   "loglik": 61882.869375990835,
+   "sd_calm": 0.006642767651881447,
+   "sd_wild": 0.029603536673251534,
+   "stay_calm": 0.9081176351561763,
+   "stay_wild": 0.8275906187856654
+  },
+  "ETH": {
+   "train_bars": 17965,
+   "iters": 26,
+   "loglik": 44027.25824315708,
+   "sd_calm": 0.015974974105253996,
+   "sd_wild": 0.22967654154579617,
+   "stay_calm": 0.978191914390018,
+   "stay_wild": 0.6796860524067
+  },
+  "XMR": {
+   "train_bars": 15276,
+   "iters": 37,
+   "loglik": 39253.63094440277,
+   "sd_calm": 0.01142278812685354,
+   "sd_wild": 0.03794724183412981,
+   "stay_calm": 0.9548837004241542,
+   "stay_wild": 0.9029290169156441
+  },
+  "PAXG": {
+   "train_bars": 8989,
+   "iters": 45,
+   "loglik": 37885.85452946837,
+   "sd_calm": 0.002441049190106268,
+   "sd_wild": 0.009177262363011656,
+   "stay_calm": 0.9426834472534044,
+   "stay_wild": 0.760696167217028
+  },
+  "SOL": {
+   "train_bars": 5558,
+   "iters": 46,
+   "loglik": 13484.580195025374,
+   "sd_calm": 0.013361681249539169,
+   "sd_wild": 0.03845384903505577,
+   "stay_calm": 0.9335810974106703,
+   "stay_wild": 0.8703565374304855
+  },
+  "TRX": {
+   "train_bars": 8370,
+   "iters": 25,
+   "loglik": 23821.31171782552,
+   "sd_calm": 0.007812704843639344,
+   "sd_wild": 0.03277744589224721,
+   "stay_calm": 0.9505812562249654,
+   "stay_wild": 0.8958528762066972
+  }
+ },
+ "share_of_bars_calm_from_2024": {
+  "BTC": 0.8299,
+  "ETH": 0.9939,
+  "XMR": 0.8327,
+  "PAXG": 0.8301,
+  "SOL": 0.8693,
+  "TRX": 0.9475
+ },
+ "rows": {
+  "LIVE|from_2024-01-01": {
+   "variant": "LIVE",
+   "trades": 132,
+   "win_pct": 34.8,
+   "total_pct": 111.2,
+   "cagr_pct": 30.86,
+   "max_dd_pct": -20.3,
+   "cagr_over_dd": 1.52,
+   "pf": 1.98,
+   "pf_ex_top3": 1.56,
+   "stops": 41,
+   "exits": {
+    "death_cross": 91,
+    "stop": 41
+   },
+   "sharpe_4h_annualised": 1.22
+  },
+  "VALIDATED|from_2024-01-01": {
+   "variant": "VALIDATED",
+   "trades": 81,
+   "win_pct": 35.8,
+   "total_pct": 106.4,
+   "cagr_pct": 29.8,
+   "max_dd_pct": -17.9,
+   "cagr_over_dd": 1.66,
+   "pf": 2.39,
+   "pf_ex_top3": 1.74,
+   "stops": 27,
+   "exits": {
+    "death_cross": 54,
+    "stop": 27
+   },
+   "sharpe_4h_annualised": 1.33
+  },
+  "LIVE|last_365d": {
+   "variant": "LIVE",
+   "trades": 34,
+   "win_pct": 35.3,
+   "total_pct": 25.2,
+   "cagr_pct": 25.32,
+   "max_dd_pct": -14.2,
+   "cagr_over_dd": 1.78,
+   "pf": 1.71,
+   "pf_ex_top3": 0.84,
+   "stops": 6,
+   "exits": {
+    "death_cross": 28,
+    "stop": 6
+   },
+   "sharpe_4h_annualised": 1.33
+  },
+  "VALIDATED|last_365d": {
+   "variant": "VALIDATED",
+   "trades": 22,
+   "win_pct": 36.4,
+   "total_pct": 24.7,
+   "cagr_pct": 24.84,
+   "max_dd_pct": -13.8,
+   "cagr_over_dd": 1.8,
+   "pf": 2.01,
+   "pf_ex_top3": 0.68,
+   "stops": 4,
+   "exits": {
+    "death_cross": 18,
+    "stop": 4
+   },
+   "sharpe_4h_annualised": 1.43
+  }
+ }
+}
