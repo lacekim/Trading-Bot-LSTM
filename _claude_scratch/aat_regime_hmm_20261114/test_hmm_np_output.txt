@@ -3,4 +3,5 @@ online regime accuracy vs truth: 0.947
 loglik difference between the two forward passes: 1.35e-10
 online last state == brute-force Viterbi last state on 12 prefixes
 no look-ahead: states unchanged when later data is removed
+outlier regression: 41 iterations, log-likelihood never falls
 ALL CHECKS PASSED

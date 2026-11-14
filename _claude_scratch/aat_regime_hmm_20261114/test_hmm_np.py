@@ -24,16 +24,16 @@ def ll_logspace(x, m):
     for v in x[1:]:
         a = [math.log(sum(math.exp(a[i] - max(a)) * m["A"][i][j] for i in range(2))) + max(a) + lb(v, j) for j in range(2)]
     return max(a) + math.log(sum(math.exp(q - max(a)) for q in a))
-B = H._emis(x, m["mu"], m["var"]); _, _, c = H._forward_backward(B, m["pi"], m["A"])
-d = abs(ll_logspace(x, m) - float(np.log(c).sum())); print("loglik difference between the two forward passes: %.2e" % d); assert d < 1e-6
+B, rowmax = H._emis(x, m["mu"], m["var"]); _, _, c = H._forward_backward(B, m["pi"], m["A"])
+d = abs(ll_logspace(x, m) - float(np.log(c).sum() + rowmax.sum())); print("loglik difference between the two forward passes: %.2e" % d); assert d < 1e-6
 # 3. Viterbi-last-state online equals brute-force Viterbi on short prefixes (all 2^n paths)
 xs = x[:12]
 def brute_last(xp):
     best = None
     for path in itertools.product((0, 1), repeat=len(xp)):
-        lp = math.log(m["pi"][path[0]]) + math.log(H._emis(np.array([xp[0]]), m["mu"], m["var"])[0, path[0]])
+        lp = math.log(m["pi"][path[0]]) + H._log_emis(np.array([xp[0]]), m["mu"], m["var"])[0, path[0]]
         for t in range(1, len(xp)):
-            lp += math.log(m["A"][path[t - 1]][path[t]]) + math.log(H._emis(np.array([xp[t]]), m["mu"], m["var"])[0, path[t]])
+            lp += math.log(m["A"][path[t - 1]][path[t]]) + H._log_emis(np.array([xp[t]]), m["mu"], m["var"])[0, path[t]]
         if best is None or lp > best[0]: best = (lp, path[-1])
     return best[1]
 on = H.last_state_online(xs, m)
@@ -42,4 +42,9 @@ assert all(on[k - 1] == brute_last(xs[:k]) for k in range(1, 13)); print("online
 full = H.last_state_online(x, m)
 for k in (50, 777, 3001, 5999): assert (H.last_state_online(x[:k + 1], m) == full[:k + 1]).all()
 print("no look-ahead: states unchanged when later data is removed")
+# 5. regression: extreme outliers (found on ETH: +700% and +175% 4h bars in its first weeks in August 2015)
+xo = x.copy(); xo[100] = 7.0; xo[900] = 1.75; xo[901] = -0.92
+mo = H.fit(xo); llo = np.array(mo["ll_path"])
+assert (np.diff(llo) >= -1e-6).all() and mo["iters"] > 2, "EM must keep climbing with extreme outliers present"
+print("outlier regression: %d iterations, log-likelihood never falls" % mo["iters"])
 print("ALL CHECKS PASSED")

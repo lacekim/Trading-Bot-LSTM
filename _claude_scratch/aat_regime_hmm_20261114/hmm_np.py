@@ -16,14 +16,22 @@ hmm_model.predict(returns)[-1] returns when called bar by bar. It uses no data a
 import math
 import numpy as np
 
-TINY = 1e-300
+TINY = 1e-300  # only used for log(0) of a start/transition probability
+
+
+def _log_emis(x, mu, var):
+    L = np.empty((len(x), 2))
+    for j in range(2):
+        L[:, j] = -0.5 * (x - mu[j]) ** 2 / var[j] - 0.5 * math.log(2 * math.pi * var[j])
+    return L
 
 
 def _emis(x, mu, var):
-    B = np.empty((len(x), 2))
-    for j in range(2):
-        B[:, j] = np.exp(-0.5 * (x - mu[j]) ** 2 / var[j]) / math.sqrt(2 * math.pi * var[j])
-    return np.maximum(B, TINY)
+    """Emission densities with each row divided by its larger entry, plus the log of that divisor.
+    Exact (no floor): an extreme return can no longer underflow to zero in both states."""
+    L = _log_emis(x, mu, var)
+    rowmax = L.max(axis=1)
+    return np.exp(L - rowmax[:, None]), rowmax
 
 
 def _forward_backward(B, pi, A):
@@ -59,10 +67,10 @@ def fit(x, n_iter=1000, tol=1e-2):
     pi = [0.5, 0.5]; A = [[0.5, 0.5], [0.5, 0.5]]
     ll_path = []; prev = -np.inf
     for it in range(1, n_iter + 1):
-        B = _emis(x, mu, var)
+        B, rowmax = _emis(x, mu, var)
         alpha, beta, c = _forward_backward(B, pi, A)
-        ll = float(np.log(c).sum()); ll_path.append(ll)
-        if ll - prev < tol and it > 1:
+        ll = float(np.log(c).sum() + rowmax.sum()); ll_path.append(ll)
+        if it > 1 and abs(ll - prev) < tol:
             break
         prev = ll
         gamma = alpha * beta
@@ -85,7 +93,7 @@ def fit(x, n_iter=1000, tol=1e-2):
 def last_state_online(x, m):
     """state[t] = last entry of the Viterbi path of x[:t+1] (what hmmlearn's predict(x[:t+1])[-1] gives)."""
     x = np.asarray(x, float)
-    logB = np.log(_emis(x, m["mu"], m["var"])).tolist()
+    logB = _log_emis(x, m["mu"], m["var"]).tolist()
     lA = [[math.log(max(m["A"][i][j], TINY)) for j in range(2)] for i in range(2)]
     d0 = math.log(max(m["pi"][0], TINY)) + logB[0][0]; d1 = math.log(max(m["pi"][1], TINY)) + logB[0][1]
     out = np.empty(len(x), dtype=np.int8); out[0] = 0 if d0 >= d1 else 1
