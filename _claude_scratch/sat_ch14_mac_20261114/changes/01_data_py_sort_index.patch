@@ -1,0 +1,11 @@
+--- book_code_printed/data.py	2026-11-14 22:50:35.500000000 +0000
++++ book_code/data.py	2026-11-14 22:50:35.580000000 +0000
+@@ -127,7 +127,7 @@
+                     'datetime', 'open', 'high', 
+                     'low', 'close', 'volume', 'adj_close'
+                 ]
+-            ).sort()
++            ).sort_index()
+ 
+             # Combine the index to pad forward values
+             if comb_index is None:

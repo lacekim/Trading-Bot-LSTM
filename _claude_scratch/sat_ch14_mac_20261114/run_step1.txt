@@ -1,0 +1,12 @@
+Creating DataHandler, Strategy, Portfolio and ExecutionHandler
+1
+Traceback (most recent call last):
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/run_as_printed.py", line 15, in <module>
+    backtest.simulate_trading()
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/backtest.py", line 137, in simulate_trading
+    self._run_backtest()
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/backtest.py", line 99, in _run_backtest
+    self.strategy.calculate_signals(event)
+  File "/sessions/rcw-01evuvgej6pp73aaaw9sdbhm/mnt/Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/_claude_scratch/sat_ch14_mac_20261114/book_code/mac.py", line 61, in calculate_signals
+    if bars is not None and bars != []:
+ValueError: The truth value of an empty array is ambiguous. Use `array.size > 0` to check that an array is not empty.
