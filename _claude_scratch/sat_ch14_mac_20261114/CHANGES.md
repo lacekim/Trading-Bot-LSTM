@@ -6,3 +6,6 @@ The book's own source files are not committed (public repo, commercial book); th
 
 ### SAT ch.14 change 1: data.py line 130 .sort() -> .sort_index()
 Why: pandas 2.3.3 has no DataFrame.sort (the book targets pandas 0.16.2); sort_index is the same operation (sort rows by the date index) under its current name. Diff: changes/01_data_py_sort_index.patch. Run after this change (run_step1.txt): next stop at mac.py line 61, 'bars != []' raises ValueError (truth value of an empty array is ambiguous) on numpy 2.2.6.
+
+### SAT ch.14 change 2: mac.py line 61 'bars != []' -> 'len(bars) > 0'
+Why: numpy 2.2.6 raises on comparing an array with an empty list; the line's purpose is to skip a symbol that has no bars yet, which len(bars) > 0 does. Nothing else in the strategy is touched (100/400 windows, long-only, 100 shares per order, the book's commission model). Diff: changes/02_mac_py_empty_check.patch. Run after this change (run_step2.txt): the book's backtest completes on AAPL daily closes from the Alpaca file - Total Return 24.30%, Sharpe Ratio 11.75, Max Drawdown 8.58%, Drawdown Duration 615, 9 signals / 9 orders / 9 fills. These are the book's own printed statistics, not yet checked independently.

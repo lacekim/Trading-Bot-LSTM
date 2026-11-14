@@ -1,0 +1,11 @@
+--- book_code_printed/mac.py	2026-11-14 22:50:35.510000000 +0000
++++ book_code/mac.py	2026-11-14 22:50:43.610000000 +0000
+@@ -58,7 +58,7 @@
+             for symbol in self.symbol_list:
+                 bars = self.bars.get_latest_bars_values(symbol, "close", N=self.long_window)               
+ 
+-                if bars is not None and bars != []:
++                if bars is not None and len(bars) > 0:
+                     short_sma = np.mean(bars[-self.short_window:])
+                     long_sma = np.mean(bars[-self.long_window:])
+ 
