@@ -1,0 +1,134 @@
+{
+ "LIVE|from_2024-01-01": {
+  "variant": "LIVE",
+  "trades": 110,
+  "win_pct": 30.9,
+  "total_pct": 44.4,
+  "cagr_pct": 14.15,
+  "max_dd_pct": -30.7,
+  "cagr_over_dd": 0.46,
+  "pf": 1.23,
+  "pf_ex_top3": 0.8,
+  "stops": 57,
+  "exits": {
+   "stop": 57,
+   "death_cross": 53
+  },
+  "independent": {
+   "total_pct": 44.4,
+   "max_dd_pct": -30.7,
+   "trades": 110,
+   "pf": 1.23
+  }
+ },
+ "VALIDATED|from_2024-01-01": {
+  "variant": "VALIDATED",
+  "trades": 48,
+  "win_pct": 31.2,
+  "total_pct": 31.5,
+  "cagr_pct": 10.34,
+  "max_dd_pct": -19.8,
+  "cagr_over_dd": 0.52,
+  "pf": 1.45,
+  "pf_ex_top3": 0.67,
+  "stops": 26,
+  "exits": {
+   "stop": 26,
+   "death_cross": 22
+  },
+  "independent": {
+   "total_pct": 31.5,
+   "max_dd_pct": -19.8,
+   "trades": 48,
+   "pf": 1.45
+  }
+ },
+ "LIVE|last_365d": {
+  "variant": "LIVE",
+  "trades": 27,
+  "win_pct": 25.9,
+  "total_pct": 5.5,
+  "cagr_pct": 5.47,
+  "max_dd_pct": -30.9,
+  "cagr_over_dd": 0.18,
+  "pf": 0.3,
+  "pf_ex_top3": 0.07,
+  "stops": 13,
+  "exits": {
+   "death_cross": 14,
+   "stop": 13
+  },
+  "independent": {
+   "total_pct": 5.5,
+   "max_dd_pct": -30.9,
+   "trades": 27,
+   "pf": 0.3
+  }
+ },
+ "VALIDATED|last_365d": {
+  "variant": "VALIDATED",
+  "trades": 11,
+  "win_pct": 18.2,
+  "total_pct": 3.6,
+  "cagr_pct": 3.58,
+  "max_dd_pct": -10.8,
+  "cagr_over_dd": 0.33,
+  "pf": 0.07,
+  "pf_ex_top3": 0.0,
+  "stops": 7,
+  "exits": {
+   "stop": 7,
+   "death_cross": 4
+  },
+  "independent": {
+   "total_pct": 3.6,
+   "max_dd_pct": -10.8,
+   "trades": 11,
+   "pf": 0.07
+  }
+ },
+ "LIVE|whole_history": {
+  "variant": "LIVE",
+  "trades": 365,
+  "win_pct": 27.4,
+  "total_pct": 7437.1,
+  "cagr_pct": 40.22,
+  "max_dd_pct": -56.2,
+  "cagr_over_dd": 0.72,
+  "pf": 1.84,
+  "pf_ex_top3": 1.24,
+  "stops": 212,
+  "exits": {
+   "stop": 212,
+   "death_cross": 153
+  },
+  "independent": {
+   "total_pct": 7437.1,
+   "max_dd_pct": -56.2,
+   "trades": 365,
+   "pf": 1.84
+  }
+ },
+ "VALIDATED|whole_history": {
+  "variant": "VALIDATED",
+  "trades": 155,
+  "win_pct": 29.0,
+  "total_pct": 847.6,
+  "cagr_pct": 19.23,
+  "max_dd_pct": -45.3,
+  "cagr_over_dd": 0.42,
+  "pf": 2.17,
+  "pf_ex_top3": 1.49,
+  "stops": 86,
+  "exits": {
+   "stop": 86,
+   "death_cross": 69
+  },
+  "independent": {
+   "total_pct": 847.6,
+   "max_dd_pct": -45.3,
+   "trades": 155,
+   "pf": 2.17
+  }
+ }
+}
