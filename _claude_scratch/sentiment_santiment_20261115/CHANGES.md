@@ -28,3 +28,16 @@ Not tested: Alpaca (Santiment has no equity data).
 
 ### Santiment step 3: write the sentiment result into BOOK_NOTES.md
 Appends the result and what it says to section 7 of tools/book_study/BOOK_NOTES.md: the book's sentiment rule fails against the golden cross on Kraken (-21.4% vs +23.0%), mostly because it trades about 180 times per asset and costs take about 27% of capital; it is only +5.8% even before costs. Records that sentiment as a slow regime gate on the golden cross has not been tested and needs its own pre-set rule.
+
+## Test 2: crowd-mood regime gate on the golden cross. Rule fixed BEFORE any result was computed (2026-11-15)
+The user's idea: sentiment is what flips a regime, so it should switch the trend system off at turning points, not trade on its own. Test 1 used sentiment as a fast in/out signal and failed. This test leaves the golden cross alone and only blocks NEW entries when the crypto crowd is euphoric (the "crowd is tapped out" idea from the user's earlier social-exhaustion experiment).
+- Market mood, hourly: the social-volume-weighted average of BTC, ETH and SOL weighted sentiment, sum(sentiment_i * volume_i) / sum(volume_i). XMR, TRX and PAXG are left out of the mood series because their median social volume is 0 to 3 posts per hour (measured in step 1, before any result).
+- Slow version: mean over each 4h bar, then a 7-day rolling mean (42 bars), shifted one bar (decision at the close of bar t uses data through bar t-1).
+- Euphoria: the 7-day mood is at or above the 90th percentile of its own trailing 60 days (360 bars, past only).
+- Gate: while euphoric, the golden cross may not open a new position in any of the six assets. Exits and the -8% stop are unchanged. Before 60 days of 7-day mood exist (until about 2026-01-21), entries are allowed.
+- Engine: the user's run() with one changed line, 'if want:' -> 'if want and bool(r.reg_ok):' (same as the HMM test). Window 2025-12-16 to 2026-10-13, same as test 1. LIVE and VALIDATED both reported.
+- Pass rule: the gated golden cross beats the plain golden cross on return AND on return / max drawdown, in BOTH variants. The plain golden cross had 27 (LIVE) and 21 (VALIDATED) trades in this window, so only a few entries can be blocked; a pass would still be weak evidence, and the blocked trades will be listed one by one.
+- Alpaca: not possible (Santiment has no equity data).
+
+### Santiment step 4: fix the crowd-mood regime-gate rule before running it
+Writes test 2's rule in CHANGES.md and a pointer in BOOK_NOTES.md section 7, before any result exists. The golden cross is left unchanged; the only change is that new entries are blocked while the crypto crowd is euphoric: 7-day mean of the BTC/ETH/SOL social-volume-weighted Santiment sentiment, previous bar only, at or above the 90th percentile of its trailing 60 days. Exits and the -8% stop are untouched. Same window and engine as test 1. Pass rule: better return and better return / max drawdown than the plain golden cross in both LIVE and VALIDATED. Stated in advance: only a few of the 27 / 21 trades in this window can be blocked, so even a pass is weak evidence. Alpaca cannot be tested with Santiment.
