@@ -549,3 +549,15 @@ Section 4 said there was no sentiment history on disk and asked the user for a s
 ### 8. Committed 2026-11-15: `tools/book_study/llm/fetch_alpaca_news.py` (written 2026-11-02, untracked until now)
 - Step 1 of adding *LLMs in Finance* to the AFML bot: builds the book's `news_ticker.csv` input (Ch.7 `score_headlines`) from Alpaca's historical news API, which covers BOTH equities and crypto, for the bot's Kraken and Alpaca symbols. Keys are read from `.env`/environment, sent only in request headers, never printed or written; no key is in the file (checked before committing). Output goes to `runtime/llm_news/` (gitignored).
 - Never run: `runtime/llm_news/` does not exist. It is the one sentiment source in the project that covers Alpaca equities as well as Kraken crypto, and Alpaca's news history is not limited to 12 months the way the Santiment plan is.
+
+### 9. NOT FROM THE BOOKS: flag on the Santiment tests (section 7), written 2026-11-15 after the user said the books were not being followed
+Under standing rule 2 these are Claude's additions, not the books', and are marked here so they are not mistaken for book results:
+- Test 1: the book (AAT Sentdex strategy) uses the Sentdex score with thresholds 6 and -1. Mapping those to the 90th / 30th percentile of Santiment's weighted sentiment, averaging to 4h bars, and using only one of Santiment's three metrics were Claude's choices. The data source (Santiment instead of Sentdex) was also a substitution, not a data-only change of the book's own feed.
+- Test 2 (crowd-mood gate on the golden cross): entirely Claude's rule. No book prints it.
+- Both results stand as recorded, but neither is a test of what the books say.
+
+What the books actually print for per-symbol sentiment (read 2026-11-15):
+- LLMs in Finance, Listing 7.2 (p242-243, mirrored at LLMs-in-Finance/book_mirror/ch07.../02_p242-243.py): score every headline with the Hugging Face model ProsusAI/finbert, read from `news_ticker.csv` (date, ticker, headline), then average the scores per ticker per day (`daily_sent`). The book says daily_sent "can be merged with returns, factors, and risk metrics" and prints no trading rule.
+- LLMs in Finance, Listing 7.1 (p239-241): daily headlines embedded with sentence-transformers/all-MiniLM-L6-v2 plus the lagged return, fed to a RandomForestRegressor predicting the next day's return (prints one ticker, SPY).
+- AAT Sentdex strategy: per ticker, enter long at sentiment >= 6, close at <= -1 (Sentdex scale).
+- The data-source script for Listing 7.2 already exists: `tools/book_study/llm/fetch_alpaca_news.py` builds per-symbol headlines for the Kraken and Alpaca symbols from Alpaca's news API. That is the only change the user allows (data source).
