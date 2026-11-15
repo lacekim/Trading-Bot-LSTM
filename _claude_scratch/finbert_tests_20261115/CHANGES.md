@@ -16,3 +16,9 @@ Pass rule: better return AND better return / max drawdown than the golden cross,
 
 ### FinBERT option 3 step 1: fix the Sentdex-threshold rule before running it
 Writes the rule for option 3 with its source table, before any result exists: the AAT Sentdex strategy (long at sentiment >= 6, close at <= -1, act only on new readings) with the Sentdex scale's ten levels mapped onto FinBERT net sentiment as fixed 0.2-wide buckets (entry net >= 0.8, exit net <= -0.4). That mapping is not in the book and is marked so; before writing it only the share of days past each threshold was looked at, no returns, and the thresholds were not changed. Decision uses the previous UTC day's sentiment only (no look-ahead). Run in the user's golden cross engines on both venues with only the signal replaced, same windows as the bar. Pass rule stated in advance. BOOK_NOTES.md section 12 started.
+
+### FinBERT option 3 step 2: Sentdex thresholds on FinBERT sentiment vs the golden cross - FAILS the pre-set pass rule
+Scripts: sentdex_state.py (the rule committed in 5d266fc), run_option3.py (the user's Kraken run() and Alpaca backtest_one with only the signal replaced; the golden cross run through the same code first and reproduces the bar exactly), check_option3.py with check_option3_output.txt (all numbers recomputed from saved files; no look-ahead; every entry follows an entry-level reading: ALL CHECKS PASSED).
+Kraken LIVE: from 2024-01-01 golden cross +107.5% (max DD -21.5%, 145 trades) vs Sentdex rule +33.8% (max DD -15.3%, 95 trades); last 365 days +25.0% vs +5.1%. Kraken VALIDATED: +124.8% vs +2.5%; +28.2% vs -4.5%.
+Alpaca, open positions marked at the last close: entered from 2024-01-01 +15.15% (max DD -3.64%) vs +10.88% (max DD -3.77%); entered from 2025-10-10 -2.54% vs +0.22%.
+Fails in five of six windows. Noted: on closed Alpaca trades alone the Sentdex rule made +12.87% from 2024 vs -2.13% for the golden cross, whose lead there is 36 still-open positions.
