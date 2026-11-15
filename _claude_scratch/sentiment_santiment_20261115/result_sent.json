@@ -1,0 +1,85 @@
+{
+ "mode": "sent",
+ "window": [
+  "2025-12-16 00:00:00",
+  "2026-10-13 00:00:00"
+ ],
+ "signal_info": {
+  "BTC": {
+   "share_on": 0.165,
+   "entries": 12
+  },
+  "ETH": {
+   "share_on": 0.196,
+   "entries": 181
+  },
+  "XMR": {
+   "share_on": 0.156,
+   "entries": 178
+  },
+  "PAXG": {
+   "share_on": 0.755,
+   "entries": 116
+  },
+  "SOL": {
+   "share_on": 0.2,
+   "entries": 174
+  },
+  "TRX": {
+   "share_on": 0.166,
+   "entries": 184
+  }
+ },
+ "rows": {
+  "LIVE": {
+   "variant": "LIVE",
+   "trades": 848,
+   "win_pct": 39.3,
+   "total_pct": -21.4,
+   "cagr_pct": -25.44,
+   "max_dd_pct": -24.2,
+   "cagr_over_dd": -1.05,
+   "pf": 0.71,
+   "pf_ex_top3": 0.65,
+   "stops": 4,
+   "exits": {
+    "death_cross": 844,
+    "stop": 4
+   },
+   "ret_over_dd": -0.88,
+   "per_asset_pnl": {
+    "BTC": -451.0,
+    "ETH": -6762.0,
+    "PAXG": -5253.0,
+    "SOL": -46.0,
+    "TRX": -4117.0,
+    "XMR": -4797.0
+   }
+  },
+  "VALIDATED": {
+   "variant": "VALIDATED",
+   "trades": 845,
+   "win_pct": 39.3,
+   "total_pct": -21.3,
+   "cagr_pct": -25.35,
+   "max_dd_pct": -24.0,
+   "cagr_over_dd": -1.06,
+   "pf": 0.71,
+   "pf_ex_top3": 0.65,
+   "stops": 4,
+   "exits": {
+    "death_cross": 841,
+    "stop": 4
+   },
+   "ret_over_dd": -0.89,
+   "per_asset_pnl": {
+    "BTC": -450.0,
+    "ETH": -6767.0,
+    "PAXG": -5385.0,
+    "SOL": -13.0,
+    "TRX": -4121.0,
+    "XMR": -4613.0
+   }
+  }
+ }
+}

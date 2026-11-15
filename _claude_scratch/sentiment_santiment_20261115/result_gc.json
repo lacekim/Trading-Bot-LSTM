@@ -1,0 +1,58 @@
+{
+ "mode": "gc",
+ "window": [
+  "2025-12-16 00:00:00",
+  "2026-10-13 00:00:00"
+ ],
+ "signal_info": {},
+ "rows": {
+  "LIVE": {
+   "variant": "LIVE",
+   "trades": 27,
+   "win_pct": 37.0,
+   "total_pct": 23.0,
+   "cagr_pct": 28.72,
+   "max_dd_pct": -14.4,
+   "cagr_over_dd": 2.0,
+   "pf": 1.88,
+   "pf_ex_top3": 0.78,
+   "stops": 3,
+   "exits": {
+    "death_cross": 24,
+    "stop": 3
+   },
+   "ret_over_dd": 1.6,
+   "per_asset_pnl": {
+    "ETH": 3541.0,
+    "PAXG": 2065.0,
+    "SOL": -2865.0,
+    "TRX": 2422.0,
+    "XMR": 1461.0
+   }
+  },
+  "VALIDATED": {
+   "variant": "VALIDATED",
+   "trades": 21,
+   "win_pct": 33.3,
+   "total_pct": 18.5,
+   "cagr_pct": 22.91,
+   "max_dd_pct": -6.4,
+   "cagr_over_dd": 3.58,
+   "pf": 1.42,
+   "pf_ex_top3": 0.33,
+   "stops": 3,
+   "exits": {
+    "death_cross": 18,
+    "stop": 3
+   },
+   "ret_over_dd": 2.89,
+   "per_asset_pnl": {
+    "ETH": 3209.0,
+    "PAXG": -357.0,
+    "SOL": -2685.0,
+    "TRX": 2380.0,
+    "XMR": 115.0
+   }
+  }
+ }
+}

@@ -17,3 +17,11 @@ The book: enter long when a ticker's sentiment reading is >= 6 (the top of Sentd
 
 ### Santiment step 1: record the pull and fix the sentiment test rule before running it
 Records what the Santiment pull returned (one year per asset, 2025-11-15 to 2026-10-16, older history refused; almost no social volume for PAXG, TRX, XMR; no equity coverage, so Alpaca cannot be tested with this source) and writes the test rule BEFORE any result exists: the book's Sentdex sentiment strategy (enter at the top of the scale, exit at the bottom three levels) mapped to each asset's own trailing 30-day percentiles (entry >= 90%, exit <= 30%), using only the previous completed 4h bar, inside the user's golden cross engine with only the signal column replaced, compared with the golden cross on the same window. Pass rule stated in advance. Also adds BOOK_NOTES.md section 7. The pulled data stays in runtime/ (gitignored).
+
+### Santiment step 2: the book's sentiment rule against the golden cross on Kraken - FAILS the pre-set pass rule
+Scripts: sentiment_state.py (the rule committed in d358369), run_sentiment_vs_gc.py (the user's run() with only the signal column replaced), check_sentiment.py. Window 2025-12-16 to 2026-10-13, six Kraken assets, 4h bars, 12 bp per side, 15% allocation, -8% stop.
+Result: golden cross LIVE +23.0% (max DD -14.4%, PF 1.88, 27 trades), VALIDATED +18.5% (max DD -6.4%, 21 trades). Book's sentiment rule LIVE -21.4% (max DD -24.2%, PF 0.71, 848 trades), VALIDATED -21.3% (max DD -24.0%, 845 trades). Every asset lost money.
+Why: the state flips about 180 times per asset in ten months (mean hold 12.6 hours). Diagnostic only, not a rule change: costs paid were about 27.3% of starting capital; before costs the same trades made about +5.8%, still far below the golden cross after costs.
+Also found: PAXG's state was ON 75% of the time because most of its hourly readings are exactly 0 (almost no posts), which breaks the percentile mapping for that asset. Not tuned.
+Checks (check_sentiment_output.txt): all four rows recomputed from the saved files match; cutting the sentiment data at 2026-03-01 and 2026-07-15 never changes an earlier state for ETH, SOL, XMR (no look-ahead).
+Not tested: Alpaca (Santiment has no equity data).

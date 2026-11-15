@@ -1,0 +1,11 @@
+gc   LIVE      recomputed total=23.0% maxDD=-14.4% trades=27 match=True
+gc   VALIDATED recomputed total=18.5% maxDD=-6.4% trades=21 match=True
+sent LIVE      recomputed total=-21.4% maxDD=-24.2% trades=848 match=True | costs paid ~27.3% of starting capital; gross P&L ~5.8%; mean hold 12.6 h
+sent VALIDATED recomputed total=-21.3% maxDD=-24.0% trades=845 match=True | costs paid ~27.2% of starting capital; gross P&L ~5.8%; mean hold 12.5 h
+no look-ahead ETH cut 2026-03-01: earlier states unchanged = True
+no look-ahead ETH cut 2026-07-15: earlier states unchanged = True
+no look-ahead SOL cut 2026-03-01: earlier states unchanged = True
+no look-ahead SOL cut 2026-07-15: earlier states unchanged = True
+no look-ahead XMR cut 2026-03-01: earlier states unchanged = True
+no look-ahead XMR cut 2026-07-15: earlier states unchanged = True
+ALL CHECKS PASSED
