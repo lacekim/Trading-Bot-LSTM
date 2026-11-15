@@ -1,0 +1,652 @@
+{
+ "kraken": {
+  "v2": {
+   "run": "tools/book_study/book_bot_v2/kraken",
+   "features": [
+    "ffd",
+    "log_trgt",
+    "sadf",
+    "ent_plugin",
+    "ent_konto",
+    "cs_spread",
+    "bp_sigma",
+    "roll",
+    "kyle",
+    "amihud",
+    "hasbrouck",
+    "csw"
+   ],
+   "events": 63979,
+   "symbols": 27,
+   "seconds": 1340,
+   "walk_forward_auc": 0.5063,
+   "cpcv_auc_mean": 0.5143,
+   "ch13_pt_sl": [
+    3.5,
+    10.0
+   ],
+   "ch14_last365_gain_pct": -2.11,
+   "spans": {
+    "last_365_days": {
+     "first": "2025-10-13",
+     "last": "2026-10-12",
+     "gain_pct": -2.11,
+     "max_dd_pct": -2.84
+    },
+    "whole_walk_forward_span": {
+     "first": "2024-01-01",
+     "last": "2026-10-12",
+     "gain_pct": -4.0,
+     "max_dd_pct": -4.76
+    }
+   }
+  },
+  "sent": {
+   "run": "runtime/book_bot_sent/kraken_20261115T231431Z",
+   "features": [
+    "ffd",
+    "log_trgt",
+    "sadf",
+    "ent_plugin",
+    "ent_konto",
+    "cs_spread",
+    "bp_sigma",
+    "roll",
+    "kyle",
+    "amihud",
+    "hasbrouck",
+    "csw",
+    "sent_positive",
+    "sent_negative",
+    "sent_neutral"
+   ],
+   "events": 44183,
+   "symbols": 27,
+   "seconds": 606,
+   "walk_forward_auc": 0.5156,
+   "cpcv_auc_mean": 0.5157,
+   "ch13_pt_sl": [
+    2.5,
+    10.0
+   ],
+   "ch14_last365_gain_pct": -4.33,
+   "spans": {
+    "last_365_days": {
+     "first": "2025-10-13",
+     "last": "2026-10-12",
+     "gain_pct": -4.33,
+     "max_dd_pct": -4.8
+    },
+    "whole_walk_forward_span": {
+     "first": "2024-01-01",
+     "last": "2026-10-12",
+     "gain_pct": -4.39,
+     "max_dd_pct": -6.44
+    }
+   }
+  },
+  "importance": {
+   "mdi.csv": [
+    {
+     "Unnamed: 0": "ffd",
+     "mean": 0.0479652721904228,
+     "std": 0.006246817642661
+    },
+    {
+     "Unnamed: 0": "log_trgt",
+     "mean": 0.0857864448136499,
+     "std": 0.0073667219733175
+    },
+    {
+     "Unnamed: 0": "sadf",
+     "mean": 0.1361656867207566,
+     "std": 0.0109015757219766
+    },
+    {
+     "Unnamed: 0": "ent_plugin",
+     "mean": 0.0415216804643011,
+     "std": 0.0053891598168249
+    },
+    {
+     "Unnamed: 0": "ent_konto",
+     "mean": 0.05555605497582,
+     "std": 0.0076385443288264
+    },
+    {
+     "Unnamed: 0": "cs_spread",
+     "mean": 0.0400262240299067,
+     "std": 0.0058447361487417
+    },
+    {
+     "Unnamed: 0": "bp_sigma",
+     "mean": 0.0369077626845893,
+     "std": 0.0042749424267568
+    },
+    {
+     "Unnamed: 0": "roll",
+     "mean": 0.0548600262057025,
+     "std": 0.0046010004590882
+    },
+    {
+     "Unnamed: 0": "kyle",
+     "mean": 0.0453175166339073,
+     "std": 0.0056678430897762
+    },
+    {
+     "Unnamed: 0": "amihud",
+     "mean": NaN,
+     "std": NaN
+    },
+    {
+     "Unnamed: 0": "hasbrouck",
+     "mean": 0.0294831935036767,
+     "std": 0.00297344826981
+    },
+    {
+     "Unnamed: 0": "csw",
+     "mean": 0.2034895734119502,
+     "std": 0.0138715024825374
+    },
+    {
+     "Unnamed: 0": "sent_positive",
+     "mean": 0.0678262962871015,
+     "std": 0.0078862982099138
+    },
+    {
+     "Unnamed: 0": "sent_negative",
+     "mean": 0.0802872584884343,
+     "std": 0.0167916457071364
+    },
+    {
+     "Unnamed: 0": "sent_neutral",
+     "mean": 0.0748070095897806,
+     "std": 0.0074093695778544
+    }
+   ],
+   "mda.csv": [
+    {
+     "Unnamed: 0": "ffd",
+     "mean": -0.0003433518116478,
+     "std": 0.0002057500957762
+    },
+    {
+     "Unnamed: 0": "log_trgt",
+     "mean": 0.0003034436855185,
+     "std": 0.0004095916692557
+    },
+    {
+     "Unnamed: 0": "sadf",
+     "mean": 0.000425970218544,
+     "std": 0.0011620646570245
+    },
+    {
+     "Unnamed: 0": "ent_plugin",
+     "mean": -0.0003548034183216,
+     "std": 0.0004777278696503
+    },
+    {
+     "Unnamed: 0": "ent_konto",
+     "mean": -5.187757095061621e-05,
+     "std": 0.0002343620159795
+    },
+    {
+     "Unnamed: 0": "cs_spread",
+     "mean": 0.0002940186624078,
+     "std": 0.0001309365550573
+    },
+    {
+     "Unnamed: 0": "bp_sigma",
+     "mean": 0.0001160746809324,
+     "std": 0.0003332952375655
+    },
+    {
+     "Unnamed: 0": "roll",
+     "mean": 0.0001378778569634,
+     "std": 0.0002204660882423
+    },
+    {
+     "Unnamed: 0": "kyle",
+     "mean": -0.0003256798759892,
+     "std": 0.0002175210223631
+    },
+    {
+     "Unnamed: 0": "amihud",
+     "mean": 0.0,
+     "std": 0.0
+    },
+    {
+     "Unnamed: 0": "hasbrouck",
+     "mean": -0.0001559762060527,
+     "std": 0.0002322083180485
+    },
+    {
+     "Unnamed: 0": "csw",
+     "mean": 0.0043231691484878,
+     "std": 0.0007989428374982
+    },
+    {
+     "Unnamed: 0": "sent_positive",
+     "mean": -0.0005763675065942,
+     "std": 0.00031156167277
+    },
+    {
+     "Unnamed: 0": "sent_negative",
+     "mean": -0.000181177370047,
+     "std": 0.0001313259942512
+    },
+    {
+     "Unnamed: 0": "sent_neutral",
+     "mean": -0.0001359710640804,
+     "std": 0.0002437545278761
+    }
+   ],
+   "sfi.csv": [
+    {
+     "feature": "ffd",
+     "mean": -0.7049558302000831,
+     "std": 0.0080307843471431
+    },
+    {
+     "feature": "log_trgt",
+     "mean": -0.7003564405809829,
+     "std": 0.0036545406758118
+    },
+    {
+     "feature": "sadf",
+     "mean": -0.6976639862488332,
+     "std": 0.0046462319949065
+    },
+    {
+     "feature": "ent_plugin",
+     "mean": -0.697420517382543,
+     "std": 0.004717234511172
+    },
+    {
+     "feature": "ent_konto",
+     "mean": -0.7002083480296458,
+     "std": 0.0058441829952359
+    },
+    {
+     "feature": "cs_spread",
+     "mean": -0.6946949722970805,
+     "std": 0.0044995593608987
+    },
+    {
+     "feature": "bp_sigma",
+     "mean": -0.6971409156225696,
+     "std": 0.0044102167954107
+    },
+    {
+     "feature": "roll",
+     "mean": -0.6976640562608284,
+     "std": 0.0051547225966473
+    },
+    {
+     "feature": "kyle",
+     "mean": -0.6958926976755946,
+     "std": 0.0053589812378221
+    },
+    {
+     "feature": "amihud",
+     "mean": -0.6946290444733052,
+     "std": 0.0050107585266091
+    },
+    {
+     "feature": "hasbrouck",
+     "mean": -0.6966968200050215,
+     "std": 0.004960271777329
+    },
+    {
+     "feature": "csw",
+     "mean": -0.6880538240427976,
+     "std": 0.004161506832319
+    },
+    {
+     "feature": "sent_positive",
+     "mean": -0.7003938959182467,
+     "std": 0.0054174638417912
+    },
+    {
+     "feature": "sent_negative",
+     "mean": -0.6987612035193553,
+     "std": 0.0045693066936465
+    },
+    {
+     "feature": "sent_neutral",
+     "mean": -0.7000659314958072,
+     "std": 0.0054112939664281
+    }
+   ]
+  },
+  "sent_age": {
+   "median": 5.0,
+   "p75": 41.0,
+   "share_gt_7d": 0.43514473892673655
+  }
+ },
+ "alpaca": {
+  "v2": {
+   "run": "tools/book_study/book_bot_v2/alpaca",
+   "features": [
+    "ffd",
+    "log_trgt",
+    "sadf",
+    "ent_plugin",
+    "ent_konto",
+    "cs_spread",
+    "bp_sigma",
+    "roll",
+    "kyle",
+    "amihud",
+    "hasbrouck",
+    "csw"
+   ],
+   "events": 352005,
+   "symbols": 495,
+   "seconds": 1930,
+   "walk_forward_auc": 0.5007,
+   "cpcv_auc_mean": 0.5014,
+   "ch13_pt_sl": [
+    10.0,
+    9.5
+   ],
+   "ch14_last365_gain_pct": -0.74,
+   "spans": {
+    "last_365_days": {
+     "first": "2025-10-10",
+     "last": "2026-10-09",
+     "gain_pct": -0.74,
+     "max_dd_pct": -0.77
+    },
+    "whole_walk_forward_span": {
+     "first": "2024-01-01",
+     "last": "2026-10-09",
+     "gain_pct": -1.9,
+     "max_dd_pct": -1.9
+    }
+   }
+  },
+  "sent": {
+   "run": "runtime/book_bot_sent/alpaca_20261115T232638Z",
+   "features": [
+    "ffd",
+    "log_trgt",
+    "sadf",
+    "ent_plugin",
+    "ent_konto",
+    "cs_spread",
+    "bp_sigma",
+    "roll",
+    "kyle",
+    "amihud",
+    "hasbrouck",
+    "csw",
+    "sent_positive",
+    "sent_negative",
+    "sent_neutral"
+   ],
+   "events": 346758,
+   "symbols": 495,
+   "seconds": 1398,
+   "walk_forward_auc": 0.5003,
+   "cpcv_auc_mean": 0.5011,
+   "ch13_pt_sl": [
+    10.0,
+    9.5
+   ],
+   "ch14_last365_gain_pct": -0.76,
+   "spans": {
+    "last_365_days": {
+     "first": "2025-10-10",
+     "last": "2026-10-09",
+     "gain_pct": -0.76,
+     "max_dd_pct": -0.79
+    },
+    "whole_walk_forward_span": {
+     "first": "2024-01-01",
+     "last": "2026-10-09",
+     "gain_pct": -1.94,
+     "max_dd_pct": -1.94
+    }
+   }
+  },
+  "importance": {
+   "mdi.csv": [
+    {
+     "Unnamed: 0": "ffd",
+     "mean": 0.0518888813351335,
+     "std": 0.0088429432403177
+    },
+    {
+     "Unnamed: 0": "log_trgt",
+     "mean": 0.0840974179694899,
+     "std": 0.0128408361660227
+    },
+    {
+     "Unnamed: 0": "sadf",
+     "mean": 0.0577463592332112,
+     "std": 0.014002755787823
+    },
+    {
+     "Unnamed: 0": "ent_plugin",
+     "mean": 0.0338104247981238,
+     "std": 0.0065376390146505
+    },
+    {
+     "Unnamed: 0": "ent_konto",
+     "mean": 0.0382888217825929,
+     "std": 0.0082449066442341
+    },
+    {
+     "Unnamed: 0": "cs_spread",
+     "mean": 0.0535448269108888,
+     "std": 0.0135649807230955
+    },
+    {
+     "Unnamed: 0": "bp_sigma",
+     "mean": 0.0645334351616132,
+     "std": 0.0082071785426877
+    },
+    {
+     "Unnamed: 0": "roll",
+     "mean": 0.0456765502823327,
+     "std": 0.0091506895619546
+    },
+    {
+     "Unnamed: 0": "kyle",
+     "mean": 0.0940662561719747,
+     "std": 0.0233976031787904
+    },
+    {
+     "Unnamed: 0": "amihud",
+     "mean": NaN,
+     "std": NaN
+    },
+    {
+     "Unnamed: 0": "hasbrouck",
+     "mean": NaN,
+     "std": NaN
+    },
+    {
+     "Unnamed: 0": "csw",
+     "mean": 0.3647019219979736,
+     "std": 0.0089300333395575
+    },
+    {
+     "Unnamed: 0": "sent_positive",
+     "mean": 0.0525382770227331,
+     "std": 0.0089963932295697
+    },
+    {
+     "Unnamed: 0": "sent_negative",
+     "mean": 0.0220063836194259,
+     "std": 0.0036179863367064
+    },
+    {
+     "Unnamed: 0": "sent_neutral",
+     "mean": 0.0371004437145061,
+     "std": 0.0061291444001424
+    }
+   ],
+   "mda.csv": [
+    {
+     "Unnamed: 0": "ffd",
+     "mean": 0.0002726332977333,
+     "std": 7.497832352462041e-05
+    },
+    {
+     "Unnamed: 0": "log_trgt",
+     "mean": 2.4010661414740105e-05,
+     "std": 0.0001569574880144
+    },
+    {
+     "Unnamed: 0": "sadf",
+     "mean": -0.0001553195790763,
+     "std": 0.0001024839845401
+    },
+    {
+     "Unnamed: 0": "ent_plugin",
+     "mean": -1.3173980098816664e-05,
+     "std": 3.998104646886148e-05
+    },
+    {
+     "Unnamed: 0": "ent_konto",
+     "mean": 8.470542434833162e-05,
+     "std": 3.7879627530074055e-05
+    },
+    {
+     "Unnamed: 0": "cs_spread",
+     "mean": 0.0002846291491344,
+     "std": 0.0001611292420061
+    },
+    {
+     "Unnamed: 0": "bp_sigma",
+     "mean": 0.001424878508913,
+     "std": 0.0006130649617088
+    },
+    {
+     "Unnamed: 0": "roll",
+     "mean": 8.33891999886945e-05,
+     "std": 7.598075107065821e-05
+    },
+    {
+     "Unnamed: 0": "kyle",
+     "mean": -1.174654369497246e-05,
+     "std": 1.760033558724537e-05
+    },
+    {
+     "Unnamed: 0": "amihud",
+     "mean": 0.0,
+     "std": 0.0
+    },
+    {
+     "Unnamed: 0": "hasbrouck",
+     "mean": 0.0,
+     "std": 0.0
+    },
+    {
+     "Unnamed: 0": "csw",
+     "mean": 0.0261417562530031,
+     "std": 0.0017556774122848
+    },
+    {
+     "Unnamed: 0": "sent_positive",
+     "mean": 4.220331012262952e-05,
+     "std": 8.917290660706363e-05
+    },
+    {
+     "Unnamed: 0": "sent_negative",
+     "mean": 0.0001975217639327,
+     "std": 9.390797813872176e-05
+    },
+    {
+     "Unnamed: 0": "sent_neutral",
+     "mean": 0.000212212661966,
+     "std": 8.50473422028179e-05
+    }
+   ],
+   "sfi.csv": [
+    {
+     "feature": "ffd",
+     "mean": -0.6945985882666194,
+     "std": 0.0008347189516249
+    },
+    {
+     "feature": "log_trgt",
+     "mean": -0.6954956343800806,
+     "std": 0.0020070984077643
+    },
+    {
+     "feature": "sadf",
+     "mean": -0.696262979684692,
+     "std": 0.000690875406343
+    },
+    {
+     "feature": "ent_plugin",
+     "mean": -0.6951193317843688,
+     "std": 0.0006785907841461
+    },
+    {
+     "feature": "ent_konto",
+     "mean": -0.6953840614403553,
+     "std": 0.0006469472550935
+    },
+    {
+     "feature": "cs_spread",
+     "mean": -0.6948470426068578,
+     "std": 0.0008813044132292
+    },
+    {
+     "feature": "bp_sigma",
+     "mean": -0.6935657460583778,
+     "std": 0.0014952426496512
+    },
+    {
+     "feature": "roll",
+     "mean": -0.6951015352713822,
+     "std": 0.0011339125009789
+    },
+    {
+     "feature": "kyle",
+     "mean": -0.6948095291737735,
+     "std": 0.0007488125916334
+    },
+    {
+     "feature": "amihud",
+     "mean": -0.6949147721689642,
+     "std": 0.0007374587910992
+    },
+    {
+     "feature": "hasbrouck",
+     "mean": -0.6949147721689642,
+     "std": 0.0007374587910992
+    },
+    {
+     "feature": "csw",
+     "mean": -0.6504496511592842,
+     "std": 0.0058043028378757
+    },
+    {
+     "feature": "sent_positive",
+     "mean": -0.6955080759233044,
+     "std": 0.0006609760988439
+    },
+    {
+     "feature": "sent_negative",
+     "mean": -0.6954620557855187,
+     "std": 0.000672702040921
+    },
+    {
+     "feature": "sent_neutral",
+     "mean": -0.6953692427985645,
+     "std": 0.0006951684505138
+    }
+   ]
+  },
+  "sent_age": {
+   "median": 1.0,
+   "p75": 5.0,
+   "share_gt_7d": 0.1415482843943038
+  }
+ }
+}

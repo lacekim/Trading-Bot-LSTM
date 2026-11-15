@@ -61,3 +61,9 @@ Listing 7.1 ran on the Mac for all 6 Kraken symbols (155 s) and all 55 Alpaca in
 Kraken 2025-08-02 to 2026-10-12: LIVE golden cross +21.7% (max DD -14.2%, 56 trades) vs Listing 7.1 -19.2% (max DD -33.3%, 213 trades); VALIDATED +22.4% (max DD -13.8%) vs -6.4% (max DD -23.0%).
 Alpaca entries from 2025-12-10: golden cross -4.61% (max DD -4.68%) vs Listing 7.1 +1.56% (max DD -5.53%, 1,272 closed + 32 open).
 Fails: far behind on Kraken; ahead on Alpaca in a short window where the golden cross lost. check_option2.py: every number recomputed from the saved files matches; all 3,857 entries follow a positive prediction dated before the entry day (no look-ahead). ALL CHECKS PASSED.
+
+### FinBERT option 1 step 2: AFML bot with FinBERT features vs the golden cross and the 12-feature bot - FAILS the pre-set pass rule
+Runs made on the Mac: runtime/book_bot_sent/kraken_20261115T231431Z and alpaca_20261115T232638Z (runtime/ is gitignored). compare_option1.py reads both bots' own outputs the same way; recomputing book_bot_v2 from its equity curve reproduces RESULTS.md exactly.
+Kraken: from 2024-01-01 golden cross +107.5% / v2 -4.00% / with FinBERT -4.39% (max DD -6.44%); last 365 days +25.0% / -2.11% / -4.33%. Alpaca: from 2024-01-01 +15.15% / -1.90% / -1.94%; last 12 months -2.54% / -0.74% / -0.76%.
+Walk-forward AUC Kraken 0.5063 -> 0.5156, Alpaca 0.5007 -> 0.5003. Kraken events 63,979 -> 44,183 (pre-2022 events have no headlines, stated in advance). The sentiment features rank mid-to-high on Kraken MDI (0.07-0.08) but the bot's returns got slightly worse; Alpaca is unchanged. Kraken sentiment readings are stale (median 5 days old at the event).
+BOOK_NOTES.md gets the comparison table and a summary of all three FinBERT tests: none beats the golden cross; the repeated pattern (sentiment rules losing less than the golden cross on Alpaca in its losing windows) is recorded but not acted on.
