@@ -576,3 +576,6 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - Validator checks (separate code, on the saved files): one row per ticker-day, matching news_ticker.csv exactly on both venues; no missing values; each row's three probabilities sum to 1. Means: Kraken positive 0.313 / negative 0.291 / neutral 0.396; Alpaca 0.263 / 0.180 / 0.557.
 - Content sanity check (not proof of an edge): net sentiment (positive minus negative) reads known events the right way. SPY February 2020 -0.195 against a whole-file mean of -0.084; BTC in the FTX collapse week (2022-11-06 to 11-10) -0.11 to -0.38 against a mean of -0.002; BTC February 2024 (after spot ETF approval) +0.105.
 - STOP: the book ends Listing 7.2 with "'daily_sent' can be merged with returns, factors, and risk metrics" and prints no trading rule. How the scores are used needs the user's decision.
+
+### 12. FinBERT sentiment tested three ways against the golden cross - `_claude_scratch/finbert_tests_20261115/CHANGES.md` (2026-11-15; user: "test all of them")
+- Option 3 rule (AAT Sentdex thresholds 6 / -1 mapped to FinBERT net >= 0.8 / <= -0.4; previous day's sentiment only; in the user's engines) is written in CHANGES.md with its source table and committed before any result.
