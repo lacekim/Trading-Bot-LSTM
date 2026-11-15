@@ -25,3 +25,6 @@ Why: the state flips about 180 times per asset in ten months (mean hold 12.6 hou
 Also found: PAXG's state was ON 75% of the time because most of its hourly readings are exactly 0 (almost no posts), which breaks the percentile mapping for that asset. Not tuned.
 Checks (check_sentiment_output.txt): all four rows recomputed from the saved files match; cutting the sentiment data at 2026-03-01 and 2026-07-15 never changes an earlier state for ETH, SOL, XMR (no look-ahead).
 Not tested: Alpaca (Santiment has no equity data).
+
+### Santiment step 3: write the sentiment result into BOOK_NOTES.md
+Appends the result and what it says to section 7 of tools/book_study/BOOK_NOTES.md: the book's sentiment rule fails against the golden cross on Kraken (-21.4% vs +23.0%), mostly because it trades about 180 times per asset and costs take about 27% of capital; it is only +5.8% even before costs. Records that sentiment as a slow regime gate on the golden cross has not been tested and needs its own pre-set rule.
