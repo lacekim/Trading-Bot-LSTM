@@ -22,3 +22,19 @@ Scripts: sentdex_state.py (the rule committed in 5d266fc), run_option3.py (the u
 Kraken LIVE: from 2024-01-01 golden cross +107.5% (max DD -21.5%, 145 trades) vs Sentdex rule +33.8% (max DD -15.3%, 95 trades); last 365 days +25.0% vs +5.1%. Kraken VALIDATED: +124.8% vs +2.5%; +28.2% vs -4.5%.
 Alpaca, open positions marked at the last close: entered from 2024-01-01 +15.15% (max DD -3.64%) vs +10.88% (max DD -3.77%); entered from 2025-10-10 -2.54% vs +0.22%.
 Fails in five of six windows. Noted: on closed Alpaca trades alone the Sentdex rule made +12.87% from 2024 vs -2.13% for the golden cross, whose lead there is 36 still-open positions.
+
+## Option 2: LLMs in Finance Listing 7.1 per symbol. Rule fixed BEFORE any result was computed
+SOURCE TABLE
+| rule | source |
+|---|---|
+| per symbol: next-day return target, that day's headlines joined into one text, MiniLM (sentence-transformers/all-MiniLM-L6-v2) CLS embedding in batches of 16, previous day's return, inner join on date, first 70% of rows train / last 30% test, RandomForestRegressor(n_estimators=200, max_depth=6, random_state=42), y_pred on the test rows | the book, Listing 7.1, p239-241, run from the user's mirror by tools/book_study/llm/run_listing_7_1.py |
+| prices and headlines from the project (Kraken daily closes from the 1h candles, Alpaca daily closes; the last 10 years as the book's period="10y"; headlines from news_ticker.csv) | DATA SOURCE, the one allowed change (4 lines replaced in memory, listed in the script header) |
+| how y_pred is traded: long while the latest prediction is > 0, flat otherwise; a prediction made from day D's row acts from day D+1 (Kraken: the 4h bars of D+1; Alpaca: the close of D+1) | NOT in the book: the book stops at y_pred and says backtesting should follow. Long-only to match the golden cross. Acting one day late removes the look-ahead from Alpaca headlines published after the close |
+| engines, costs, sizing, stop: the user's golden cross engines unchanged, only the signal replaced (as option 3) | the user's code |
+| window: from the LAST test-start date among the venue's symbols to the end of data, so every symbol is in its test period; the golden cross is run on the same window | NOT in the book; needed so no training-period prediction is ever traded |
+| a symbol whose book run raises an error is recorded and left out on both sides | NOT in the book |
+Pass rule: better return AND better return / max drawdown than the golden cross over that window, on both venues (Kraken: both variants).
+
+### FinBERT option 2 step 1: Listing 7.1 runner and the rule for trading its predictions, before running
+Adds tools/book_study/llm/run_listing_7_1.py: the book's Listing 7.1 (p239-241) run per symbol from the user's mirror, with only 4 data-source lines replaced in memory (no yfinance; each bot symbol instead of SPY; the project's daily closes, last 10 years; that symbol's headlines). Saves y_pred and y_test per test date; a symbol that errors is recorded and skipped. Tested in the cloud workspace with a stand-in text model and synthetic data: the target equals the next day's return (max difference 1e-16) and a symbol with no news is skipped with its error recorded.
+The rule for trading y_pred is written in CHANGES.md with its source table before any result: long while the latest prediction is above 0, acting from the next day (removes look-ahead from after-close Alpaca headlines), in the user's engines, over the window where every symbol is in its test period, golden cross on the same window. That trading rule is not in the book (the book stops at y_pred) and is marked so. Pass rule stated in advance.
