@@ -1,0 +1,8 @@
+kraken gc|LIVE|window_2025-08-02_to_2026-10-12          recomputed 21.7% / -14.2% / 56 trades  match=True
+kraken gc|VALIDATED|window_2025-08-02_to_2026-10-12     recomputed 22.4% / -13.8% / 37 trades  match=True
+kraken sent|LIVE|window_2025-08-02_to_2026-10-12        recomputed -19.2% / -33.3% / 213 trades  match=True
+kraken sent|VALIDATED|window_2025-08-02_to_2026-10-12   recomputed -6.4% / -23.0% / 159 trades  match=True
+alpaca gc   recomputed -4.61% / -4.68%  engine -4.61% / -4.68%  match=True
+alpaca sent recomputed 1.56% / -5.53%  engine 1.56% / -5.53%  match=True
+entries whose latest prediction dated before the entry day was not positive: 0 of 3857 (must be 0)
+ALL CHECKS PASSED
