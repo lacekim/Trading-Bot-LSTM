@@ -1,0 +1,45 @@
+{
+ "mode": "gate",
+ "window": [
+  "2025-12-16 00:00:00",
+  "2026-10-13 00:00:00"
+ ],
+ "euphoric_share_of_bars": 0.095,
+ "first_gate_bar": "2026-03-30 20:00:00",
+ "rows": {
+  "LIVE": {
+   "variant": "LIVE",
+   "trades": 27,
+   "win_pct": 37.0,
+   "total_pct": 22.8,
+   "cagr_pct": 28.4,
+   "max_dd_pct": -14.4,
+   "cagr_over_dd": 1.97,
+   "pf": 1.83,
+   "pf_ex_top3": 0.76,
+   "stops": 3,
+   "exits": {
+    "death_cross": 24,
+    "stop": 3
+   },
+   "ret_over_dd": 1.58
+  },
+  "VALIDATED": {
+   "variant": "VALIDATED",
+   "trades": 19,
+   "win_pct": 36.8,
+   "total_pct": 12.7,
+   "cagr_pct": 15.65,
+   "max_dd_pct": -6.3,
+   "cagr_over_dd": 2.49,
+   "pf": 1.53,
+   "pf_ex_top3": 0.35,
+   "stops": 3,
+   "exits": {
+    "death_cross": 16,
+    "stop": 3
+   },
+   "ret_over_dd": 2.02
+  }
+ }
+}

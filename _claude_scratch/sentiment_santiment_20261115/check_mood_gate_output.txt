@@ -1,0 +1,20 @@
+off  LIVE      recomputed total=23.0% maxDD=-14.4% trades=27 match=True
+off  VALIDATED recomputed total=18.5% maxDD=-6.4% trades=21 match=True
+gate LIVE      recomputed total=22.8% maxDD=-14.4% trades=27 match=True
+gate VALIDATED recomputed total=12.7% maxDD=-6.3% trades=19 match=True
+no look-ahead, mood data cut at 2026-04-15: earlier euphoria flags unchanged = True
+no look-ahead, mood data cut at 2026-07-01: earlier euphoria flags unchanged = True
+
+LIVE: trades only WITHOUT the gate (blocked or moved): 2
+   PAXG  2026-05-14 00:00:00 -> 2026-05-15 12:00:00  -3.0%  pnl -442  exit=death_cross
+   TRX   2026-08-09 12:00:00 -> 2026-09-04 08:00:00  -0.2%  pnl -35  exit=death_cross
+LIVE: trades only WITH the gate (entered later instead): 2
+   PAXG  2026-05-14 04:00:00 -> 2026-05-15 12:00:00  -3.3%  pnl -490  exit=death_cross
+   TRX   2026-08-13 08:00:00 -> 2026-09-04 08:00:00  -1.4%  pnl -209  exit=death_cross
+
+VALIDATED: trades only WITHOUT the gate (blocked or moved): 2
+   PAXG  2026-05-14 00:00:00 -> 2026-05-15 12:00:00  -3.0%  pnl -426  exit=death_cross
+   TRX   2026-08-09 12:00:00 -> 2026-09-04 08:00:00  -0.2%  pnl -34  exit=death_cross
+VALIDATED: trades only WITH the gate (entered later instead): 0
+
+ALL CHECKS PASSED
