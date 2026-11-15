@@ -561,3 +561,9 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - LLMs in Finance, Listing 7.1 (p239-241): daily headlines embedded with sentence-transformers/all-MiniLM-L6-v2 plus the lagged return, fed to a RandomForestRegressor predicting the next day's return (prints one ticker, SPY).
 - AAT Sentdex strategy: per ticker, enter long at sentiment >= 6, close at <= -1 (Sentdex scale).
 - The data-source script for Listing 7.2 already exists: `tools/book_study/llm/fetch_alpaca_news.py` builds per-symbol headlines for the Kraken and Alpaca symbols from Alpaca's news API. That is the only change the user allows (data source).
+
+### 10. LLMs in Finance Listing 7.2 on Kraken: STOPPED, failed as printed (2026-11-15, run by the user on the Mac)
+- News pull (fetch_alpaca_news.py --venue kraken): 53,800 headlines for all 27 Kraken symbols, 2021-03-18 to 2026-11-15 (23 in 2021; about 9,000 to 13,000 a year from 2022). Very uneven: BTC 22,081, ETH 13,875, DOGE 6,664, SOL 3,639, XRP 2,907; ICX 1, BAL 2, ANKR 11. The Alpaca venue pull has not been run yet.
+- run_listing_7_2.py --venue kraken: FinBERT (ProsusAI/finbert, 438 MB) downloaded and loaded, then macOS killed the process ("zsh: killed") while the book's code was scoring. No daily_sent.csv was written. The script's own failure record was not written either, because a killed process cannot run its error handler.
+- Cause: the book's code passes all headlines to score_headlines in ONE call (`score_headlines(news_df["headline"].tolist())`), so FinBERT is asked to process 53,800 headlines in a single batch, which runs out of memory.
+- Under standing rule 6 this is a STOP: the book's code cannot run as printed on this data. Not patched. The change it would need: call the book's own score_headlines on the headlines in pieces (for example 64 at a time) and stack the results, with everything else as printed. Waiting for the user's yes.
