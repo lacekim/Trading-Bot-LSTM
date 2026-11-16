@@ -1,0 +1,48 @@
+{
+ "call": "testFunc()",
+ "defaults": {
+  "n_features": 40,
+  "n_informative": 10,
+  "n_redundant": 10,
+  "n_estimators": 1000,
+  "n_samples": 10000,
+  "cv": 10
+ },
+ "seconds": 2221.4,
+ "finished_utc": "2026-11-16T18:15:51.230422+00:00",
+ "stats": [
+  {
+   "method": "MDA",
+   "scoring": "accuracy",
+   "minWLeaf": 0.0,
+   "max_samples": 1.0,
+   "I": 0.5718847684970021,
+   "R": 0.3742758470284524,
+   "N": 0.004539295483133739,
+   "oob": 0.9277,
+   "oos": 0.8334999999999999
+  },
+  {
+   "method": "MDI",
+   "scoring": "accuracy",
+   "minWLeaf": 0.0,
+   "max_samples": 1.0,
+   "I": 0.3253019283314254,
+   "R": 0.33930306067520893,
+   "N": 0.3353950109933657,
+   "oob": 0.9259,
+   "oos": 0.8338999999999999
+  },
+  {
+   "method": "SFI",
+   "scoring": "accuracy",
+   "minWLeaf": 0.0,
+   "max_samples": 1.0,
+   "I": 0.249653281815778,
+   "R": 0.2592048956067973,
+   "N": 0.4911418225774248,
+   "oob": 0.9283,
+   "oos": 0.834
+  }
+ ]
+}
