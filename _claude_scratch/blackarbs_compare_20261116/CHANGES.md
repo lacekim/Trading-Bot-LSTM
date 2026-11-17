@@ -130,3 +130,6 @@ User 'ok'. 10.1-10.3 tested together as printed on pandas 3: no errors or warnin
 
 ### AFML Snippet 10.2 ruled: plain quotes only
 User 'ok'. Runs as printed otherwise.
+
+### AFML Snippet 10.3 recorded: runs as printed
+No change.
