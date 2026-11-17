@@ -226,3 +226,6 @@ No change.
 
 ### AFML Snippet 21.3 recorded: runs as printed
 No change.
+
+### AFML Snippet 21.5 ruled: parameter block at top level
+User: 'if that is what the book says ok'. Claude's genParams wrapper excluded.
