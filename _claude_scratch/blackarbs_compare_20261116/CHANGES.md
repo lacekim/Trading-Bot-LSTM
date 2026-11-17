@@ -223,3 +223,6 @@ User 'ok'.
 
 ### AFML Snippet 21.2 recorded: runs as printed (repeated columns kept)
 No change.
+
+### AFML Snippet 21.3 recorded: runs as printed
+No change.

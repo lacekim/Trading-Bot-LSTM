@@ -739,3 +739,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **Chapter 20 complete.**
 - **Snippet 21.1 (p201): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean. pigeonHole(3,3) -> 10 partitions = C(5,2), ordered ones distinct (Figure 21.1).
 - **Snippet 21.2 (p202): runs exactly as printed; no change.** Page clean (ﬂoat ligature in a name). Known behaviour of the printed code, kept: a zero entry is multiplied by both signs, so columns repeat; getAllWeights(3,3) -> 80 columns, 38 distinct.
+- **Snippet 21.3 (p203): runs exactly as printed; no change.** Page clean (already uses range; handles sr None itself). Ran in the Chapter 21 experiment test.
