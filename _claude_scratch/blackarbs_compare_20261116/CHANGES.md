@@ -97,3 +97,6 @@ User: 'if that is what te book says ok'. The ﬁ ligature in identifiers is read
 
 ### AFML Snippet 8.2 ruled: closing lines aligned with the function body
 User: 'if that is what the book say ok'. Notes that the port header's 'as printed' was inaccurate for 8.2.
+
+### AFML Snippet 8.3 ruled: shuffle -> permutation (forced on pandas 3; same draws)
+User: 'if that is what the book say ok'. Read-only ValueError confirmed; permutation equals shuffle on a copy for the same seed (checked). Parked item 7 resolved as forced.
