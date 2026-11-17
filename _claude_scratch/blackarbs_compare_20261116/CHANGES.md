@@ -190,3 +190,6 @@ User 'ok'.
 
 ### AFML Snippet 20.2 copied from the PDF with its three fixes
 User 'ok'. Same 8 combinations as 20.1.
+
+### AFML Snippet 20.5 recorded: runs as printed
+No change.
