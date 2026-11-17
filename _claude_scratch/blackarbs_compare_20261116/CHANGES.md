@@ -19,3 +19,6 @@ Notes the three sources of the stops (Python 2 era code, typesetting errors, unp
 
 ### AFML Snippet 20.3 copied from the PDF as printed (range, print() only)
 Ruling 'a'. 21 lines, diff vs PDF shows only xrange->range (x2) and print(). The printed continue keeps the last touch; the program prints only a timing. Claude's break version in book_mp.py is not used.
+
+### AFML Snippet 20.4 copied from the PDF as printed, with 20.3's barrierTouch alongside
+Ruling '(A) is fine then'. Diff vs PDF: only xrange->range and print(); 20.3's barrierTouch copied word for word (20.4 calls it without defining it). As printed the jobs cover 1,000 of 10,000 paths (rows count used to slice columns); kept, noted: the timing is not a speed-up measure vs 20.3. Spawn-mode test: one main1() 2.03 s, no error.
