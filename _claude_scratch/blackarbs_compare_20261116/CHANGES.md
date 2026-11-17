@@ -160,3 +160,6 @@ User: 'if that is what the book says, yes'. Diff vs PDF: only the print line. 15
 
 ### AFML Snippets 16.1-16.3 recorded as covered by the 16.4 run; Chapter 16 complete
 User: 'if thats what the book says, ok'. Same code and fixes as 16.4. 16.5 stays not run.
+
+### AFML Snippet 17.1 ruled: None comparison keeps Python 2's behaviour
+User 'ok'. Only change; port already matches.
