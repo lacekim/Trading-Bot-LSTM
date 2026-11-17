@@ -127,3 +127,6 @@ User: 'if that what the book says do it'. 18 lines; diff vs PDF shows only the t
 
 ### AFML Snippet 10.1 ruled: as printed plus the norm import
 User 'ok'. 10.1-10.3 tested together as printed on pandas 3: no errors or warnings.
+
+### AFML Snippet 10.2 ruled: plain quotes only
+User 'ok'. Runs as printed otherwise.
