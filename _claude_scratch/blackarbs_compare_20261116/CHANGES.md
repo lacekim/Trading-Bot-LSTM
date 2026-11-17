@@ -13,3 +13,6 @@ User's Mac run: pairs [(4,6),(1,7),(3,8),(3,9),(2,10)], ClusterWarning from the 
 
 ### AFML Snippet 16.4: integer start weight 1 -> 1. (user ruling A)
 pandas 3 refuses w[...]*=alpha on the printed integer Series; the user chose (a): pd.Series(1.,index=sortIx). Only change; header table updated.
+
+### BOOK_NOTES: why the printed code keeps stopping; Snippet 17.2 alignment recorded
+Notes the three sources of the stops (Python 2 era code, typesetting errors, unprinted code) at the user's request ('ok, note all this and continue on'). The standing yes for mechanical fixes was offered, not taken as granted. 17.2: 'continue on' taken as (a), reversible; port already matches; no code change.
