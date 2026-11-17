@@ -211,3 +211,6 @@ User 'a'. Round-trip test of a bound method passes.
 
 ### AFML Snippet 20.12 ruled: quotes, copy and pandas imports
 User 'ok'.
+
+### AFML Snippet 20.13 ruled: range only
+User 'ok'.
