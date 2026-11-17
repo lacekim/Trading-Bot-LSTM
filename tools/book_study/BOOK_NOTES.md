@@ -723,3 +723,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **Snippet 19.2 (p181): RULING (user 2026-11-17, "ok"): two en dashes (3–2*2**.5, 2**-.5–1) -> minus signs.** Page clean. Same simulated market: true daily volatility 1.00%, estimate 0.95%.
 - **Chapter 19 complete.**
 - **Snippet 20.1 (p187): RULING (user 2026-11-17, "ok"): print -> print() only.** Page clean. New `snippet_20_1_as_printed.py`; workspace run prints the 8 combinations. Awaiting the user's Mac run.
+- **Snippet 20.1 RESULT (user, Mac, 2026-11-17): RAN as printed.** All 8 = 2 x 2 x 2 combinations, in nested-loop order, identical to the workspace run. Saved: `_claude_scratch/snippet_20_1_20261117/printed_output.txt`.
