@@ -231,7 +231,8 @@ def getTimeDecay(tW, clfLastW=1.):
     const = 1. - slope * clfW.iloc[-1]
     clfW = const + slope * clfW
     clfW[clfW < 0] = 0
-    return clfW, const, slope
+    print(const, slope)
+    return clfW
 
 
 # ---------------------------------------------------------------------------------------------------------------------

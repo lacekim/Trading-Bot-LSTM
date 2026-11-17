@@ -372,9 +372,9 @@ def main() -> int:
     labels_dropped = sorted(set(shares) - set(ev["bin_book"].unique()))
     ev["bin"] = (ev["bin_book"] > 0).astype(np.int8)
     tW = pd.Series(ev["u"].to_numpy(float))                                                                                                              # Snippet 4.11 (c = 1)
-    clfW, dconst, dslope = PE.getTimeDecay(tW, clfLastW=DECAY_C)
+    clfW = PE.getTimeDecay(tW, clfLastW=DECAY_C)
     ev["w"] = ev["w"].to_numpy(float) * clfW.to_numpy(float)
-    log(f"Snippet 3.8: label shares {shares}, dropped {labels_dropped}; {n_all - len(ev)} events removed; Snippet 4.11: const {dconst}, slope {dslope}")
+    log(f"Snippet 3.8: label shares {shares}, dropped {labels_dropped}; {n_all - len(ev)} events removed")
     ev.to_csv(run / "events.csv", index=False, float_format="%.12g")
     pd.DataFrame(einfo["per_symbol"]).to_csv(run / "symbols.csv", index=False)
     closes = {s: pd.Series(b.close, index=b.idx) for s, b in bars.items()}
@@ -491,7 +491,7 @@ def main() -> int:
     after = RB.integrity_snapshot()
     meta = {"venue": venue, "bar_dir": str(bars_dir), "seed": seed, "cost_bp_per_side": a.cost_bp_per_side, "cutoff": CUTOFF, "embargo_pct": EMBARGO, "step": STEP, "base_forest": BASE_FOREST, "forest": forest,
             "features": FEATURES, "symbols": len(bars), "events": int(len(ev)), "events_before_dropLabels": int(n_all), "label_shares_before_dropLabels": {str(k): v for k, v in shares.items()},
-            "labels_dropped_3_8": [int(x) for x in labels_dropped], "time_decay_4_11": {"c": DECAY_C, "const": float(dconst), "slope": float(dslope)}, "events_pre_cutoff": int(len(tr)), "events_cusum": einfo["events_cusum"],
+            "labels_dropped_3_8": [int(x) for x in labels_dropped], "time_decay_4_11": {"c": DECAY_C}, "events_pre_cutoff": int(len(tr)), "events_cusum": einfo["events_cusum"],
             "universe": a.universe, "otr": {"pt": pt, "sl": sl, "K": K_OTR}, "cpcv": {"n_paths": int(cmeta["n_paths"]), "auc_by_path": auc_cp, "auc_mean": float(np.mean(auc_cp))}, "walk_forward": wf_stats,
             "exit_stats_wf": results["wf"][1], "hrp_rebalances": len(sched), "reb_window": BF.REB_WINDOW, "first_day": pd.Timestamp(first_day_all * DAY, unit="s").strftime("%Y-%m-%d"),
             "last_day": pd.Timestamp(last_day * DAY, unit="s").strftime("%Y-%m-%d"), "dsr": dsr_out, "ch14": ch14, "ch15": ch15, "ch10_orders": ch10, "rebalance_cost_effect": reb_effect, "concentration_eq77_78": conc, "volume_capacity": cap, "tuned": tj, "integrity_unchanged": before == after,

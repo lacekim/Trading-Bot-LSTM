@@ -235,3 +235,6 @@ User 'ok'. Diff vs PDF: range and the two print lines only.
 
 ### Parked item 1: dropLabels verbose switch taken out (book_port_a.py, book_bot.py)
 User: 'do what the book says'. dropLabels always prints as printed in 3.8; the book bot's one call no longer passes verbose=True (it already printed). No result changes. BOOK_NOTES section 17.
+
+### Parked item 2: getTimeDecay prints const, slope and returns the weights only; 5 bots and 2 October scripts updated
+User: 'Do what the book says'. No trade or result changes; const/slope move from the bots' logs/run.json to the printed output. 17 tests pass in the workspace. Old runs' recorded md5 of book_port files no longer match (old versions in git).

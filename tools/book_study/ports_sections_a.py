@@ -183,9 +183,9 @@ def ch4(V, cfg, log):
     tW = pd.Series(se["u"].to_numpy(), index=se.index)
     dec = {}
     for c in (1., .5, 0., -.5):
-        w, const, slope = PE.getTimeDecay(tW, c)
+        w = PE.getTimeDecay(tW, c)
         ref = TD.decay_factors(se["u"].to_numpy(), se["t0"].to_numpy(), c)
-        dec[str(c)] = {"const": float(const), "slope": float(slope), "oldest_weight": float(w.iloc[0]), "share_of_events_with_zero_weight": float((w == 0).mean()),
+        dec[str(c)] = {"oldest_weight": float(w.iloc[0]), "share_of_events_with_zero_weight": float((w == 0).mean()),
                        "max_abs_diff_vs_project": float(np.max(np.abs(w.to_numpy() - ref)))}
     out["time_decay"] = dec
     md += ["", "Snippet 4.11, time decay by cumulative uniqueness over all the venue's events in time order (the newest event has weight 1):", "", "| c | oldest weight | events with weight 0 | max abs diff vs project's time_decay.py |", "|---|---|---|---|"]

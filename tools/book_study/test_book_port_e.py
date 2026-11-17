@@ -121,17 +121,23 @@ class Test4(unittest.TestCase):
 
     def test_time_decay_hand(self):
         tW = pd.Series([.5, .5, .5, .5], index=pd.date_range('2026-01-01', periods=4))
-        w, const, slope = E.getTimeDecay(tW, .5)
+        import io, contextlib
+        def run(c):  # Snippet 4.11 prints const, slope and returns the weights
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf): w = E.getTimeDecay(tW, c)
+            const, slope = map(float, buf.getvalue().split())
+            return w, const, slope
+        w, const, slope = run(.5)
         np.testing.assert_allclose(w.values, [.625, .75, .875, 1.0]); self.assertAlmostEqual(const, .5); self.assertAlmostEqual(slope, .25)
-        w, const, slope = E.getTimeDecay(tW, -.5)
+        w, const, slope = run(-.5)
         np.testing.assert_allclose(w.values, [0, 0, .5, 1.]); self.assertAlmostEqual(const, -1.); self.assertAlmostEqual(slope, 1.)
-        w, _, _ = E.getTimeDecay(tW, 1.)
+        w = E.getTimeDecay(tW, 1.)
         np.testing.assert_allclose(w.values, 1.)
         # against the project's own function
         import time_decay as TD
         u = np.array([.5, .3, .9, .2, .7]); t0 = np.arange(5)
         for c in (1., .5, 0., -.5):
-            mine, _, _ = E.getTimeDecay(pd.Series(u, index=pd.date_range('2026-01-01', periods=5)), c)
+            mine = E.getTimeDecay(pd.Series(u, index=pd.date_range('2026-01-01', periods=5)), c)
             np.testing.assert_allclose(mine.values, TD.decay_factors(u, t0, c), atol=1e-12)
 
 
