@@ -100,3 +100,6 @@ User: 'if that is what the book say ok'. Notes that the port header's 'as printe
 
 ### AFML Snippet 8.3 ruled: shuffle -> permutation (forced on pandas 3; same draws)
 User: 'if that is what the book say ok'. Read-only ValueError confirmed; permutation equals shuffle on a copy for the same seed (checked). Parked item 7 resolved as forced.
+
+### AFML Snippets 8.4 and 8.5 recorded: run as printed
+Pages clean; tested on pandas 3 with no errors or warnings. No ruling needed (no change).
