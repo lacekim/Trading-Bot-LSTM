@@ -61,3 +61,6 @@ User: 'if that is the way the book says, ok'. snippet_4_6_as_printed.py holds 4.
 
 ### AFML Snippets 4.7 (range only) and 4.8 (as printed) ruled
 User 'ok'. Tested 200 draws on pandas 3: no warnings; averages match Figure 4.2.
+
+### AFML Snippet 4.9 ruled: four fixes; the full-size run stands
+User 'a'. Indentation of the closing lines, range, mpEngine -> book_mp (Ch.20 snippets), print(). The port's return-instead-of-print is Claude's and noted; the computation is identical, so the 1,000,000-iteration result (0.6074 / 0.6932) stands.
