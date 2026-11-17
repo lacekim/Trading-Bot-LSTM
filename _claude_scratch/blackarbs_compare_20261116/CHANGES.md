@@ -205,3 +205,6 @@ No change.
 
 ### AFML Snippet 20.9 ruled: missing imports added
 User 'ok'.
+
+### AFML Snippet 20.11 ruled: copyreg and Python 3 method attribute names
+User 'a'. Round-trip test of a bound method passes.
