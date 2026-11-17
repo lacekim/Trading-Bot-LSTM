@@ -1,0 +1,5 @@
+# python 3.12.13 numpy 2.4.4 pandas 3.0.2
+[2 2 2]
+Standard uniqueness: 0.3333333333333333
+[np.int64(2), np.int64(2), np.int64(1)]
+Sequential uniqueness: 0.6666666666666666
