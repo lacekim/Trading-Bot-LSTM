@@ -220,3 +220,6 @@ User 'ok'. File diffed against the PDF (only ruled fixes) and run with real work
 
 ### AFML Snippet 21.1 ruled: range only
 User 'ok'.
+
+### AFML Snippet 21.2 recorded: runs as printed (repeated columns kept)
+No change.

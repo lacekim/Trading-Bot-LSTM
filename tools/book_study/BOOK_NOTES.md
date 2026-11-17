@@ -738,3 +738,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **New `snippet_20_as_printed.py`: Snippets 20.5-20.14 copied from the PDF with only the ruled fixes** (change table in its header); diff against the PDF text shows only those lines. Workspace run of the whole file with spawned workers: mpPandasObj gives the same result with 2 workers and with 1 thread; the 20.14 check as above. This is the ruled Chapter 20 code; book_mp.py (the October port, used by the 4.9 and 8.9 runs) is not edited.
 - **Chapter 20 complete.**
 - **Snippet 21.1 (p201): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean. pigeonHole(3,3) -> 10 partitions = C(5,2), ordered ones distinct (Figure 21.1).
+- **Snippet 21.2 (p202): runs exactly as printed; no change.** Page clean (ﬂoat ligature in a name). Known behaviour of the printed code, kept: a zero entry is multiplied by both signs, so columns repeat; getAllWeights(3,3) -> 80 columns, 38 distinct.
