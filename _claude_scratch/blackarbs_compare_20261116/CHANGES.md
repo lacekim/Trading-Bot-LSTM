@@ -196,3 +196,6 @@ No change.
 
 ### AFML Snippet 20.6 ruled: range only
 User 'ok'. Balanced parts for a triangular job.
+
+### AFML Snippet 20.7 ruled: quotes, argList -> pdObj, split line, range, concat
+User 'ok'. Empty pd.Series() kept as printed (object dtype under pandas 2+, values unchanged).
