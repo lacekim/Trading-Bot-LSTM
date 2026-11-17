@@ -73,3 +73,6 @@ User: 'if thats the way the book says, ok'. The port's changed return value stay
 
 ### AFML Snippet 5.1 copied from the PDF; only the three missing imports added
 User: 'if that is the way the book says, ok'. 22 lines identical to the PDF text; __main__ draws Figures 5.1/5.2.
+
+### AFML Snippet 5.2 ruled (quotes, ligatures, ffill()); Chapter 5 complete
+User 'ok'. pandas 3 removed fillna(method=); ffill() is the same step. 5.3/5.4 stay not run.
