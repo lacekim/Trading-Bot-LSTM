@@ -217,3 +217,6 @@ User 'ok'.
 
 ### AFML Snippet 20.14 recorded; Chapter 20 ruled code saved as snippet_20_as_printed.py; Chapter 20 complete
 User 'ok'. File diffed against the PDF (only ruled fixes) and run with real worker processes.
+
+### AFML Snippet 21.1 ruled: range only
+User 'ok'.
