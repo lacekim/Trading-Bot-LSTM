@@ -1,0 +1,15 @@
+# python 3.12.13 numpy 2.4.4 pandas 3.0.2 scipy 1.17.1 matplotlib 3.10.9
+[(4, 6), (1, 7), (3, 8), (3, 9), (2, 10)]
+WARNING ClusterWarning: The symmetric non-negative hollow observation matrix looks suspiciously like an uncondensed distance matrix (snippet_16_4_as_printed.py:106)
+8     0.071408
+3     0.075961
+9     0.125317
+2     0.067596
+10    0.063236
+1     0.109945
+7     0.103968
+5     0.193357
+4     0.097549
+6     0.091662
+dtype: float64
+# done; files: ._HRP3_corr0.png, ._HRP3_corr1.png, ._printed_output.txt, HRP3_corr0.png, HRP3_corr1.png, printed_output.txt
