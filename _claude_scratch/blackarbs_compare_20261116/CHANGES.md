@@ -241,3 +241,6 @@ User: 'Do what the book says'. No trade or result changes; const/slope move from
 
 ### Parked item 3: NaT pre-creation removed from applyPtSlOnT1 (not needed on pandas 3, tested)
 User: 'Do what the book says'. The October claim that pandas 3 needs it was wrong. Chapter 3 tests pass. Bots unaffected.
+
+### Parked item 4: testFunc made the book's version; superseded 8.9 runner removed; test updated
+User: 'Do what the book says...'. book_port_b.testFunc = Snippet 8.9 with the ruled fixes only. run_snippet_8_9_as_printed.py removed (in git history). 10 tests pass.

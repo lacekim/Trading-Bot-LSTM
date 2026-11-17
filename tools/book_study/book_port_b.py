@@ -270,31 +270,35 @@ def plotFeatImportance(pathOut, imp, oob, oos, method, tag=0, simNum=0, **kargs)
     return
 
 
-def testFunc(n_features=40, n_informative=10, n_redundant=10, n_estimators=1000, n_samples=10000, cv=10, pathOut='./testFunc/', numThreads=24, plot=True):
+def testFunc(n_features=40, n_informative=10, n_redundant=10, n_estimators=1000,
+             n_samples=10000, cv=10):
+    # Snippet 8.9 as printed with the ruled fixes only (2026-11-17, parked item 4: Claude's October extras
+    # pathOut / numThreads / plot / os.makedirs / return out were taken out). The book writes to ./testFunc/,
+    # which must already exist, and returns nothing.
     # test the performance of the feat importance functions on artificial data
     # Nr noise features = n_features-n_informative-n_redundant
-    import os
-    os.makedirs(pathOut, exist_ok=True)
     trnsX, cont = getTestData(n_features, n_informative, n_redundant, n_samples)
-    dict0 = {'minWLeaf': [0.], 'scoring': ['accuracy'], 'method': ['MDI', 'MDA', 'SFI'], 'max_samples': [1.]}
+    dict0 = {'minWLeaf': [0.], 'scoring': ['accuracy'], 'method': ['MDI', 'MDA', 'SFI'],
+             'max_samples': [1.]}
     jobs, out = (dict(zip(dict0, i)) for i in itertools.product(*dict0.values())), []
-    kargs = {'pathOut': pathOut, 'n_estimators': n_estimators, 'tag': 'testFunc', 'cv': cv, 'numThreads': numThreads}
+    kargs = {'pathOut': './testFunc/', 'n_estimators': n_estimators,
+             'tag': 'testFunc', 'cv': cv}
     for job in jobs:
-        job['simNum'] = job['method'] + '_' + job['scoring'] + '_' + '%.2f' % job['minWLeaf'] + '_' + str(job['max_samples'])
+        job['simNum'] = job['method'] + '_' + job['scoring'] + '_' + '%.2f' % job['minWLeaf'] + \
+                        '_' + str(job['max_samples'])
+        print(job['simNum'])
         kargs.update(job)
         imp, oob, oos = featImportance(trnsX=trnsX, cont=cont, **kargs)
-        if plot:
-            plotFeatImportance(imp=imp, oob=oob, oos=oos, **kargs)
+        plotFeatImportance(imp=imp, oob=oob, oos=oos, **kargs)
         df0 = imp[['mean']] / imp['mean'].abs().sum()
         df0['type'] = [i[0] for i in df0.index]
         df0 = df0.groupby('type')['mean'].sum().to_dict()
-        df0.update({'oob': oob, 'oos': oos})
-        df0.update(job)
+        df0.update({'oob': oob, 'oos': oos}); df0.update(job)
         out.append(df0)
     out = pd.DataFrame(out).sort_values(['method', 'scoring', 'minWLeaf', 'max_samples'])
     out = out[['method', 'scoring', 'minWLeaf', 'max_samples', 'I', 'R', 'N', 'oob', 'oos']]
     out.to_csv(kargs['pathOut'] + 'stats.csv')
-    return out
+    return
 
 
 # ---------------------------------------------------------------------------------------------------------------------

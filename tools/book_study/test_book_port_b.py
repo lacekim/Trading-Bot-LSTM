@@ -112,10 +112,14 @@ class T(unittest.TestCase):
     def test_testfunc_smoke(self):
         np.random.seed(0)
         with tempfile.TemporaryDirectory() as d:
-            out = B.testFunc(n_features=8, n_informative=3, n_redundant=2, n_estimators=20, n_samples=500, cv=3, pathOut=d + os.sep, numThreads=1, plot=True)
+            cwd = os.getcwd(); os.chdir(d); os.makedirs("testFunc")   # the book writes to ./testFunc/, which must exist
+            try:
+                self.assertIsNone(B.testFunc(n_features=8, n_informative=3, n_redundant=2, n_estimators=20, n_samples=500, cv=3))
+            finally:
+                os.chdir(cwd)
+            out = pd.read_csv(os.path.join(d, "testFunc", "stats.csv"))
             self.assertEqual(list(out["method"]), ["MDA", "MDI", "SFI"])
-            self.assertTrue(os.path.exists(os.path.join(d, "stats.csv")))
-            self.assertTrue(os.path.exists(os.path.join(d, "featImportance_MDI_accuracy_0.00_1.0.png")))
+            self.assertTrue(os.path.exists(os.path.join(d, "testFunc", "featImportance_MDI_accuracy_0.00_1.0.png")))
 
 
 if __name__ == "__main__":
