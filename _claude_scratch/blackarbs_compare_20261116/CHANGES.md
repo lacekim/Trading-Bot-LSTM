@@ -43,3 +43,6 @@ User: 'if thats is the way the book says, ok'. Only change; port already has it.
 
 ### AFML Snippet 3.7 ruled: plain quotes, bfill; getBins is 3.7's
 User: 'if thats is the way the book say, ok'. Curly-quote docstring delimiters and the bfill ligature retyped. 3.7 replaces 3.5's getBins (and 3.6 replaces 3.3's getEvents); Claude's getBins_3_5 / getEvents_3_3 names excluded from book results.
+
+### AFML Snippet 3.8 ruled (minPct spelling, print(), idxmin); Chapter 3 complete
+User: 'if that is the way the book says, ok'. The verbose switch stays a parked item.
