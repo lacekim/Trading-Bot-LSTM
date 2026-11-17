@@ -67,3 +67,6 @@ User 'a'. Indentation of the closing lines, range, mpEngine -> book_mp (Ch.20 sn
 
 ### AFML Snippet 4.10 ruled: items(); loose lines as printed
 User 'ok'. Claude's getSampleW wrapper excluded from book results.
+
+### AFML Snippet 4.11 ruled: print() only; Chapter 4 complete
+User: 'if thats the way the book says, ok'. The port's changed return value stays parked.
