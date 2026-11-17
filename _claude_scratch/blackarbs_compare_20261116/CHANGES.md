@@ -28,3 +28,6 @@ User: 'i want by the book'. 21.4 runs unchanged on Python 3; its unseeded Random
 
 ### AFML Chapter 2 recorded: 2.1 function only, 2.2/2.3 not applicable to Kraken/Alpaca
 User 'ok'. No printed call for 2.1; 2.2/2.3 are futures-roll code and the venues have no contracts or rolls. Nothing run or changed.
+
+### AFML Snippet 3.1 ruled: typeset dash -> minus sign
+User 'yes'. Only change in 3.1; port already matches. No code change.
