@@ -115,3 +115,6 @@ User: 'do what the book says'. Re-run from an exact copy instead of the October 
 
 ### AFML Snippet 9.1 ruled: iid dropped, None>0 guard, estimator=, max_samples count
 User: 'do what the book says'. Both iid and None>0 confirmed to raise TypeError today; each fix keeps the book's meaning.
+
+### AFML Snippet 9.2 recorded: runs as printed
+Tested on scikit-learn 1.9.1, including inside bagging with sample weights. No change.
