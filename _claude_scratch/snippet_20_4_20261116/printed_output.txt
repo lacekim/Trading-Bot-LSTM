@@ -1,0 +1,2 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python tools/book_study/snippet_20_4_as_printed.py
+5.967444000067189
