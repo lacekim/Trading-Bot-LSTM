@@ -136,3 +136,6 @@ No change.
 
 ### AFML Snippet 10.4 ruled: range, minus sign; reproduces the book's 97 / 112.3657 / 95; Chapter 10 complete
 User 'ok'. main() prints nothing as printed, so the check is the workspace computation with the book's functions and settings.
+
+### AFML Snippet 14.1 ruled: loose lines as printed, no change
+User: 'if thats what the book says, ok'. Claude's getBets wrapper excluded. Hand-checked test.
