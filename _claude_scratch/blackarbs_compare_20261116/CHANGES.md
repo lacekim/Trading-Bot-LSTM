@@ -133,3 +133,6 @@ User 'ok'. Runs as printed otherwise.
 
 ### AFML Snippet 10.3 recorded: runs as printed
 No change.
+
+### AFML Snippet 10.4 ruled: range, minus sign; reproduces the book's 97 / 112.3657 / 95; Chapter 10 complete
+User 'ok'. main() prints nothing as printed, so the check is the workspace computation with the book's functions and settings.
