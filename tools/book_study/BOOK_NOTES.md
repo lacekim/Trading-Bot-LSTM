@@ -724,3 +724,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **Chapter 19 complete.**
 - **Snippet 20.1 (p187): RULING (user 2026-11-17, "ok"): print -> print() only.** Page clean. New `snippet_20_1_as_printed.py`; workspace run prints the 8 combinations. Awaiting the user's Mac run.
 - **Snippet 20.1 RESULT (user, Mac, 2026-11-17): RAN as printed.** All 8 = 2 x 2 x 2 combinations, in nested-loop order, identical to the workspace run. Saved: `_claude_scratch/snippet_20_1_20261117/printed_output.txt`.
+- **Snippet 20.2 (p187): RULING (user 2026-11-17, "ok").** Page clean. `from itertoolsimport izip,product` (space lost in typesetting; SyntaxError) -> `from itertools import product`, izip -> zip (as 8.9); print i -> print(i). New `snippet_20_2_as_printed.py`; workspace run prints the same 8 combinations in the same order as 20.1. Awaiting the user's Mac run.
