@@ -154,3 +154,6 @@ User: 'if thats what the book sayes yes'. import, range, print().
 
 ### AFML Snippet 15.3 ruled: plain quotes, minus sign; checked against Equation 56
 User 'ok'. The implied precision solves Equation 56 back to the target Sharpe ratio.
+
+### AFML Snippet 15.5 copied from the PDF with print() and 15.3's binHR alongside
+User: 'if that is what the book says, yes'. Diff vs PDF: only the print line. 15.4 stays not run (binSR not printed).
