@@ -10,3 +10,6 @@ Ruling: 'Go by the book, remember?'. snippet_16_4_as_printed.py: 99 lines, diff 
 
 ### AFML Snippet 16.4 run 1 stopped: pandas 3 refuses the printed integer weight Series
 User's Mac run: pairs [(4,6),(1,7),(3,8),(3,9),(2,10)], ClusterWarning from the printed linkage call, then TypeError at w[cItems0]*=alpha (w=pd.Series(1,...) is int64; pandas 3.0.2). The book prints the integer 1 in 16.3 and 16.4. Stopped, waiting for the user's ruling.
+
+### AFML Snippet 16.4: integer start weight 1 -> 1. (user ruling A)
+pandas 3 refuses w[...]*=alpha on the printed integer Series; the user chose (a): pd.Series(1.,index=sortIx). Only change; header table updated.

@@ -10,7 +10,8 @@ Every change from the printed text (each forced; nothing else altered):
   | mpl.saveﬁg (ligature)                 | mpl.savefig                            | typesetting ligature                             |
   | size0–1 (en dash)                     | size0-1                                | typesetting dash                                 |
   | print [...] / print hrp               | print([...]) / print(hrp)              | Python 3                                         |
-Not changed: w=pd.Series(1,...) (integer) with w[...]*=alpha; sch.linkage(dist,'single') on the square distance frame;
+  | w=pd.Series(1,index=sortIx)           | w=pd.Series(1.,index=sortIx)           | pandas 3 refuses a float into an int Series (user ruling (a), 2026-11-16) |
+Not changed: sch.linkage(dist,'single') on the square distance frame;
 random.randint as Python 3 draws it (cols differ from the book's Python 2 run, see BOOK_NOTES section 16).
 Replaces book_port_d.py's generateData/main_16_4 (which added a `cols` argument, not in the book) as the 16.4 result.
 """
@@ -48,7 +49,7 @@ def getQuasiDiag(link):
 #———————————————————————————————————————
 def getRecBipart(cov,sortIx):
     # Compute HRP alloc
-    w=pd.Series(1,index=sortIx)
+    w=pd.Series(1.,index=sortIx)
     cItems=[sortIx] # initialize all items in one cluster
     while len(cItems)>0:
         cItems=[i[j:k] for i in cItems for j,k in ((0,len(i)//2), \
