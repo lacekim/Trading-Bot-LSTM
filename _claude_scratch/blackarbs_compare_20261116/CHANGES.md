@@ -82,3 +82,6 @@ User: 'if that is what the book says, ok'. comb import moved in SciPy, range, pr
 
 ### AFML Snippet 6.2 ruled: estimator=, 'sqrt', ligature, imports; Chapter 6 complete
 User: 'if that is what the book say, ok'. Both old scikit-learn arguments confirmed to fail on 1.9.1. Setup only; no run.
+
+### AFML Snippet 7.1 ruled: quotes, items()
+User: 'if that is what the book says ok'. Port already matches.
