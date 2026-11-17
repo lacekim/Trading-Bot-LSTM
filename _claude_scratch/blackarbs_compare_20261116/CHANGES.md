@@ -157,3 +157,6 @@ User 'ok'. The implied precision solves Equation 56 back to the target Sharpe ra
 
 ### AFML Snippet 15.5 copied from the PDF with print() and 15.3's binHR alongside
 User: 'if that is what the book says, yes'. Diff vs PDF: only the print line. 15.4 stays not run (binSR not printed).
+
+### AFML Snippets 16.1-16.3 recorded as covered by the 16.4 run; Chapter 16 complete
+User: 'if thats what the book says, ok'. Same code and fixes as 16.4. 16.5 stays not run.
