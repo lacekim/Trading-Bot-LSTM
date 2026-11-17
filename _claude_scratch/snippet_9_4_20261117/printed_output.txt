@@ -1,0 +1,12 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python tools/book_study/snippet_9_4_as_printed.py
+KstestResult(statistic=np.float64(0.007928002522792355), pvalue=np.float64(0.5531810308861733), statistic_location=np.float64(2.4208643189046293), statistic_sign=np.int8(-1))
+count    10000.000000
+mean        73.608804
+std        176.607614
+min          0.001000
+25%          0.031638
+50%          0.965672
+75%         34.580587
+max        999.822670
+dtype: float64
+(transcribed from the user's screenshot, figure_9_1_mac.png)
