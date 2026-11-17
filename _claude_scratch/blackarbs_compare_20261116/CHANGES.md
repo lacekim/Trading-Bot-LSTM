@@ -151,3 +151,6 @@ User 'ok'. numpy's own year length replaces the October port's 365.25. Hand-chec
 
 ### AFML Snippet 15.1 copied from the PDF with its three forced changes
 User: 'if thats what the book sayes yes'. import, range, print().
+
+### AFML Snippet 15.3 ruled: plain quotes, minus sign; checked against Equation 56
+User 'ok'. The implied precision solves Equation 56 back to the target Sharpe ratio.
