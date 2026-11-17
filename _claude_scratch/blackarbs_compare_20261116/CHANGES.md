@@ -85,3 +85,6 @@ User: 'if that is what the book say, ok'. Both old scikit-learn arguments confir
 
 ### AFML Snippet 7.1 ruled: quotes, items()
 User: 'if that is what the book says ok'. Port already matches.
+
+### AFML Snippet 7.2 ruled: concat; loose lines as printed
+User: 'if that is what the book says ok'. Claude's embargo_usage wrapper excluded from book results.
