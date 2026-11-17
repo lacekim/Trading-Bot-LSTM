@@ -178,3 +178,6 @@ User 'ok'.
 
 ### AFML Snippet 18.4 copied from the PDF with its ruled fixes, 18.1's import and 18.3's matchLength alongside
 User 'ok'. Diff vs PDF shows only the quotes, range, //, print() lines.
+
+### AFML Snippet 19.1 ruled: .rolling() for the removed functions, minus signs
+User: 'if that is what the book says, ok'. Simulated-market test recovers the known spread to the right size. Alpaca file lacks High/Low (noted).
