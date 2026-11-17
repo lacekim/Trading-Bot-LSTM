@@ -94,3 +94,6 @@ User: 'if that is what the book says ok'. As printed it raises KeyError on panda
 
 ### AFML Snippet 7.4 ruled: import points to 7.3's class; Chapter 7 complete
 User: 'if that is what te book says ok'. The ﬁ ligature in identifiers is read as fi by Python (checked).
+
+### AFML Snippet 8.2 ruled: closing lines aligned with the function body
+User: 'if that is what the book say ok'. Notes that the port header's 'as printed' was inaccurate for 8.2.
