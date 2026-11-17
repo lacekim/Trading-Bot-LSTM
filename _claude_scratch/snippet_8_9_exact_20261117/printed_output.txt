@@ -1,0 +1,10 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python tools/book_study/run_snippet_8_9_exact.py
+MDI_accuracy_0.00_1.0
+MDA_accuracy_0.00_1.0
+SFI_accuracy_0.00_1.0
+2026-11-17 12:37:24.213385 100.0% auxFeatImpSFI done after 31.15 minutes. Remaining 0.0 minutes...
+# done in 2330 s; files in /Volumes/Extreme_SSD/Javier_Santiago_Gaston_de_Iriarte_canrera/runtime/snippet_8_9_exact/testFunc
+,method,scoring,minWLeaf,max_samples,I,R,N,oob,oos
+1,MDA,accuracy,0.0,1.0,0.5889641588635978,0.31084188982174354,-0.07635312695349895,0.9266,0.8312999999999999
+0,MDI,accuracy,0.0,1.0,0.32720316360990476,0.3371759776468056,0.33562085874328956,0.9242,0.834
+2,SFI,accuracy,0.0,1.0,0.24965733095893364,0.25919810048027625,0.4911445685607901,0.9276,0.8324
