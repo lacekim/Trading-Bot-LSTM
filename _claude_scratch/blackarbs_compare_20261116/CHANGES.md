@@ -76,3 +76,6 @@ User: 'if that is the way the book says, ok'. 22 lines identical to the PDF text
 
 ### AFML Snippet 5.2 ruled (quotes, ligatures, ffill()); Chapter 5 complete
 User 'ok'. pandas 3 removed fillna(method=); ffill() is the same step. 5.3/5.4 stay not run.
+
+### AFML Snippet 6.1 copied from the PDF with its three forced changes
+User: 'if that is what the book says, ok'. comb import moved in SciPy, range, print(). Workspace result 0.4812.
