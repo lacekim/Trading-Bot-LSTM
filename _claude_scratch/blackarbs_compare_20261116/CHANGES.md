@@ -106,3 +106,6 @@ Pages clean; tested on pandas 3 with no errors or warnings. No ruling needed (no
 
 ### AFML Snippet 8.7 ruled: date_range with today's names, joined line, range
 User: 'if the book says so, ok'. Minimal date fix tested; the October port's normalize() is noted as Claude's extra. 8.9's printed-size result unaffected (dates are labels).
+
+### AFML Snippet 8.8 ruled: max_samples as a row count; estimator=; mpEngine -> 20.7
+User: 'if the book says so yes'. Confirmed on scikit-learn 1.9.1 that the printed max_samples=1. with weights summing to 1 fits each tree on one row.
