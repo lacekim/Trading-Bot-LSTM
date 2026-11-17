@@ -118,3 +118,6 @@ User: 'do what the book says'. Both iid and None>0 confirmed to raise TypeError 
 
 ### AFML Snippet 9.2 recorded: runs as printed
 Tested on scikit-learn 1.9.1, including inside bagging with sample weights. No change.
+
+### AFML Snippet 9.3 ruled: 9.1's four fixes plus the closing-lines indentation
+User 'ok'. 9.3's clfHyperFit replaces 9.1's. Port already matches.
