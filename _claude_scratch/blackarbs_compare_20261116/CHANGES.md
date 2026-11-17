@@ -55,3 +55,6 @@ User: 'if thats the way the book says, ok'. Claude's getTW wrapper excluded from
 
 ### AFML Snippet 4.3 ruled: items() only
 User: 'if that is the way the book says, ok'. Tested with the book's three labels on pandas 3. The t1_ rename (parked 4) is not needed.
+
+### AFML Snippets 4.4-4.5 as printed; 4.6 copied from the PDF with print() only, plus runner
+User: 'if that is the way the book says, ok'. snippet_4_6_as_printed.py holds 4.3-4.6; diff vs PDF shows only items() and four print() lines. Runner calls main() once (the book prints no call).
