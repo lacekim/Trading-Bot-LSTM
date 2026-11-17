@@ -145,3 +145,6 @@ User 'ok'. Hand-checked 2.0-day result in the workspace test.
 
 ### AFML Snippet 14.3 ruled: pd.Grouper(freq='ME'); usage lines as printed
 User 'ok'. Both old names confirmed to fail on pandas 3. Claude's getHHIs wrapper excluded.
+
+### AFML Snippet 14.4 ruled: year as 365.2425 days, 'first'; Chapter 14 complete
+User 'ok'. numpy's own year length replaces the October port's 365.25. Hand-checked test.
