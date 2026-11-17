@@ -139,3 +139,6 @@ User 'ok'. main() prints nothing as printed, so the check is the workspace compu
 
 ### AFML Snippet 14.1 ruled: loose lines as printed, no change
 User: 'if thats what the book says, ok'. Claude's getBets wrapper excluded. Hand-checked test.
+
+### AFML Snippet 14.2 ruled: range only
+User 'ok'. Hand-checked 2.0-day result in the workspace test.

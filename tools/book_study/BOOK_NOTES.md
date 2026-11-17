@@ -696,3 +696,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **Chapter 10 complete.**
 - **Chapters 11 and 12 print no code.**
 - **Snippet 14.1 (p120): RULING (user 2026-11-17, "if thats what the book says, ok"): no code change; the seven loose lines are used exactly as printed (3.4 rule).** Claude's October wrapper `getBets(tPos)` is excluded from book results. `bets.append(...)` is Index.append, still in pandas. Workspace test on a 12-day position [0,1,2,2,0,0,-1,-2,1,1,0,1]: bets on days 1, 5, 9, 11, 12, checked by hand (flats after a non-zero day: 1, 5, 11, day 1 because the shifted value there is NaN, which the printed code counts as non-zero; flip -2 -> 1 on day 9; the last day).
+- **Snippet 14.2 (p120): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean. Workspace test on the same 12-day position: holding period 2.0 days, checked by hand (closes of 2.5 d weight 2, 1.5 d weight 2, 2 d weight 1); no warning.
