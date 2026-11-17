@@ -7,3 +7,6 @@ inst['Close'] -> close and the three over-indented closing lines, both as printe
 
 ### AFML Snippet 16.4 copied from the PDF as printed (forced Python 3 changes only) and its runner
 Ruling: 'Go by the book, remember?'. snippet_16_4_as_printed.py: 99 lines, diff vs PDF text shows only append->concat, /->// (x2), xrange->range (x2), savefig ligature, en dash, print() (x2). The October cols argument (not in the book) is no longer used for 16.4; its Table 16.1 reproduction is withdrawn as a book result. book_port_d.py not edited. Runner writes runtime/snippet_16_4/.
+
+### AFML Snippet 16.4 run 1 stopped: pandas 3 refuses the printed integer weight Series
+User's Mac run: pairs [(4,6),(1,7),(3,8),(3,9),(2,10)], ClusterWarning from the printed linkage call, then TypeError at w[cItems0]*=alpha (w=pd.Series(1,...) is int64; pandas 3.0.2). The book prints the integer 1 in 16.3 and 16.4. Stopped, waiting for the user's ruling.
