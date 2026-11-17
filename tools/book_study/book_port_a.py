@@ -86,14 +86,13 @@ def rolled_prices(raw):
 # ---------------------------------------------------------------------------------------------------------------------
 # Chapter 3
 # ---------------------------------------------------------------------------------------------------------------------
-def dropLabels(events, minPct=.05, verbose=False):
+def dropLabels(events, minPct=.05):
     # apply weights, drop labels with insufficient examples
     while True:
         df0 = events['bin'].value_counts(normalize=True)
         if df0.min() > minPct or df0.shape[0] < 3:
             break
-        if verbose:
-            print('dropped label', df0.idxmin(), df0.min())
+        print('dropped label', df0.idxmin(), df0.min())
         events = events[events['bin'] != df0.idxmin()]
     return events
 

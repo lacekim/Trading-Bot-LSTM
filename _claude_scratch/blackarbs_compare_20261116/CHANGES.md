@@ -232,3 +232,6 @@ User: 'if that is what the book says ok'. Claude's genParams wrapper excluded.
 
 ### AFML Snippets 21.6-21.7 ruled; Chapter 21 experiment copied from the PDF as snippet_21_as_printed.py
 User 'ok'. Diff vs PDF: range and the two print lines only.
+
+### Parked item 1: dropLabels verbose switch taken out (book_port_a.py, book_bot.py)
+User: 'do what the book says'. dropLabels always prints as printed in 3.8; the book bot's one call no longer passes verbose=True (it already printed). No result changes. BOOK_NOTES section 17.
