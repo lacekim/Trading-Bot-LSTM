@@ -229,3 +229,6 @@ No change.
 
 ### AFML Snippet 21.5 ruled: parameter block at top level
 User: 'if that is what the book says ok'. Claude's genParams wrapper excluded.
+
+### AFML Snippets 21.6-21.7 ruled; Chapter 21 experiment copied from the PDF as snippet_21_as_printed.py
+User 'ok'. Diff vs PDF: range and the two print lines only.
