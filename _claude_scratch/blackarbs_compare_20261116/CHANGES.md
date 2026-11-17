@@ -172,3 +172,6 @@ User 'ok'. Entropy test values match Equation 67's expectations.
 
 ### AFML Snippet 18.2 ruled: range only
 User 'ok'. Standard LZ split reproduced.
+
+### AFML Snippet 18.3 ruled: range only
+User 'ok'.

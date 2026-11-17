@@ -715,3 +715,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **Chapter 17 complete.**
 - **Snippet 18.1 (p168): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean (ﬂoat ligature in a name needs nothing). Workspace test against Equation 67: constant message 0 bits; alternating 0101... 1.0 at w=1 and 0.5 at w=2; 100,000 random coin flips 1.0.
 - **Snippet 18.2 (p169): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean. Workspace test: '11100001' -> ['1', '11', '0', '00', '01'] (the standard LZ split); 64 zeros -> 10 phrases, a varied 64-bit message -> 20.
+- **Snippet 18.3 (p170): RULING (user 2026-11-17, "ok"): xrange -> range (x2) only.** Page clean. Ran in the 18.3-18.4 workspace test.
