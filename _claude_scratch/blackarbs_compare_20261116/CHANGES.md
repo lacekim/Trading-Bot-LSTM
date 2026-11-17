@@ -121,3 +121,6 @@ Tested on scikit-learn 1.9.1, including inside bagging with sample weights. No c
 
 ### AFML Snippet 9.3 ruled: 9.1's four fixes plus the closing-lines indentation
 User 'ok'. 9.3's clfHyperFit replaces 9.1's. Port already matches.
+
+### AFML Snippet 9.4 copied from the PDF with print() only
+User: 'if that what the book says do it'. 18 lines; diff vs PDF shows only the two print lines. Draws Figure 9.1.
