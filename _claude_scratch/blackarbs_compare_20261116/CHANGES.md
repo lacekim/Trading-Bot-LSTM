@@ -163,3 +163,6 @@ User: 'if thats what the book says, ok'. Same code and fixes as 16.4. 16.5 stays
 
 ### AFML Snippet 17.1 ruled: None comparison keeps Python 2's behaviour
 User 'ok'. Only change; port already matches.
+
+### AFML Snippets 17.3-17.4 run as printed; Chapter 17 complete
+Chain 17.1-17.4 tested: random walk -0.62 vs explosive end 14.3.
