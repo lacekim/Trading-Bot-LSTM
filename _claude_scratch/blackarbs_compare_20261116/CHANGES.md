@@ -109,3 +109,6 @@ User: 'if the book says so, ok'. Minimal date fix tested; the October port's nor
 
 ### AFML Snippet 8.8 ruled: max_samples as a row count; estimator=; mpEngine -> 20.7
 User: 'if the book says so yes'. Confirmed on scikit-learn 1.9.1 that the printed max_samples=1. with weights summing to 1 fits each tree on one row.
+
+### AFML Snippet 8.9: exact copy of 7.3-8.10 from the PDF with the ruled fixes, and runner
+User: 'do what the book says'. Re-run from an exact copy instead of the October port. Small-size test passed (all three methods, plots, stats.csv). Includes the second split statement in 8.7 (same fix kind).
