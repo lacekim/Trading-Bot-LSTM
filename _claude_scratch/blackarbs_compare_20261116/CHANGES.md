@@ -91,3 +91,6 @@ User: 'if that is what the book says ok'. Claude's embargo_usage wrapper exclude
 
 ### AFML Snippet 7.3 ruled: .iloc for the positional lookup; quotes
 User: 'if that is what the book says ok'. As printed it raises KeyError on pandas 3 (tested); .iloc keeps the book's positional meaning.
+
+### AFML Snippet 7.4 ruled: import points to 7.3's class; Chapter 7 complete
+User: 'if that is what te book says ok'. The ﬁ ligature in identifiers is read as fi by Python (checked).
