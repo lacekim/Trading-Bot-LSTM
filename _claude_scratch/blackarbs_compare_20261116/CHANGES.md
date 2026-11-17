@@ -37,3 +37,6 @@ User 'ok'. The printed page puts the second half of applyPtSlOnT1 at the left ma
 
 ### AFML Snippets 3.3 (as printed) and 3.4 (three lines, no wrapper) recorded
 3.3 is clean on the page and needs no change. 3.4: user '(a)': the three printed lines are used as printed where t1 is needed; Claude's addVerticalBarrier wrapper is excluded from book results.
+
+### AFML Snippet 3.5 ruled: ligature retyped as bfill
+User: 'if thats is the way the book says, ok'. Only change; port already has it. The double definition of getBins (3.5, 3.7) is left for 3.7.
