@@ -4,8 +4,7 @@
 Changes from the printed code (each forced by the language / library versions or by a typo; nothing else is altered):
   2.4   as printed.
   3.1   `close.index[df0–1]` (an en dash) -> `df0-1`.
-  3.2   Series.iteritems() -> items(); `pd.Series(index=...)` -> pd.Series(index=..., dtype=float) (NaNs); the two output columns 'sl' and 'pt' are created as datetime NaT columns before the loop
-        (pandas 3 does not enlarge a frame with a column of a different dtype through .loc).
+  3.2   Series.iteritems() -> items(); `pd.Series(index=...)` -> pd.Series(index=..., dtype=float) (NaNs).  (The October NaT pre-creation of 'sl'/'pt' was removed 2026-11-17: not needed on pandas 3, tested.)
   3.3   as printed (mpPandasObj is the port in book_mp.py).
   3.4   the three printed lines are wrapped in `addVerticalBarrier(close, tEvents, numDays)`.
   3.5   `bﬁll` ligature -> 'bfill'.   The printed getBins of 3.5 is `getBins_3_5`; the one of 3.7 (which includes it) is `getBins`.  Likewise getEvents_3_3 / getEvents (3.6).
@@ -65,8 +64,6 @@ def applyPtSlOnT1(close, events, ptSl, molecule):
     # apply stop loss/profit taking, if it takes place before t1 (end of event)
     events_ = events.loc[molecule]
     out = events_[['t1']].copy(deep=True)
-    out['sl'] = pd.NaT
-    out['pt'] = pd.NaT
     if ptSl[0] > 0:
         pt = ptSl[0] * events_['trgt']
     else:

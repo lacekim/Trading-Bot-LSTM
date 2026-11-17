@@ -238,3 +238,6 @@ User: 'do what the book says'. dropLabels always prints as printed in 3.8; the b
 
 ### Parked item 2: getTimeDecay prints const, slope and returns the weights only; 5 bots and 2 October scripts updated
 User: 'Do what the book says'. No trade or result changes; const/slope move from the bots' logs/run.json to the printed output. 17 tests pass in the workspace. Old runs' recorded md5 of book_port files no longer match (old versions in git).
+
+### Parked item 3: NaT pre-creation removed from applyPtSlOnT1 (not needed on pandas 3, tested)
+User: 'Do what the book says'. The October claim that pandas 3 needs it was wrong. Chapter 3 tests pass. Bots unaffected.
