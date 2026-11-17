@@ -714,3 +714,4 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **Snippets 17.3 and 17.4 (p165): run exactly as printed; no change.** Pages clean. Workspace test of 17.1-17.4 together (17.1 and 17.2 with their ruled fixes; pandas 3.0.5; 300 daily log prices, minSL 50, constant 'c', 1 lag): random walk SADF -0.616; the same walk with an explosive run-up over the last 100 days 14.30 (bubble detected); no error or warning.
 - **Chapter 17 complete.**
 - **Snippet 18.1 (p168): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean (ﬂoat ligature in a name needs nothing). Workspace test against Equation 67: constant message 0 bits; alternating 0101... 1.0 at w=1 and 0.5 at w=2; 100,000 random coin flips 1.0.
+- **Snippet 18.2 (p169): RULING (user 2026-11-17, "ok"): xrange -> range only.** Page clean. Workspace test: '11100001' -> ['1', '11', '0', '00', '01'] (the standard LZ split); 64 zeros -> 10 phrases, a varied 64-bit message -> 20.

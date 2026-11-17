@@ -169,3 +169,6 @@ Chain 17.1-17.4 tested: random walk -0.62 vs explosive end 14.3.
 
 ### AFML Snippet 18.1 ruled: range only
 User 'ok'. Entropy test values match Equation 67's expectations.
+
+### AFML Snippet 18.2 ruled: range only
+User 'ok'. Standard LZ split reproduced.
