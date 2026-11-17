@@ -52,3 +52,6 @@ User: 'if thats the way the book says, ok'. Port already matches; no code change
 
 ### AFML Snippet 4.2 ruled: items(), fillna ligature; loose lines used as printed
 User: 'if thats the way the book says, ok'. Claude's getTW wrapper excluded from book results, as with 3.4.
+
+### AFML Snippet 4.3 ruled: items() only
+User: 'if that is the way the book says, ok'. Tested with the book's three labels on pandas 3. The t1_ rename (parked 4) is not needed.
