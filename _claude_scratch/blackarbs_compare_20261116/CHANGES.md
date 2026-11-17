@@ -58,3 +58,6 @@ User: 'if that is the way the book says, ok'. Tested with the book's three label
 
 ### AFML Snippets 4.4-4.5 as printed; 4.6 copied from the PDF with print() only, plus runner
 User: 'if that is the way the book says, ok'. snippet_4_6_as_printed.py holds 4.3-4.6; diff vs PDF shows only items() and four print() lines. Runner calls main() once (the book prints no call).
+
+### AFML Snippets 4.7 (range only) and 4.8 (as printed) ruled
+User 'ok'. Tested 200 draws on pandas 3: no warnings; averages match Figure 4.2.
