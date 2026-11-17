@@ -202,3 +202,6 @@ User 'ok'. Empty pd.Series() kept as printed (object dtype under pandas 2+, valu
 
 ### AFML Snippets 20.8 and 20.10 recorded: run as printed
 No change.
+
+### AFML Snippet 20.9 ruled: missing imports added
+User 'ok'.
