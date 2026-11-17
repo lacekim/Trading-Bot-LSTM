@@ -124,3 +124,6 @@ User 'ok'. 9.3's clfHyperFit replaces 9.1's. Port already matches.
 
 ### AFML Snippet 9.4 copied from the PDF with print() only
 User: 'if that what the book says do it'. 18 lines; diff vs PDF shows only the two print lines. Draws Figure 9.1.
+
+### AFML Snippet 10.1 ruled: as printed plus the norm import
+User 'ok'. 10.1-10.3 tested together as printed on pandas 3: no errors or warnings.
