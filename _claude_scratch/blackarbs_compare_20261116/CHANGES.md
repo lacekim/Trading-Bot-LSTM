@@ -49,3 +49,6 @@ User: 'if that is the way the book says, ok'. The verbose switch stays a parked 
 
 ### AFML Snippet 4.1 ruled: quotes, fillna ligature, items(), 0 -> 0.
 User: 'if thats the way the book says, ok'. Port already matches; no code change.
+
+### AFML Snippet 4.2 ruled: items(), fillna ligature; loose lines used as printed
+User: 'if thats the way the book says, ok'. Claude's getTW wrapper excluded from book results, as with 3.4.
