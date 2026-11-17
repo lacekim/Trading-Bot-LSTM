@@ -175,3 +175,6 @@ User 'ok'. Standard LZ split reproduced.
 
 ### AFML Snippet 18.3 ruled: range only
 User 'ok'.
+
+### AFML Snippet 18.4 copied from the PDF with its ruled fixes, 18.1's import and 18.3's matchLength alongside
+User 'ok'. Diff vs PDF shows only the quotes, range, //, print() lines.
