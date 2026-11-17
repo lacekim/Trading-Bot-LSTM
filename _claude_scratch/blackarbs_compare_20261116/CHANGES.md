@@ -148,3 +148,6 @@ User 'ok'. Both old names confirmed to fail on pandas 3. Claude's getHHIs wrappe
 
 ### AFML Snippet 14.4 ruled: year as 365.2425 days, 'first'; Chapter 14 complete
 User 'ok'. numpy's own year length replaces the October port's 365.25. Hand-checked test.
+
+### AFML Snippet 15.1 copied from the PDF with its three forced changes
+User: 'if thats what the book sayes yes'. import, range, print().
