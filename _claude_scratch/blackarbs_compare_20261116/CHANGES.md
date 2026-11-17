@@ -46,3 +46,6 @@ User: 'if thats is the way the book say, ok'. Curly-quote docstring delimiters a
 
 ### AFML Snippet 3.8 ruled (minPct spelling, print(), idxmin); Chapter 3 complete
 User: 'if that is the way the book says, ok'. The verbose switch stays a parked item.
+
+### AFML Snippet 4.1 ruled: quotes, fillna ligature, items(), 0 -> 0.
+User: 'if thats the way the book says, ok'. Port already matches; no code change.
