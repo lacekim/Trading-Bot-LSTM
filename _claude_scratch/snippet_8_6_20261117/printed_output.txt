@@ -1,0 +1,8 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python
+Python 3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 17:06:14) [Clang 19.1.7 ] on darwin
+>>> import numpy as np
+>>> from scipy.stats import weightedtau
+>>> featImp=np.array([.55,.33,.07,.05]) # feature importance
+>>> pcRank=np.array([1,2,4,3]) # PCA rank
+>>> weightedtau(featImp,pcRank**-1.)[0]
+np.float64(0.8133333333333331)
