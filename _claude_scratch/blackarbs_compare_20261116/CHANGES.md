@@ -142,3 +142,6 @@ User: 'if thats what the book says, ok'. Claude's getBets wrapper excluded. Hand
 
 ### AFML Snippet 14.2 ruled: range only
 User 'ok'. Hand-checked 2.0-day result in the workspace test.
+
+### AFML Snippet 14.3 ruled: pd.Grouper(freq='ME'); usage lines as printed
+User 'ok'. Both old names confirmed to fail on pandas 3. Claude's getHHIs wrapper excluded.
