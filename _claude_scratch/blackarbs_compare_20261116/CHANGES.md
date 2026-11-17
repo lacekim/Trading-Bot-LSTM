@@ -208,3 +208,6 @@ User 'ok'.
 
 ### AFML Snippet 20.11 ruled: copyreg and Python 3 method attribute names
 User 'a'. Round-trip test of a bound method passes.
+
+### AFML Snippet 20.12 ruled: quotes, copy and pandas imports
+User 'ok'.
