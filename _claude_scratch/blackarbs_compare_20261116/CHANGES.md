@@ -16,3 +16,6 @@ pandas 3 refuses w[...]*=alpha on the printed integer Series; the user chose (a)
 
 ### BOOK_NOTES: why the printed code keeps stopping; Snippet 17.2 alignment recorded
 Notes the three sources of the stops (Python 2 era code, typesetting errors, unprinted code) at the user's request ('ok, note all this and continue on'). The standing yes for mechanical fixes was offered, not taken as granted. 17.2: 'continue on' taken as (a), reversible; port already matches; no code change.
+
+### AFML Snippet 20.3 copied from the PDF as printed (range, print() only)
+Ruling 'a'. 21 lines, diff vs PDF shows only xrange->range (x2) and print(). The printed continue keeps the last touch; the program prints only a timing. Claude's break version in book_mp.py is not used.
