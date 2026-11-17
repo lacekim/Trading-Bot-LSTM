@@ -1,0 +1,9 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python tools/book_study/snippet_20_2_as_printed.py
+{'a': '1', 'b': '+', 'c': '!'}
+{'a': '1', 'b': '+', 'c': '@'}
+{'a': '1', 'b': '*', 'c': '!'}
+{'a': '1', 'b': '*', 'c': '@'}
+{'a': '2', 'b': '+', 'c': '!'}
+{'a': '2', 'b': '+', 'c': '@'}
+{'a': '2', 'b': '*', 'c': '!'}
+{'a': '2', 'b': '*', 'c': '@'}
