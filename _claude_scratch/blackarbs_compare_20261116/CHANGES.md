@@ -22,3 +22,6 @@ Ruling 'a'. 21 lines, diff vs PDF shows only xrange->range (x2) and print(). The
 
 ### AFML Snippet 20.4 copied from the PDF as printed, with 20.3's barrierTouch alongside
 Ruling '(A) is fine then'. Diff vs PDF: only xrange->range and print(); 20.3's barrierTouch copied word for word (20.4 calls it without defining it). As printed the jobs cover 1,000 of 10,000 paths (rows count used to slice columns); kept, noted: the timing is not a speed-up measure vs 20.3. Spawn-mode test: one main1() 2.03 s, no error.
+
+### AFML Snippet 21.4 ruled as printed (unseeded); seed argument excluded
+User: 'i want by the book'. 21.4 runs unchanged on Python 3; its unseeded RandomState means each run of the Chapter 21 experiment differs. Claude's seed argument excluded from book results. Behaviour-change list complete; next: forced fixes in book order, then the parked 10.
