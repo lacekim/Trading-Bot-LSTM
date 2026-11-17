@@ -25,3 +25,6 @@ Ruling '(A) is fine then'. Diff vs PDF: only xrange->range and print(); 20.3's b
 
 ### AFML Snippet 21.4 ruled as printed (unseeded); seed argument excluded
 User: 'i want by the book'. 21.4 runs unchanged on Python 3; its unseeded RandomState means each run of the Chapter 21 experiment differs. Claude's seed argument excluded from book results. Behaviour-change list complete; next: forced fixes in book order, then the parked 10.
+
+### AFML Chapter 2 recorded: 2.1 function only, 2.2/2.3 not applicable to Kraken/Alpaca
+User 'ok'. No printed call for 2.1; 2.2/2.3 are futures-roll code and the venues have no contracts or rolls. Nothing run or changed.
