@@ -103,3 +103,6 @@ User: 'if that is what the book say ok'. Read-only ValueError confirmed; permuta
 
 ### AFML Snippets 8.4 and 8.5 recorded: run as printed
 Pages clean; tested on pandas 3 with no errors or warnings. No ruling needed (no change).
+
+### AFML Snippet 8.7 ruled: date_range with today's names, joined line, range
+User: 'if the book says so, ok'. Minimal date fix tested; the October port's normalize() is noted as Claude's extra. 8.9's printed-size result unaffected (dates are labels).
