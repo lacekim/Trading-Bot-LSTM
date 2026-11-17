@@ -193,3 +193,6 @@ User 'ok'. Same 8 combinations as 20.1.
 
 ### AFML Snippet 20.5 recorded: runs as printed
 No change.
+
+### AFML Snippet 20.6 ruled: range only
+User 'ok'. Balanced parts for a triangular job.
