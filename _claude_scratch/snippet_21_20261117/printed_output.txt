@@ -1,0 +1,3 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python tools/book_study/snippet_21_as_printed.py
+static SR: 1.90973043273889
+dynamic SR: 2.161699460979832
