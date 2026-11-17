@@ -166,3 +166,6 @@ User 'ok'. Only change; port already matches.
 
 ### AFML Snippets 17.3-17.4 run as printed; Chapter 17 complete
 Chain 17.1-17.4 tested: random walk -0.62 vs explosive end 14.3.
+
+### AFML Snippet 18.1 ruled: range only
+User 'ok'. Entropy test values match Equation 67's expectations.
