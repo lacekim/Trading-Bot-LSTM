@@ -112,3 +112,6 @@ User: 'if the book says so yes'. Confirmed on scikit-learn 1.9.1 that the printe
 
 ### AFML Snippet 8.9: exact copy of 7.3-8.10 from the PDF with the ruled fixes, and runner
 User: 'do what the book says'. Re-run from an exact copy instead of the October port. Small-size test passed (all three methods, plots, stats.csv). Includes the second split statement in 8.7 (same fix kind).
+
+### AFML Snippet 9.1 ruled: iid dropped, None>0 guard, estimator=, max_samples count
+User: 'do what the book says'. Both iid and None>0 confirmed to raise TypeError today; each fix keeps the book's meaning.
