@@ -79,3 +79,6 @@ User 'ok'. pandas 3 removed fillna(method=); ffill() is the same step. 5.3/5.4 s
 
 ### AFML Snippet 6.1 copied from the PDF with its three forced changes
 User: 'if that is what the book says, ok'. comb import moved in SciPy, range, print(). Workspace result 0.4812.
+
+### AFML Snippet 6.2 ruled: estimator=, 'sqrt', ligature, imports; Chapter 6 complete
+User: 'if that is what the book say, ok'. Both old scikit-learn arguments confirmed to fail on 1.9.1. Setup only; no run.
