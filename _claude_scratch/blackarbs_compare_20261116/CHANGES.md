@@ -31,3 +31,6 @@ User 'ok'. No printed call for 2.1; 2.2/2.3 are futures-roll code and the venues
 
 ### AFML Snippet 3.1 ruled: typeset dash -> minus sign
 User 'yes'. Only change in 3.1; port already matches. No code change.
+
+### AFML Snippet 3.2 ruled: indent the printed lines into the function; iteritems -> items
+User 'ok'. The printed page puts the second half of applyPtSlOnT1 at the left margin (SyntaxError as printed). Port already has both fixes; its NaT columns and dtype=float remain parked items. No code change.
