@@ -1,0 +1,3 @@
+(javier) mike@Mac Javier_Santiago_Gaston_de_Iriarte_canrera % python tools/book_study/snippet_18_4_as_printed.py
+{'num': 6, 'sum': np.float64(3.324584239155804), 'subS': ['', '10', '010', '1010', '01010', '101010'], 'h': np.float64(0.554097373192634), 'r': np.float64(0.8454384465440933)}
+{'num': 6, 'sum': np.float64(4.562670602573019), 'subS': ['', '10', '010', '10', '0', '01010'], 'h': np.float64(0.7604451004288365), 'r': np.float64(0.7878792036804111)}
