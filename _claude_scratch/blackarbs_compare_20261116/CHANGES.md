@@ -88,3 +88,6 @@ User: 'if that is what the book says ok'. Port already matches.
 
 ### AFML Snippet 7.2 ruled: concat; loose lines as printed
 User: 'if that is what the book says ok'. Claude's embargo_usage wrapper excluded from book results.
+
+### AFML Snippet 7.3 ruled: .iloc for the positional lookup; quotes
+User: 'if that is what the book says ok'. As printed it raises KeyError on pandas 3 (tested); .iloc keeps the book's positional meaning.
