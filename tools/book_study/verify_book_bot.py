@@ -10,7 +10,7 @@ Re-derived (each line is counted in the "numbers" total):
   2.4.1      rebalance cost on every rebalance date and the per-trade volume capacity (ETF-trick items 1 and 3)
   account    bet size (10.1/10.3), averaging (10.2), OTR exits, per-bar position, day booking, HRP (own linkage / quasi-diagonalisation / bisection, every weight at every rebalance), every row of summary.csv
   Ch.14      daily target position, bets, holding period, HHI, drawdowns and time under water, annualised return (Eq. 49), PSR and DSR
-  Ch.15      binHR, binFreq, binSR, probFailure from the per-bet returns; the t-value of precision (Eq.54); Eq.77-78 portfolio concentration of every HRP allocation (f = V'w assumed)
+  Ch.15      binHR, probFailure (15.4 binFreq / binSR removed 2026-11-17: not printed) from the per-bet returns; the t-value of precision (Eq.54); Eq.77-78 portfolio concentration of every HRP allocation (f = V'w assumed)
   10.4       every order ticket
 Not re-derived (listed so nothing is hidden): FFD, SADF and entropy features; MDI / MDA / SFI / orthogonal-feature tables and the forest fits; the Snippet 13.2 verbatim-loop cross-check; the 100-tree forests behind the predictions.
 Usage (from the project root): python tools/book_study/verify_book_bot.py <run folder> [--plant label|feature|weight|bet_size|cost|hrp|exit|ch13|ch14|ch15|dsr|order|rebal]
@@ -895,9 +895,6 @@ def main(run: Path, plant: str | None) -> int:
     for tsr in (1.0, 2.0):
         tg = c15["targets"][str(tsr)]
         cmp(f"Ch.15 implied precision (15.3) SR {tsr}", b_hr(rn, rp, freq, tsr), tg["implied_precision_15_3"])
-        fq = b_freq(rn, rp, prec, tsr)
-        cmp(f"Ch.15 implied frequency (15.4) SR {tsr}", fq, tg["implied_frequency_15_4_at_observed_precision"])
-        cmp(f"Ch.15 Sharpe at observed precision (Eq.56) SR {tsr}", b_sr(rn, rp, freq, prec), tg["sharpe_of_observed_precision_eq56"])
         thr = b_hr(rn, rp, freq, tsr)
         p_ = float((r15 > 0).mean())
         cmp(f"Ch.15 probability of failure (15.5) SR {tsr}", float(norm.cdf(thr, p_, p_ * (1 - p_))), tg["prob_failure_15_5"])

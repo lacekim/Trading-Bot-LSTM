@@ -24,7 +24,7 @@ def main() -> int:
          "twelve features: FFD (Ch.5), Snippet 3.1 volatility, SADF (Ch.17), plug-in and Kontoyiannis entropy (Ch.18), Corwin-Schultz spread and Becker-Parkinson volatility (19.1-19.2), Roll, Kyle / Amihud / Hasbrouck lambdas (Eq.82-92) and Chu-Stinchcombe-White CUSUM (17.3.2); "
          "the Chapter 13 optimal trading rule on a 20 x 20 mesh with 100,000 simulated paths; MDI / MDA / SFI / orthogonal features / weighted tau (Ch.8); the randomised purged-CV search (Ch.9); bagged entropy forest with sequential bootstrap (Ch.6); "
          "walk-forward and combinatorial purged CV (Ch.7, 12); bet size and averaging (Snippets 10.1-10.3); HRP allocation (Snippet 16.4); PSR / deflated Sharpe, bet timing, holding period, HHI, drawdown and time under water, annualised return (Ch.14); "
-         "binHR, binFreq, binSR, probFailure and the t-value of precision (Ch.15); the Snippet 10.4 order ticket; the rebalance cost, spread cost and volume rule of section 2.4.1; the Eq.77-78 concentration of every HRP allocation. The last section lists every item of the book's Contents and what the bot does with it.", ""]
+         "binHR, probFailure (15.4 binFreq / binSR removed 2026-11-17: not printed) and the t-value of precision (Ch.15); the Snippet 10.4 order ticket; the rebalance cost, spread cost and volume rule of section 2.4.1; the Eq.77-78 concentration of every HRP allocation. The last section lists every item of the book's Contents and what the bot does with it.", ""]
     S_, M_ = {}, {}
     for v in names:
         S_[v] = pd.read_csv(new[v] / "summary.csv")
@@ -111,9 +111,9 @@ def main() -> int:
         c5 = m["ch15"]
         L += [f"### Chapter 15 (per-bet unit returns, last 365 days, {c5['n_bets']:,} bets)", "",
               f"Observed precision {f(c5['observed_precision'], 4)} (t-value under H0: p = 1/2, Equation 54: {f(c5['t_value_of_precision_eq54'], 2)}); mean positive bet return {f(c5['mean_positive_return'], 5)}, mean non-positive {f(c5['mean_nonpositive_return'], 5)}.", "",
-              "| target Sharpe | implied precision (15.3) | implied frequency (15.4) | Sharpe at observed precision (Eq.56) | probability of failure (15.5) |", "|---:|---:|---:|---:|---:|"]
+              "| target Sharpe | implied precision (15.3) | probability of failure (15.5) |", "|---:|---:|---:|"]
         for k, x in c5["targets"].items():
-            L.append(f"| {k} | {f(x['implied_precision_15_3'], 4)} | {f(x['implied_frequency_15_4_at_observed_precision'], 1)} | {f(x['sharpe_of_observed_precision_eq56'], 4)} | {f(x['prob_failure_15_5'], 4)} |")
+            L.append(f"| {k} | {f(x['implied_precision_15_3'], 4)} | {f(x['prob_failure_15_5'], 4)} |")
         o = m["ch10_orders"]
         L += ["", f"### Snippet 10.4 order tickets", "", f"{o['n_orders']:,} tickets in `orders_10_4.csv` (forecast price = the barrier of the predicted side, M* = 0.95, Q = 100): median target position {f(o['median_target_position'], 0)}, median limit offset {f(o['median_limit_offset_bp'], 1)} bp. Nothing is connected to any order path. The extract gives no forecast model, so the forecast price is my assumption (the barrier of the predicted side); that makes the ticket size the calibrated M* x Q for every order, so the tickets carry the side but no information about confidence. The confidence-dependent size is the Snippet 10.3 value in the `size_10_3` column, and that is what the account trades.", ""]
         re_ = m["rebalance_cost_effect"]

@@ -295,8 +295,8 @@ def stage_ch15(ev, closes, w_idx, side, t1pos, cost_side, last_day, run):
     for tsr in TARGET_SR:
         rp, rn, freq = out["mean_positive_return"], out["mean_nonpositive_return"], float(len(r))
         p_star = PC.binHR(rn, rp, freq, tsr)
-        out["targets"][str(tsr)] = {"implied_precision_15_3": float(p_star), "implied_frequency_15_4_at_observed_precision": PCm.num(PC.binFreq(rn, rp, out["observed_precision"], tsr) or float("nan")),
-                                    "sharpe_of_observed_precision_eq56": float(PC.binSR(rn, rp, freq, out["observed_precision"])), "prob_failure_15_5": float(PC.probFailure(r, freq, tsr))}
+        out["targets"][str(tsr)] = {"implied_precision_15_3": float(p_star),
+                                    "prob_failure_15_5": float(PC.probFailure(r, freq, tsr))}
     (run / "ch15.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
     return out
 

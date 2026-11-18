@@ -253,3 +253,6 @@ User: 'Fallow the BOOK!'. None in a bot code path. Also records the finding that
 
 ### Parked item 7: ports call the Chapter 20 engine the book's way; parked list finished
 User: 'fallow the book'. 9 calls in 4 files; 84 tests pass.
+
+### AFML bots: 15.4 binFreq/binSR fields removed from the Chapter 15 report (5 bots, report, 3 checkers)
+User: 'fallow the book'. Report-only fields; no trade or result affected. BOOK_NOTES section 18.
