@@ -23,7 +23,7 @@ from scipy.special import comb
 from sklearn.ensemble import BaggingClassifier, RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 
-import book_mp as MP
+from book_mp import processJobs, processJobs_  # the book: from mpEngine import ... (Chapter 20); parked item 7, 2026-11-17
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -172,9 +172,9 @@ def mainMC(numObs=10, numBars=100, maxH=5, numIters=1E6, numThreads=24):
         job = {'func': auxMC, 'numObs': numObs, 'numBars': numBars, 'maxH': maxH}
         jobs.append(job)
     if numThreads == 1:
-        out = MP.processJobs_(jobs)
+        out = processJobs_(jobs)
     else:
-        out = MP.processJobs(jobs, numThreads=numThreads)
+        out = processJobs(jobs, numThreads=numThreads)
     return pd.DataFrame(out).describe()
 
 

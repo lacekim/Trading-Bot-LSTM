@@ -26,7 +26,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-import book_mp as MP
+from book_mp import mpPandasObj  # the book: from mpEngine import ... (Chapter 20); parked item 7, 2026-11-17
 import book_port_a as PA
 
 
@@ -90,7 +90,7 @@ def getEvents_3_3(close, tEvents, ptSl, trgt, minRet, numThreads, t1=False):
     # 3) form events object, apply stop loss on t1
     side_ = pd.Series(1., index=trgt.index)
     events = pd.concat({'t1': t1, 'trgt': trgt, 'side': side_}, axis=1).dropna(subset=['trgt'])
-    df0 = MP.mpPandasObj(func=applyPtSlOnT1, pdObj=('molecule', events.index), numThreads=numThreads, close=close, events=events, ptSl=[ptSl, ptSl])
+    df0 = mpPandasObj(func=applyPtSlOnT1, pdObj=('molecule', events.index), numThreads=numThreads, close=close, events=events, ptSl=[ptSl, ptSl])
     events['t1'] = df0.dropna(how='all').min(axis=1)  # pd.min ignores nan
     events = events.drop('side', axis=1)
     return events
@@ -129,7 +129,7 @@ def getEvents(close, tEvents, ptSl, trgt, minRet, numThreads, t1=False, side=Non
     else:
         side_, ptSl_ = side.loc[trgt.index], ptSl[:2]
     events = pd.concat({'t1': t1, 'trgt': trgt, 'side': side_}, axis=1).dropna(subset=['trgt'])
-    df0 = MP.mpPandasObj(func=applyPtSlOnT1, pdObj=('molecule', events.index), numThreads=numThreads, close=close, events=events, ptSl=ptSl_)
+    df0 = mpPandasObj(func=applyPtSlOnT1, pdObj=('molecule', events.index), numThreads=numThreads, close=close, events=events, ptSl=ptSl_)
     events['t1'] = df0.dropna(how='all').min(axis=1)  # pd.min ignores nan
     if side is None:
         events = events.drop('side', axis=1)
@@ -194,10 +194,10 @@ def mpSampleTW(t1, numCoEvents, molecule):
 
 def getTW(events, close, numThreads):
     """The lines printed under Snippet 4.2: returns (numCoEvents, tW)."""
-    numCoEvents = MP.mpPandasObj(mpNumCoEvents, ('molecule', events.index), numThreads, closeIdx=close.index, t1=events['t1'])
+    numCoEvents = mpPandasObj(mpNumCoEvents, ('molecule', events.index), numThreads, closeIdx=close.index, t1=events['t1'])
     numCoEvents = numCoEvents.loc[~numCoEvents.index.duplicated(keep='last')]
     numCoEvents = numCoEvents.reindex(close.index).fillna(0)
-    tW = MP.mpPandasObj(mpSampleTW, ('molecule', events.index), numThreads, t1=events['t1'], numCoEvents=numCoEvents)
+    tW = mpPandasObj(mpSampleTW, ('molecule', events.index), numThreads, t1=events['t1'], numCoEvents=numCoEvents)
     return numCoEvents, tW
 
 
@@ -212,7 +212,7 @@ def mpSampleW(t1, numCoEvents, close, molecule):
 
 def getSampleW(events, numCoEvents, close, numThreads):
     """The lines printed under Snippet 4.10: returns the weights scaled to sum to the number of events."""
-    w = MP.mpPandasObj(mpSampleW, ('molecule', events.index), numThreads, t1=events['t1'], numCoEvents=numCoEvents, close=close)
+    w = mpPandasObj(mpSampleW, ('molecule', events.index), numThreads, t1=events['t1'], numCoEvents=numCoEvents, close=close)
     w *= w.shape[0] / w.sum()
     return w
 

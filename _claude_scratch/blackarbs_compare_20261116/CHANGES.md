@@ -250,3 +250,6 @@ User: 'you said it, the book calls for a'. One line; the testFunc smoke test (pl
 
 ### Parked item 6: 17 added dtypes on empty Series/DataFrames removed (5 ports + book_mp); 84 tests pass
 User: 'Fallow the BOOK!'. None in a bot code path. Also records the finding that the AFML bot still calls binSR, getBets/getHHIs wrappers and the 365.25-day computeDD_TuW.
+
+### Parked item 7: ports call the Chapter 20 engine the book's way; parked list finished
+User: 'fallow the book'. 9 calls in 4 files; 84 tests pass.

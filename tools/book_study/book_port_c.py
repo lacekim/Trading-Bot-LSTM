@@ -32,7 +32,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as ss
 
-import book_mp as MP
+from book_mp import mpPandasObj  # the book: from mpEngine import ... (Chapter 20); parked item 7, 2026-11-17
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ def avgActiveSignals(signals, numThreads):
     tPnts = tPnts.union(signals.index.values)
     tPnts = list(tPnts)
     tPnts.sort()
-    out = MP.mpPandasObj(mpAvgActiveSignals, ('molecule', tPnts), numThreads, signals=signals)
+    out = mpPandasObj(mpAvgActiveSignals, ('molecule', tPnts), numThreads, signals=signals)
     return out
 
 

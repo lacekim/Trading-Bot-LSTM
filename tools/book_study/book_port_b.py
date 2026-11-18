@@ -34,7 +34,7 @@ from sklearn.model_selection._split import _BaseKFold  # noqa: E402
 from sklearn.pipeline import Pipeline  # noqa: E402
 from sklearn.tree import DecisionTreeClassifier  # noqa: E402
 
-import book_mp as MP  # noqa: E402
+from book_mp import mpPandasObj  # noqa: E402  # the book: from mpEngine import ... (Chapter 20); parked item 7, 2026-11-17
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -248,7 +248,7 @@ def featImportance(trnsX, cont, n_estimators=1000, cv=10, max_samples=1., numThr
         cvGen = PurgedKFold(n_splits=cv, t1=cont['t1'], pctEmbargo=pctEmbargo)
         oos = cvScore(clf, X=trnsX, y=cont['bin'], sample_weight=cont['w'], scoring=scoring, cvGen=cvGen).mean()
         clf.n_jobs = 1  # paralellize auxFeatImpSFI rather than clf
-        imp = MP.mpPandasObj(auxFeatImpSFI, ('featNames', trnsX.columns), numThreads, clf=clf, trnsX=trnsX, cont=cont, scoring=scoring, cvGen=cvGen)
+        imp = mpPandasObj(auxFeatImpSFI, ('featNames', trnsX.columns), numThreads, clf=clf, trnsX=trnsX, cont=cont, scoring=scoring, cvGen=cvGen)
     return imp, oob, oos
 
 
