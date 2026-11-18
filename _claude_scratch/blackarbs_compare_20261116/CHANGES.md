@@ -244,3 +244,6 @@ User: 'Do what the book says'. The October claim that pandas 3 needs it was wron
 
 ### Parked item 4: testFunc made the book's version; superseded 8.9 runner removed; test updated
 User: 'Do what the book says...'. book_port_b.testFunc = Snippet 8.9 with the ruled fixes only. run_snippet_8_9_as_printed.py removed (in git history). 10 tests pass.
+
+### Parked item 5: plotFeatImportance title uses the book's 'tag='+tag
+User: 'you said it, the book calls for a'. One line; the testFunc smoke test (plots) passes.

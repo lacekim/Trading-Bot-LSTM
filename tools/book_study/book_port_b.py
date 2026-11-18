@@ -263,7 +263,7 @@ def plotFeatImportance(pathOut, imp, oob, oos, method, tag=0, simNum=0, **kargs)
     ax.get_yaxis().set_visible(False)
     for i, j in zip(ax.patches, imp.index):
         ax.text(i.get_width() / 2, i.get_y() + i.get_height() / 2, j, ha='center', va='center', color='black')
-    mpl.title('tag=' + str(tag) + ' | simNum=' + str(simNum) + ' | oob=' + str(round(oob, 4)) + ' | oos=' + str(round(oos, 4)))
+    mpl.title('tag=' + tag + ' | simNum=' + str(simNum) + ' | oob=' + str(round(oob, 4)) + ' | oos=' + str(round(oos, 4)))
     mpl.savefig(pathOut + 'featImportance_' + str(simNum) + '.png', dpi=100)
     mpl.clf()
     mpl.close()
