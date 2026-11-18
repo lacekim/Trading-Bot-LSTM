@@ -1,7 +1,7 @@
 """Chapters 10 (Snippet 10.4), 13-15, 17 and 18 of the book, ported to Python 3 / pandas 3 / numpy 2 with the book's names.
 
 Changes from the printed code (each forced by the language / library versions or by a typo; nothing else is altered):
-  10.1-10.3  `pd.Series()` -> pd.Series(dtype=float); `norm.cdf` is scipy.stats.norm.cdf; mpPandasObj is the port in book_mp.py.  The molecules are the sorted time points, as printed.
+  10.1-10.3  `pd.Series()` as printed (October dtype=float removed 2026-11-17, parked item 6); `norm.cdf` is scipy.stats.norm.cdf; mpPandasObj is the port in book_mp.py.  The molecules are the sorted time points, as printed.
   10.4  xrange -> range; `ﬂoat` (ligature) -> float; `m**-2–1` (an en dash in the printed text) -> `m**-2-1`.
   13.2  `print comb_...` -> print(); `from random import gauss` kept (the printed generator).  In the printed layout the three lines `mean,std=...`, `print`, `output1.append` fall outside the
         `for comb_` loop, which would report only the last node; they are inside it here (the output list has one tuple per node, as the surrounding text describes).  `batch` returns output1.
@@ -41,7 +41,7 @@ import book_mp as MP
 def getSignal(events, stepSize, prob, pred, numClasses, numThreads, **kargs):
     # get signals from predictions
     if prob.shape[0] == 0:
-        return pd.Series(dtype=float)
+        return pd.Series()
     # 1) generate signals from multinomial classification (one-vs-rest, OvR)
     signal0 = (prob - 1. / numClasses) / (prob * (1. - prob)) ** .5  # t-value of OvR
     signal0 = pred * (2 * ss.norm.cdf(signal0) - 1)  # signal=side*size
@@ -72,7 +72,7 @@ def mpAvgActiveSignals(signals, molecule):
         a) issued before or at loc AND
         b) loc before signal's endtime, or endtime is still unknown (NaT).
     '''
-    out = pd.Series(dtype=float)
+    out = pd.Series()
     for loc in molecule:
         df0 = (signals.index.values <= loc) & ((loc < signals['t1']) | pd.isnull(signals['t1']))
         act = signals[df0].index

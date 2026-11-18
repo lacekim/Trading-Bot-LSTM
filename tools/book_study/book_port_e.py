@@ -4,7 +4,7 @@
 Changes from the printed code (each forced by the language / library versions or by a typo; nothing else is altered):
   2.4   as printed.
   3.1   `close.index[df0–1]` (an en dash) -> `df0-1`.
-  3.2   Series.iteritems() -> items(); `pd.Series(index=...)` -> pd.Series(index=..., dtype=float) (NaNs).  (The October NaT pre-creation of 'sl'/'pt' was removed 2026-11-17: not needed on pandas 3, tested.)
+  3.2   Series.iteritems() -> items(); `pd.Series(index=...)` as printed (October dtype=float removed 2026-11-17, parked item 6).  (The October NaT pre-creation of 'sl'/'pt' was removed 2026-11-17: not needed on pandas 3, tested.)
   3.3   as printed (mpPandasObj is the port in book_mp.py).
   3.4   the three printed lines are wrapped in `addVerticalBarrier(close, tEvents, numDays)`.
   3.5   `bﬁll` ligature -> 'bfill'.   The printed getBins of 3.5 is `getBins_3_5`; the one of 3.7 (which includes it) is `getBins`.  Likewise getEvents_3_3 / getEvents (3.6).
@@ -67,11 +67,11 @@ def applyPtSlOnT1(close, events, ptSl, molecule):
     if ptSl[0] > 0:
         pt = ptSl[0] * events_['trgt']
     else:
-        pt = pd.Series(index=events.index, dtype=float)  # NaNs
+        pt = pd.Series(index=events.index)  # NaNs
     if ptSl[1] > 0:
         sl = -ptSl[1] * events_['trgt']
     else:
-        sl = pd.Series(index=events.index, dtype=float)  # NaNs
+        sl = pd.Series(index=events.index)  # NaNs
     for loc, t1 in events_['t1'].fillna(close.index[-1]).items():
         df0 = close[loc:t1]  # path prices
         df0 = (df0 / close[loc] - 1) * events_.at[loc, 'side']  # path returns
@@ -186,7 +186,7 @@ def mpNumCoEvents(closeIdx, t1, molecule):
 
 def mpSampleTW(t1, numCoEvents, molecule):
     # Derive average uniqueness over the event's lifespan
-    wght = pd.Series(index=molecule, dtype=float)
+    wght = pd.Series(index=molecule)
     for tIn, tOut in t1.loc[wght.index].items():
         wght.loc[tIn] = (1. / numCoEvents.loc[tIn:tOut]).mean()
     return wght
@@ -204,7 +204,7 @@ def getTW(events, close, numThreads):
 def mpSampleW(t1, numCoEvents, close, molecule):
     # Derive sample weight by return attribution
     ret = np.log(close).diff()  # log-returns, so that they are additive
-    wght = pd.Series(index=molecule, dtype=float)
+    wght = pd.Series(index=molecule)
     for tIn, tOut in t1.loc[wght.index].items():
         wght.loc[tIn] = (ret.loc[tIn:tOut] / numCoEvents.loc[tIn:tOut]).sum()
     return wght.abs()
@@ -259,7 +259,7 @@ def fracDiff_FFD(series, d, thres=1e-5):
     # 2) Apply weights to values
     df = {}
     for name in series.columns:
-        seriesF, df_ = series[[name]].ffill().dropna(), pd.Series(dtype=float)
+        seriesF, df_ = series[[name]].ffill().dropna(), pd.Series()
         for iloc1 in range(width, seriesF.shape[0]):
             loc0, loc1 = seriesF.index[iloc1 - width], seriesF.index[iloc1]
             if not np.isfinite(series.loc[loc1, name]):
@@ -292,7 +292,7 @@ def adfuller_c1(y):
 def minFFD_table(df0, thres=.01, ds=None):
     """The body of Snippet 5.4's plotMinFFD for a price frame with a 'Close' column: for each d, the ADF statistic, the 5% value and the correlation with the original log series."""
     ds = np.linspace(0, 1, 11) if ds is None else ds
-    out = pd.DataFrame(columns=['adfStat', 'nObs', '95% conf', 'corr'], dtype=float)
+    out = pd.DataFrame(columns=['adfStat', 'nObs', '95% conf', 'corr'])
     for d in ds:
         df1 = np.log(df0[['Close']]).resample('1D').last()  # downcast to daily obs
         df2 = fracDiff_FFD(df1, d, thres=thres)

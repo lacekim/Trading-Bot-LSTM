@@ -247,3 +247,6 @@ User: 'Do what the book says...'. book_port_b.testFunc = Snippet 8.9 with the ru
 
 ### Parked item 5: plotFeatImportance title uses the book's 'tag='+tag
 User: 'you said it, the book calls for a'. One line; the testFunc smoke test (plots) passes.
+
+### Parked item 6: 17 added dtypes on empty Series/DataFrames removed (5 ports + book_mp); 84 tests pass
+User: 'Fallow the BOOK!'. None in a bot code path. Also records the finding that the AFML bot still calls binSR, getBets/getHHIs wrappers and the 365.25-day computeDD_TuW.

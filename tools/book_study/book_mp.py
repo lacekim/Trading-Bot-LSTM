@@ -224,7 +224,7 @@ def mpPandasObj(func, pdObj, numThreads=24, mpBatches=1, linMols=True, **kargs):
     if isinstance(out[0], pd.DataFrame):
         df0 = pd.DataFrame()
     elif isinstance(out[0], pd.Series):
-        df0 = pd.Series(dtype=out[0].dtype)
+        df0 = pd.Series()
     else:
         return out
     df0 = pd.concat([df0] + list(out)) if len(df0) else pd.concat(list(out))

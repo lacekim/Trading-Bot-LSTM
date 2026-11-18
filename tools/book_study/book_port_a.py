@@ -122,7 +122,7 @@ def seqBootstrap(indM, sLength=None):
         sLength = indM.shape[1]
     phi = []
     while len(phi) < sLength:
-        avgU = pd.Series(dtype=float)
+        avgU = pd.Series()
         for i in indM:
             indM_ = indM[phi + [i]]  # reduce indM
             avgU.loc[i] = getAvgUniqueness(indM_).iloc[-1]
@@ -145,7 +145,7 @@ def example_seq_bootstrap():
 
 def getRndT1(numObs, numBars, maxH):
     # random t1 Series
-    t1 = pd.Series(dtype=int)
+    t1 = pd.Series()
     for i in range(numObs):
         ix = np.random.randint(0, numBars)
         val = ix + np.random.randint(1, maxH)
@@ -206,7 +206,7 @@ def fracDiff(series, d, thres=.01):
     # 3) Apply weights to values
     df = {}
     for name in series.columns:
-        seriesF, df_ = series[[name]].ffill().dropna(), pd.Series(dtype=float)
+        seriesF, df_ = series[[name]].ffill().dropna(), pd.Series()
         for iloc in range(skip, seriesF.shape[0]):
             loc = seriesF.index[iloc]
             if not np.isfinite(series.loc[loc, name]):

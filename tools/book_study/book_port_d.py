@@ -207,12 +207,12 @@ def getCLA(cov, **kargs):
 def hrpMC(numIters=1e4, nObs=520, size0=5, size1=5, mu0=0, sigma0=1e-2, sigma1F=.25, sLength=260, rebal=22, methods=None):
     # Monte Carlo experiment on HRP
     methods = [getIVP, getHRP, getCLA] if methods is None else methods
-    stats, numIter = {i.__name__: pd.Series(dtype=float) for i in methods}, 0
+    stats, numIter = {i.__name__: pd.Series() for i in methods}, 0
     pointers = range(sLength, nObs, rebal)
     while numIter < numIters:
         # 1) Prepare data for one experiment
         x, cols = generateData_MC(nObs, sLength, size0, size1, mu0, sigma0, sigma1F)
-        r = {i.__name__: pd.Series(dtype=float) for i in methods}
+        r = {i.__name__: pd.Series() for i in methods}
         # 2) Compute portfolios in-sample
         for pointer in pointers:
             x_ = x[pointer - sLength:pointer]

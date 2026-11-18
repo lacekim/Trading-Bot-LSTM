@@ -144,7 +144,7 @@ def featImpMDA(clf, X, y, cv, sample_weight, t1, pctEmbargo, scoring='neg_log_lo
         raise Exception('wrong scoring method.')
     from sklearn.metrics import log_loss, accuracy_score
     cvGen = PurgedKFold(n_splits=cv, t1=t1, pctEmbargo=pctEmbargo)  # purged cv
-    scr0, scr1 = pd.Series(dtype=float), pd.DataFrame(columns=X.columns, dtype=float)
+    scr0, scr1 = pd.Series(), pd.DataFrame(columns=X.columns)
     for i, (train, test) in enumerate(cvGen.split(X=X)):
         X0, y0, w0 = X.iloc[train, :], y.iloc[train], sample_weight.iloc[train]
         X1, y1, w1 = X.iloc[test, :], y.iloc[test], sample_weight.iloc[test]
@@ -174,7 +174,7 @@ def featImpMDA(clf, X, y, cv, sample_weight, t1, pctEmbargo, scoring='neg_log_lo
 
 
 def auxFeatImpSFI(featNames, clf, trnsX, cont, scoring, cvGen):
-    imp = pd.DataFrame(columns=['mean', 'std'], dtype=float)
+    imp = pd.DataFrame(columns=['mean', 'std'])
     for featName in featNames:
         df0 = cvScore(clf, X=trnsX[[featName]], y=cont['bin'], sample_weight=cont['w'], scoring=scoring, cvGen=cvGen)
         imp.loc[featName, 'mean'] = df0.mean()
