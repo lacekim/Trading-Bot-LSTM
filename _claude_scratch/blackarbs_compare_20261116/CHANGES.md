@@ -256,3 +256,6 @@ User: 'fallow the book'. 9 calls in 4 files; 84 tests pass.
 
 ### AFML bots: 15.4 binFreq/binSR fields removed from the Chapter 15 report (5 bots, report, 3 checkers)
 User: 'fallow the book'. Report-only fields; no trade or result affected. BOOK_NOTES section 18.
+
+### AFML bots: Snippet 14.1's printed lines replace the getBets wrapper call (5 bots)
+User: 'Do what the book says'. Identical bets (checked on 500 random positions). Report only; no trade affected.

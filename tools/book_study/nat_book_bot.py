@@ -226,7 +226,14 @@ def stage_ch14(ev, closes, w_idx, side, size, t1pos, sched, r_year, last_day, ru
     idx = pd.to_datetime(np.arange(lo, last_day + 1) * DAY, unit="s")
     tPos, ret_d = pd.Series(E_day, index=idx), pd.Series(r_year, index=idx)
     equity = (1.0 + ret_d).cumprod()
-    bets, hp = PC.getBets(tPos), PC.getHoldingPeriod(tPos)
+    # SNIPPET 14.1 (p120), the printed lines used as printed where tPos exists (ruling 2026-11-17; was Claude's PC.getBets wrapper)
+    df0=tPos[tPos==0].index
+    df1=tPos.shift(1);df1=df1[df1!=0].index
+    bets=df0.intersection(df1) # flattening
+    df0=tPos.iloc[1:]*tPos.iloc[:-1].values
+    bets=bets.union(df0[df0<0].index).sort_values() # tPos flips
+    if tPos.index[-1] not in bets:bets=bets.append(tPos.index[-1:]) # last bet
+    hp = PC.getHoldingPeriod(tPos)
     prev, bet_ret = tPos.index[0], []
     for b in bets:
         seg = ret_d.loc[(ret_d.index > prev) & (ret_d.index <= b)] if prev != tPos.index[0] else ret_d.loc[ret_d.index <= b]
