@@ -14,3 +14,11 @@ Result: trading output identical.
   nothing to act on in this run.
 - Printed output now shows the book's prints: "dropped label 0 0.0007652901855438246" (3.8) and "1.0 0.0" (4.11 const, slope).
 - Walk-forward AUC 0.5099 in both.
+
+## Alpaca (same check)
+Run: runtime/book_bot_nf/alpaca_20261119T030922Z (user, Mac, 1,240 s) vs alpaca_20261116T072013Z (1,253 s); --cost-bp-per-side 10,
+--universe runtime/book_meta_alpaca/20261012T023148Z/universe.csv, seed 20261022.
+Result: trading output identical. 22 of 24 output files byte-identical; cpcv_predictions.csv.gz equal in content; ch15.json /
+meta.json differ only by the approved removals (two 15.4 fields per target; time_decay_4_11 const/slope), run time and 6 script
+fingerprints. Walk-forward AUC 0.4997 in both. Time under water count 0 (nothing for the year-length change to act on).
+Printed: "dropped label 0 0.0020497380417772333" (3.8) and "1.0 0.0" (4.11).
