@@ -271,3 +271,6 @@ Caught by the user's confirming nf_book_bot run (TypeError). Fixed in book_bot_v
 
 ### Snippet 16.5's CLA from the book's named source (Bailey & Lopez de Prado 2013): kept out of git (non-business license); 4 forced Python 3 fixes found
 Code and paper gitignored (GNU-GPL non-business only; public repo). As-printed rebuild matches the PDF; fixes found by running the book's getCLA call; fixed version matches an independent solver. Fixes await the user's ruling.
+
+### CLA forced fixes ruled (user 'ok')
+The four Python 3 fixes in the gitignored CLA.py accepted. 16.5 next.
