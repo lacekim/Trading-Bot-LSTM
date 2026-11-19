@@ -781,3 +781,9 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
   Not touched (not used by 16.5): efFrontier's `points/len(self.w)` (a float for linspace in Python 3).
 - Check of CLA.py: its w[-1] equals the long-only minimum-variance portfolio from an independent solver (scipy SLSQP) to 7e-12 .. 6e-9 on 5 random covariance matrices of 7-10 assets, including cases with 1-3 zero weights; variances equal.
 - **RULING (user 2026-11-18, "ok"): the 4 forced fixes in CLA.py accepted** (list(zip); wB is None; float(np.squeeze(...)); the three None comparisons with Python 2's answers). CLA.py (gitignored) is the CLA module for Snippet 16.5. Snippet 16.5 itself is next.
+
+### 20. Snippet 16.5, "Monte Carlo experiment on HRP out-of-sample performance" (pages 153-155)
+- `tools/book_study/snippet_16_5_as_printed.py`: the printed code, with the CLA module from section 19 (gitignored) and the 16.4 functions from `snippet_16_4_as_printed.py` (the book's `from HRP import ...`; HRP = Appendix 16.A.3 = Snippet 16.4). The `if __name__=='__main__':hrpMC()` line is printed in the book.
+- **RULING (user 2026-11-18, "ok"): changes accepted:** `import ...,CLA` from `_claude_scratch/cla_2013/`; `from HRP import` -> `from snippet_16_4_as_printed import`; en dash in `size0–1` -> minus; `xrange` -> `range`; two `print` -> `print()`; `r[...].append(r_)` -> `pd.concat([r[...],r_])` (pandas 2.0 removed Series.append).
+- Runner `run_snippet_16_5_as_printed.py` (NOT in the book): runs from `runtime/snippet_16_5/` so the book's `stats.csv` lands there, tees the printed lines to `printed_output.txt`, records library versions. Calls the book's `hrpMC()` with its default numIters=1e4 (about an hour).
+- Small test before committing (container, numIters 30 and 3): runs; only message is scipy's ClusterWarning on the book's `sch.linkage` call (same as 16.4). 30 iterations is too few to quote; the full run decides.
