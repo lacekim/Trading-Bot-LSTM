@@ -120,7 +120,7 @@ class Test14(unittest.TestCase):
         self.assertEqual(list(dd.index), [ix[1], ix[3]])
         np.testing.assert_allclose(dd.values, [1 - 1.5 / 2, 1 - 2.4 / 3])
         self.assertEqual(len(tuw), 1)
-        self.assertAlmostEqual(tuw.iloc[0], 2 / 365.25)
+        self.assertAlmostEqual(tuw.iloc[0], 2 / 365.2425)
         dd2, _ = C.computeDD_TuW(s, dollars=True)
         np.testing.assert_allclose(dd2.values, [.5, .6])
 

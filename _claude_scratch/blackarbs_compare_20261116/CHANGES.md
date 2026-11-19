@@ -262,3 +262,6 @@ User: 'Do what the book says'. Identical bets (checked on 500 random positions).
 
 ### AFML bots: Snippet 14.3's printed lines replace the getHHIs wrapper call (5 bots)
 User: 'Do it as the book states...'. Identical values (checked). Report only.
+
+### computeDD_TuW uses the ruled 365.2425-day year; bots' reports now free of excluded code
+User: 'Do as the book says'. Time-under-water in years about 0.02% larger; drawdowns, trades and gains unchanged. 25 tests pass.

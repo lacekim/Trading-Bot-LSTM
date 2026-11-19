@@ -10,7 +10,7 @@ Changes from the printed code (each forced by the language / library versions or
   14.1  as printed, wrapped in `getBets(tPos)`.
   14.2  xrange -> range.  The printed `hp=pd.DataFrame(columns=['dT','w'])` is kept.
   14.3  pd.TimeGrouper(freq='M') (removed) -> pd.Grouper(freq='ME').  The three printed lines are wrapped in `getHHIs(ret)`.
-  14.4  np.timedelta64(1,'Y') is refused by numpy for a timedelta from a DatetimeIndex difference; the years are the day difference / 365.25.
+  14.4  np.timedelta64(1,'Y') is refused by numpy for a timedelta from a DatetimeIndex difference; divided by pd.Timedelta(days=365.2425), numpy's own year (ruling 2026-11-17; the October 365.25 was Claude's).
   15.1  xrange -> range; the print is returned as (mean, std, mean/std).
   15.2  needs SymPy, which is not installed here (and cannot be installed: the package registry is blocked); `factor_variance_check` verifies the identity the snippet factors,
         v = m2 - m1**2 = p*(1-p)*(u-d)**2, numerically on a grid, which is the output the book's text relies on.
@@ -226,7 +226,7 @@ def computeDD_TuW(series, dollars=False):
         dd = df1['hwm'] - df1['min']
     else:
         dd = 1 - df1['min'] / df1['hwm']
-    tuw = ((df1.index[1:] - df1.index[:-1]) / np.timedelta64(1, 'D') / 365.25).values  # in years
+    tuw = ((df1.index[1:] - df1.index[:-1]) / pd.Timedelta(days=365.2425)).values  # in years (ruling 14.4, 2026-11-17: numpy's own year)
     tuw = pd.Series(tuw, index=df1.index[:-1])
     return dd, tuw
 
