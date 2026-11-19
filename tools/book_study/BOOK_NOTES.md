@@ -787,3 +787,10 @@ What the books actually print for per-symbol sentiment (read 2026-11-15):
 - **RULING (user 2026-11-18, "ok"): changes accepted:** `import ...,CLA` from `_claude_scratch/cla_2013/`; `from HRP import` -> `from snippet_16_4_as_printed import`; en dash in `size0–1` -> minus; `xrange` -> `range`; two `print` -> `print()`; `r[...].append(r_)` -> `pd.concat([r[...],r_])` (pandas 2.0 removed Series.append).
 - Runner `run_snippet_16_5_as_printed.py` (NOT in the book): runs from `runtime/snippet_16_5/` so the book's `stats.csv` lands there, tees the printed lines to `printed_output.txt`, records library versions. Calls the book's `hrpMC()` with its default numIters=1e4 (about an hour).
 - Small test before committing (container, numIters 30 and 3): runs; only message is scipy's ClusterWarning on the book's `sch.linkage` call (same as 16.4). 30 iterations is too few to quote; the full run decides.
+- **FULL RUN (user, Mac, 2026-11-18; python 3.12.13, numpy 2.4.4, pandas 3.0.2, scipy 1.17.1): completed all 10,000 iterations (0..9999).** Only messages: scipy's ClusterWarning on the book's `sch.linkage` line (as in 16.4). The book's final print (columns 0 = std, 1 = variance, 2 = variance relative to HRP's minus 1, of the out-of-sample total return per experiment):
+  | method | std | variance | vs HRP |
+  | getIVP | 0.307401 | 0.094496 | +0.388452 (+38.8%) |
+  | getHRP | 0.260880 | 0.068058 | 0 |
+  | getCLA | 0.339746 | 0.115427 | +0.696009 (+69.6%) |
+  HRP has the lowest out-of-sample variance of the three, which is the book's claim for this experiment. The condensed PDF prints no result table for 16.5, so there is no printed number to compare against.
+- Check: runtime/snippet_16_5/stats.csv (gitignored, 10,000 rows, no NaN) recomputed independently with Python's `statistics` module (not pandas): std, variance and ratio equal the printed table to all 6 decimals; printed_output.txt ends with the same table the user pasted.

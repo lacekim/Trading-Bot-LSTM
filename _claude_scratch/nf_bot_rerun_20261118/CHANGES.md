@@ -7,3 +7,6 @@ alpaca_20261119T030922Z vs alpaca_20261116T072013Z: 22/24 files byte-identical, 
 
 ### Snippet 16.5 as printed, with runner (changes ruled by user 'ok')
 snippet_16_5_as_printed.py: the book's Monte Carlo HRP vs IVP vs CLA, with the ruled changes (CLA import from the gitignored cla_2013 folder; HRP -> snippet_16_4_as_printed; en dash; range; print(); pd.concat). run_snippet_16_5_as_printed.py: not in the book; runs hrpMC() from runtime/snippet_16_5/, tees output, records versions. BOOK_NOTES section 20. CLA code stays out of git.
+
+### Snippet 16.5 full run recorded: HRP lowest out-of-sample variance (IVP +38.8%, CLA +69.6%)
+User's Mac run of run_snippet_16_5_as_printed.py, 10,000 iterations. Table: std IVP 0.307401 / HRP 0.260880 / CLA 0.339746; variance 0.094496 / 0.068058 / 0.115427. Independently recomputed from runtime/snippet_16_5/stats.csv with the statistics module: equal. Condensed PDF prints no result table to compare. BOOK_NOTES section 20 updated.
