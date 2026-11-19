@@ -240,7 +240,12 @@ def stage_ch14(ev, closes, w_idx, side, size, t1pos, sched, r_year, last_day, ru
         bet_ret.append((b, float((1.0 + seg).prod() - 1.0)))
         prev = b
     bet_ret = pd.Series([v for _, v in bet_ret], index=[b for b, _ in bet_ret])
-    hhi_pos, hhi_neg, t_hhi = PC.getHHIs(bet_ret)
+    # SNIPPET 14.3 (p124), the three printed lines used as printed where ret exists (ruling 2026-11-17; was Claude's PC.getHHIs wrapper)
+    ret=bet_ret
+    rHHIPos=PC.getHHI(ret[ret>=0]) # concentration of positive returns per bet
+    rHHINeg=PC.getHHI(ret[ret<0]) # concentration of negative returns per bet
+    tHHI=PC.getHHI(ret.groupby(pd.Grouper(freq='ME')).count()) # concentr. bets/month
+    hhi_pos, hhi_neg, t_hhi = rHHIPos, rHHINeg, tHHI
     dd, tuw = PC.computeDD_TuW(equity)
     nn = lambda x: None if not np.isfinite(x) else float(x)  # noqa: E731
     years = len(idx) / 365.25

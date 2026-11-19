@@ -259,3 +259,6 @@ User: 'fallow the book'. Report-only fields; no trade or result affected. BOOK_N
 
 ### AFML bots: Snippet 14.1's printed lines replace the getBets wrapper call (5 bots)
 User: 'Do what the book says'. Identical bets (checked on 500 random positions). Report only; no trade affected.
+
+### AFML bots: Snippet 14.3's printed lines replace the getHHIs wrapper call (5 bots)
+User: 'Do it as the book states...'. Identical values (checked). Report only.
