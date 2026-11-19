@@ -26,3 +26,9 @@ market_data_collectors/collect_santiment_social.py
 tools/run_santiment_social_experiment.py
 tools/run_social_exhaustion_experiment.py
 freqtrade-develop/
+
+# Bailey & Lopez de Prado (2013) CLA code and paper: GNU-GPL for non-business purposes only, authors keep commercial rights; kept out of this public repo
+_claude_scratch/cla_2013/CLA.py
+_claude_scratch/cla_2013/CLA_as_printed.py
+_claude_scratch/cla_2013/critical-line.pdf
+_claude_scratch/critical-line.pdf

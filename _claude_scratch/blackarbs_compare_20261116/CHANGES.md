@@ -268,3 +268,6 @@ User: 'Do as the book says'. Time-under-water in years about 0.02% larger; drawd
 
 ### Fix: four bots still passed dropLabels(verbose=True) after parked item 1
 Caught by the user's confirming nf_book_bot run (TypeError). Fixed in book_bot_v2, nat_, sent_, nf_. Static check of all bot/script calls into the ports: 0 problems.
+
+### Snippet 16.5's CLA from the book's named source (Bailey & Lopez de Prado 2013): kept out of git (non-business license); 4 forced Python 3 fixes found
+Code and paper gitignored (GNU-GPL non-business only; public repo). As-printed rebuild matches the PDF; fixes found by running the book's getCLA call; fixed version matches an independent solver. Fixes await the user's ruling.
