@@ -380,7 +380,7 @@ def main() -> int:
     ev, einfo = BV.build_book_events(bars, break_s, 4.0, HCAP[venue], (2.0, 2.0), eligible, refvol, log)
     n_all = len(ev)
     shares = ev["bin_book"].value_counts(normalize=True).sort_index().to_dict()
-    ev = PA.dropLabels(ev.rename(columns={"bin_book": "bin"}), minPct=.05, verbose=True).rename(columns={"bin": "bin_book"}).reset_index(drop=True)      # Snippet 3.8
+    ev = PA.dropLabels(ev.rename(columns={"bin_book": "bin"}), minPct=.05).rename(columns={"bin": "bin_book"}).reset_index(drop=True)      # Snippet 3.8
     labels_dropped = sorted(set(shares) - set(ev["bin_book"].unique()))
     ev["bin"] = (ev["bin_book"] > 0).astype(np.int8)
     tW = pd.Series(ev["u"].to_numpy(float))                                                                                                              # Snippet 4.11 (c = 1)

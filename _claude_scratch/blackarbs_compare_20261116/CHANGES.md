@@ -265,3 +265,6 @@ User: 'Do it as the book states...'. Identical values (checked). Report only.
 
 ### computeDD_TuW uses the ruled 365.2425-day year; bots' reports now free of excluded code
 User: 'Do as the book says'. Time-under-water in years about 0.02% larger; drawdowns, trades and gains unchanged. 25 tests pass.
+
+### Fix: four bots still passed dropLabels(verbose=True) after parked item 1
+Caught by the user's confirming nf_book_bot run (TypeError). Fixed in book_bot_v2, nat_, sent_, nf_. Static check of all bot/script calls into the ports: 0 problems.
